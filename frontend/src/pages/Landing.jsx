@@ -3,6 +3,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Background from "../assets/images/Background.png";
 import * as Icons from "../assets/icons/index";
+import { Link } from "react-router-dom";
 
 function Landing() {
   const primaryColor = "#5D5FEF";
@@ -25,17 +26,19 @@ function Landing() {
             Phần mềm <br /> Quản lý quán{" "}
             <span className="text-primary-purple">Billiards</span>
           </h1>
-          <button
-            style={{ backgroundColor: primaryColor }}
-            className="text-white px-10 py-5 rounded-full flex items-center gap-3 shadow-2xl hover:scale-105 transition-all"
-          >
-            <span className="text-lg font-bold">Vào phần mềm</span>
-            <img
-              src={Icons.ArrowRight}
-              alt="icon"
-              className="w-6 h-6 object-contain"
-            />
-          </button>
+          <Link to="/login">
+            <button
+              style={{ backgroundColor: primaryColor }}
+              className="text-white px-10 py-5 rounded-full flex items-center gap-3 shadow-2xl hover:scale-105 transition-all"
+            >
+              <span className="text-lg font-bold">Vào phần mềm</span>
+              <img
+                src={Icons.ArrowRight}
+                alt="icon"
+                className="w-6 h-6 object-contain"
+              />
+            </button>
+          </Link>
         </div>
       </main>
 
@@ -109,7 +112,7 @@ function Landing() {
   );
 }
 
-// --- ĐỊNH NGHĨA FEATURECARD (QUAN TRỌNG: Phải có phần này) ---
+// --- FEATURECARD ---
 function FeatureCard({
   icon,
   title,
@@ -118,9 +121,9 @@ function FeatureCard({
   iconFilter = "",
 }) {
   return (
-    <div className="bg-white p-10 rounded-3xl shadow-xl border border-gray-50 flex flex-col items-center text-center space-y-6 hover:-translate-y-3 transition-all duration-300 group">
+    <div className="bg-white p-10 rounded-3xl shadow-xl border border-gray-50 flex flex-col items-center text-center space-y-6 hover:-translate-y-1 transition-all duration-300 group">
       <div
-        className={`w-20 h-20 flex items-center justify-center rounded-full ${iconCircleBg} shadow-inner group-hover:scale-110 transition-transform`}
+        className={`w-20 h-20 flex items-center justify-center rounded-full ${iconCircleBg} shadow-inner group-hover:scale-105 transition-transform`}
       >
         <img
           src={icon}

@@ -165,9 +165,11 @@ function Login() {
                 placeholder="Nhập lại mật khẩu..."
               />
 
-              <button className="w-full py-5 bg-blue-700 text-white rounded-[25px] font-bold text-xl hover:bg-blue-800 transition-all mt-8 shadow-2xl shadow-blue-200 active:scale-95">
-                Vào cửa hàng ngay
-              </button>
+              <Link to="/dashboard">
+                <button className="w-full py-5 bg-blue-700 text-white rounded-[25px] font-bold text-xl hover:bg-blue-800 transition-all mt-8 shadow-2xl shadow-blue-200 active:scale-95">
+                  Vào cửa hàng ngay
+                </button>
+              </Link>
             </div>
           </div>
         </div>
