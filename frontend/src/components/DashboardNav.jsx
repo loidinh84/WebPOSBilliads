@@ -12,7 +12,20 @@ function DashboardNav({ activeTab = "Tổng quan" }) {
           <NavItem label="Bàn" active={activeTab === "Bàn"} to="/tables" />
           <NavItem label="Giao dịch" active={activeTab === "Giao dịch"} to="/transactions" />
           <NavItem label="Nhân viên" active={activeTab === "Nhân viên"} to="/staff" />
-          <NavItem label="Báo cáo" active={activeTab === "Báo cáo"} to="/reports" />
+          
+          <div className="relative group">
+            <NavItem label="Báo cáo" active={activeTab === "Báo cáo"} to="/reports?type=revenue" />
+            
+            {/* Dropdown Menu */}
+            <div className="absolute top-[100%] left-0 w-48 bg-white border border-gray-100 shadow-xl rounded-b-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[60] overflow-hidden text-gray-800">
+              <Link to="/reports?type=revenue" className="block px-5 py-3 text-[14px] font-medium hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors border-b border-gray-50">
+                Báo cáo doanh thu
+              </Link>
+              <Link to="/reports?type=expense" className="block px-5 py-3 text-[14px] font-medium hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors">
+                Báo cáo chi phí
+              </Link>
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-3 py-2">
