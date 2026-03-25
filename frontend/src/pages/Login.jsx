@@ -79,7 +79,7 @@ function Login() {
                   className="absolute top-1/2 -translate-y-1/2 right-6 text-gray-400 hover:text-purple-600 transition-colors"
                 >
                   <img
-                    src={showPassword ? Icons.EyeOff : Icons.Eye} // Tự động chuyển đổi icon
+                    src={showPassword ? Icons.HiddenEye : Icons.Eye}
                     alt="toggle"
                     className="w-7 h-7 object-contain"
                   />
