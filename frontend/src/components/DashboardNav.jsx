@@ -44,7 +44,7 @@ function DashboardNav({ activeTab = "Tổng quan" }) {
           <NavItem
             label="Nhân viên"
             active={activeTab === "Nhân viên"}
-            to="/staff"
+            to="/staff/list"
             dropdown={[
               { label: "Danh sách nhân viên", to: "/staff/list" },
               { label: "Lịch làm việc", to: "/staff/schedule" },
