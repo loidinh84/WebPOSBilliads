@@ -346,11 +346,19 @@ function Reports() {
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Hoàn tác"
               >
+                {Icons.reply && <img src={Icons.reply} alt="Hoàn tác" className="w-4 h-4" />}
               </button>
               <button
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Làm lại"
               >
+                {Icons.reply && <img src={Icons.reply} alt="Làm lại" className="w-4 h-4 scale-x-[-1]" />}
+              </button>
+              <button
+                className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
+                title="Làm mới"
+              >
+                {Icons.forwardMedia && <img src={Icons.forwardMedia} alt="Làm mới" className="w-4 h-4" />}
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
@@ -360,12 +368,14 @@ function Reports() {
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Trang đầu"
               >
+                {Icons.doubleArrow && <img src={Icons.doubleArrow} alt="Trang đầu" className="w-4 h-4" />}
               </button>
               <button
                 onClick={handlePrevPage}
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Trang trước"
               >
+                {Icons.FirstPage && <img src={Icons.FirstPage} alt="Trang trước" className="w-4 h-4" />}
               </button>
 
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 border border-gray-300 rounded shadow-sm text-sm font-medium mx-1">
@@ -379,25 +389,29 @@ function Reports() {
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Trang sau"
               >
+                {Icons.LastPage && <img src={Icons.LastPage} alt="Trang sau" className="w-4 h-4" />}
               </button>
               <button
                 onClick={handleLastPage}
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Trang cuối"
               >
+                {Icons.ArrowDouble && <img src={Icons.ArrowDouble} alt="Trang cuối" className="w-4 h-4" />}
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
 
               <button
-                className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
+                className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer bg-white/20 shadow-sm"
                 title="Xem tài liệu"
               >
+                {Icons.insertPage && <img src={Icons.insertPage} alt="Xem tài liệu" className="w-4 h-4" />}
               </button>
               <button
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Tải xuống"
               >
+                {Icons.CloudDownload && <img src={Icons.CloudDownload} alt="Tải xuống" className="w-4 h-4" />}
               </button>
               <button
                 onClick={handlePrint}
@@ -410,10 +424,18 @@ function Reports() {
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
 
               <button
+                onClick={handleZoomIn}
+                className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
+                title="Phóng to"
+              >
+                {Icons.ZoomIn && <img src={Icons.ZoomIn} alt="Phóng to" className="w-4 h-4" />}
+              </button>
+              <button
                 onClick={handleZoomOut}
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Thu nhỏ"
               >
+                {Icons.ZoomOut && <img src={Icons.ZoomOut} alt="Thu nhỏ" className="w-4 h-4" />}
               </button>
               <button
                 onClick={handleZoomReset}
@@ -422,17 +444,15 @@ function Reports() {
               >
                 {Icons.Search && <img src={Icons.Search} alt="Đặt lại thu phóng" className="w-4 h-4" />}
               </button>
-              <button
-                onClick={handleZoomIn}
-                className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
-                title="Phóng to"
-              >
-              </button>
+
+              <div className="w-px h-6 bg-gray-400 mx-1"></div>
+
               <button
                 onClick={toggleFullscreen}
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer text-gray-500 ml-1"
                 title="Toàn màn hình"
               >
+                {Icons.FullScreen && <img src={Icons.FullScreen} alt="Toàn màn hình" className="w-4 h-4" />}
               </button>
             </div>
 
