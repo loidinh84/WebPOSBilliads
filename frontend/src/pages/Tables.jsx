@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import DashboardHeader from "../components/DashboardHeader";
 import DashboardNav from "../components/DashboardNav";
 import EditTableModal from "../components/EditTableModal";
+import AddTableModal from "../components/AddTableModal";
 
 function Tables() {
   const [tables, setTables] = useState([
@@ -31,6 +32,7 @@ function Tables() {
   const [activeTab, setActiveTab] = useState("Thông tin");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Hàm chỉnh sửa bàn
   const handleEdit = (tableId) => {
@@ -53,6 +55,16 @@ function Tables() {
   const handleCancel = () => {
     setIsEditModalOpen(false);
     setEditingTable(null);
+  };
+
+  // Hàm thêm bàn mới
+  const handleAddSave = (newTable) => {
+    setTables([...tables, newTable]);
+    setIsAddModalOpen(false);
+  };
+
+  const handleAddCancel = () => {
+    setIsAddModalOpen(false);
   };
 
   // Hàm ngừng hoạt động
@@ -146,7 +158,10 @@ function Tables() {
             <h2 className="text-xl font-bold text-gray-800 mb-3">
               Danh sách bàn
             </h2>
-            <button className="bg-[#4CAF50] hover:bg-[#45a049] text-white px-4 py-2 rounded font-medium text-sm flex items-center gap-2 transition-all cursor-pointer hover:scale-105 hover:shadow-lg">
+            <button 
+              onClick={() => setIsAddModalOpen(true)}
+              className="bg-[#4CAF50] hover:bg-[#45a049] text-white px-4 py-2 rounded font-medium text-sm flex items-center gap-2 transition-all cursor-pointer hover:scale-105 hover:shadow-lg"
+            >
               <span className="text-lg leading-none">+</span> Thêm bàn
             </button>
           </div>
@@ -357,6 +372,13 @@ function Tables() {
         table={editingTable}
         onSave={handleSave}
         onCancel={handleCancel}
+      />
+
+      {/* Modal thêm bàn mới */}
+      <AddTableModal
+        isOpen={isAddModalOpen}
+        onSave={handleAddSave}
+        onCancel={handleAddCancel}
       />
     </div>
   );
