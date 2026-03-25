@@ -22,6 +22,17 @@ import ArrowDown from "./ArrowDown.svg";
 import Search from "./Search.svg";
 import Block from "./Block.svg";
 import Delete from "./Delete.svg";
+import ArrowDouble from "./ArrowDouble.svg";
+import CloudDownload from "./CloudDownload.svg";
+import FirstPage from "./FirstPage.svg";
+import FullScreen from "./FullScreen.svg";
+import LastPage from "./LastPage.svg";
+import ZoomIn from "./ZoomIn.svg";
+import ZoomOut from "./ZoomOut.svg";
+import doubleArrow from "./doubleArrow.svg";
+import forwardMedia from "./forwardMedia.svg";
+import insertPage from "./insertPage.svg";
+import reply from "./reply.svg";
 
 // Export để sử dụng ở nơi khác
 export {
@@ -47,5 +58,16 @@ export {
   ArrowDown,
   Search,
   Block,
-  Delete
+  Delete,
+  ArrowDouble,
+  CloudDownload,
+  FirstPage,
+  FullScreen,
+  LastPage,
+  ZoomIn,
+  ZoomOut,
+  doubleArrow,
+  forwardMedia,
+  insertPage,
+  reply
 };
