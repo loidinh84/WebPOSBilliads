@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import * as Icons from "../assets/icons/index";
 
 function DashboardNav() {
@@ -6,8 +7,12 @@ function DashboardNav() {
     <nav className="bg-[#5D5FEF] sticky top-0 z-40  shadow-sm w-full font-inter">
       <div className="flex justify-between items-center  px-6 lg:px-12">
         <div className="flex text-xl font-bold cursor-pointer text-white">
+          <Link to={"/dashboard"}>
           <NavItem label="Tổng quan" active />
+          </Link>
+          <Link to={"/dashboard/product"}>
           <NavItem label="Hàng hóa" />
+          </Link>
           <NavItem label="Bàn" />
           <NavItem label="Giao dịch" />
           <NavItem label="Nhân viên" />

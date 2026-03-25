@@ -17,6 +17,11 @@ import Customer from "./Customer.svg";
 import Pen from "./Pen.svg";
 import ArrowDrop from "./ArrowDrop.svg";
 import Setting from "./Setting.svg";
+import Add from "./Add.svg";
+import ArrowDown from "./ArrowDown.svg";
+import Search from "./Search.svg";
+import Block from "./Block.svg";
+import Delete from "./Delete.svg";
 
 // Export để sử dụng ở nơi khác
 export {
@@ -38,4 +43,9 @@ export {
   Pen,
   ArrowDrop,
   Setting,
+  Add,
+  ArrowDown,
+  Search,
+  Block,
+  Delete
 };
