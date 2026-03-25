@@ -7,7 +7,7 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-[#F8F9FB] font-inter text-gray-900">
       <DashboardHeader storeName="Billiards Lục Lọi" />
-      <DashboardNav />
+      <DashboardNav activeTab="Tổng quan" />
 
       <main className="max-w-[1440px] mx-auto p-8 grid grid-cols-12 gap-6">
         {/* Nội dung bên trái */}
