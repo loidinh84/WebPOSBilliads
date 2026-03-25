@@ -7,12 +7,12 @@ function DashboardNav({ activeTab = "Tổng quan" }) {
     <nav className="bg-[#5D5FEF] sticky top-0 z-40  shadow-sm w-full font-inter">
       <div className="flex justify-between items-center  px-6 lg:px-12">
         <div className="flex text-xl font-bold cursor-pointer text-white">
-          <NavItem label="Tổng quan" active />
-          <NavItem label="Hàng hóa" />
-          <NavItem label="Bàn" />
-          <NavItem label="Giao dịch" />
-          <NavItem label="Nhân viên" />
-          <NavItem label="Báo cáo" />
+          <NavItem label="Tổng quan" active={activeTab === "Tổng quan"} to="/dashboard" />
+          <NavItem label="Hàng hóa" active={activeTab === "Hàng hóa"} to="/products" />
+          <NavItem label="Bàn" active={activeTab === "Bàn"} to="/tables" />
+          <NavItem label="Giao dịch" active={activeTab === "Giao dịch"} to="/transactions" />
+          <NavItem label="Nhân viên" active={activeTab === "Nhân viên"} to="/staff" />
+          <NavItem label="Báo cáo" active={activeTab === "Báo cáo"} to="/reports" />
         </div>
 
         <div className="flex gap-3 py-2">
@@ -28,7 +28,7 @@ function DashboardNav({ activeTab = "Tổng quan" }) {
   );
 }
 
-function NavItem({ label, active = false, to }) {
+function NavItem({ label, active = false, to = "#" }) {
   return (
     <Link
       to={to}
