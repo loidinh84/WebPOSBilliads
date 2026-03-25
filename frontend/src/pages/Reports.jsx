@@ -2,21 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import DashboardHeader from "../components/DashboardHeader";
 import DashboardNav from "../components/DashboardNav";
-import {
-  FaUndo,
-  FaRedo,
-  FaStepBackward,
-  FaBackward,
-  FaForward,
-  FaStepForward,
-  FaFileAlt,
-  FaCloudDownloadAlt,
-  FaPrint,
-  FaSearchMinus,
-  FaSearchPlus,
-  FaSearch,
-  FaExpandArrowsAlt,
-} from "react-icons/fa";
+import * as Icons from "../assets/icons/index";
 
 function Reports() {
   const [searchParams] = useSearchParams();
@@ -360,13 +346,11 @@ function Reports() {
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Hoàn tác"
               >
-                <FaUndo size={15} />
               </button>
               <button
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Làm lại"
               >
-                <FaRedo size={15} />
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
@@ -376,14 +360,12 @@ function Reports() {
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Trang đầu"
               >
-                <FaStepBackward size={15} />
               </button>
               <button
                 onClick={handlePrevPage}
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Trang trước"
               >
-                <FaBackward size={15} />
               </button>
 
               <div className="flex items-center gap-1 bg-white px-3 py-1.5 border border-gray-300 rounded shadow-sm text-sm font-medium mx-1">
@@ -397,14 +379,12 @@ function Reports() {
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Trang sau"
               >
-                <FaForward size={15} />
               </button>
               <button
                 onClick={handleLastPage}
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Trang cuối"
               >
-                <FaStepForward size={15} />
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
@@ -413,20 +393,18 @@ function Reports() {
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Xem tài liệu"
               >
-                <FaFileAlt size={16} />
               </button>
               <button
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Tải xuống"
               >
-                <FaCloudDownloadAlt size={18} />
               </button>
               <button
                 onClick={handlePrint}
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="In báo cáo"
               >
-                <FaPrint size={16} />
+                {Icons.Printer && <img src={Icons.Printer} alt="In báo cáo" className="w-4 h-4" />}
               </button>
 
               <div className="w-px h-6 bg-gray-400 mx-1"></div>
@@ -436,28 +414,25 @@ function Reports() {
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Thu nhỏ"
               >
-                <FaSearchMinus size={16} />
               </button>
               <button
                 onClick={handleZoomReset}
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Đặt lại thu phóng"
               >
-                <FaSearch size={16} />
+                {Icons.Search && <img src={Icons.Search} alt="Đặt lại thu phóng" className="w-4 h-4" />}
               </button>
               <button
                 onClick={handleZoomIn}
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer"
                 title="Phóng to"
               >
-                <FaSearchPlus size={16} />
               </button>
               <button
                 onClick={toggleFullscreen}
                 className="hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-black/5 cursor-pointer text-gray-500 ml-1"
                 title="Toàn màn hình"
               >
-                <FaExpandArrowsAlt size={16} />
               </button>
             </div>
 
