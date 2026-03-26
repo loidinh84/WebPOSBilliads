@@ -51,7 +51,7 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
       >
         {isConfirmingDelete ? (
           /* ==========================================
-             GIAO DIỆN 1: BẢNG XÁC NHẬN XÓA
+            GIAO DIỆN 1: BẢNG XÁC NHẬN XÓA
              ========================================== */
           <div className="p-8 text-center animate-fade-in">
             <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">

@@ -33,6 +33,9 @@ import doubleArrow from "./doubleArrow.svg";
 import forwardMedia from "./forwardMedia.svg";
 import insertPage from "./insertPage.svg";
 import reply from "./reply.svg";
+import NewRight from "./NewRight.svg";
+import Person from "./Person.svg";
+import checkbox from "./checkbox.svg";
 
 // Export để sử dụng ở nơi khác
 export {
@@ -69,5 +72,8 @@ export {
   doubleArrow,
   forwardMedia,
   insertPage,
-  reply
+  reply,
+  NewRight,
+  Person,
+  checkbox
 };
