@@ -36,6 +36,9 @@ import reply from "./reply.svg";
 import NewRight from "./NewRight.svg";
 import Person from "./Person.svg";
 import checkbox from "./checkbox.svg";
+import ArrowImport from "./arrow import.svg";
+import ArrowBack from "./arrowBack.svg";
+import SaveFile from "./saveFile.svg";
 
 // Export để sử dụng ở nơi khác
 export {
@@ -75,5 +78,8 @@ export {
   reply,
   NewRight,
   Person,
-  checkbox
+  checkbox,
+  ArrowImport,
+  ArrowBack,
+  SaveFile
 };
