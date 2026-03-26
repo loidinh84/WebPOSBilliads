@@ -4,7 +4,8 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Product from "./pages/Product/Product";
 import Tables from "./pages/Tables";
-import Reports from "./pages/Reports";
+import RevenueReport from "./pages/Reports/RevenueReport";
+import CostReport from "./pages/Reports/CostReport";
 import PriceSetting from "./pages/Product/PriceSetting";
 import CheckInventory from "./pages/Product/CheckInventory";
 import Export from "./pages/Transaction/Export";
@@ -37,7 +38,9 @@ function App() {
         <Route path="/staff/time-sheet" element={<TimeSheet />} />
         <Route path="/staff/payroll" element={<Salary />} />
         <Route path="/staff/settings" element={<StaffSetup />} />
-        <Route path="/reports" element={<Reports />} />
+        <Route path="/reports/revenue" element={<RevenueReport />} />
+        <Route path="/reports/cost" element={<CostReport />} />
+        <Route path="/reports" element={<RevenueReport />} />
       </Routes>
     </Router>
   );

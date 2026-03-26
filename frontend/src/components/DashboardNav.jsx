@@ -60,8 +60,8 @@ function DashboardNav({ activeTab = "Tổng quan" }) {
             active={activeTab === "Báo cáo"}
             to="/reports"
             dropdown={[
-              { label: "Báo cáo doanh thu", to: "/reports?type=revenue" },
-              { label: "Báo cáo chi phí", to: "/reports?type=expense" },
+              { label: "Báo cáo doanh thu", to: "/reports/revenue" },
+              { label: "Báo cáo chi phí", to: "/reports/cost" },
             ]}
           />
         </div>
