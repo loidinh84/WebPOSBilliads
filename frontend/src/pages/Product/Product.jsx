@@ -92,7 +92,8 @@ function Product() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     MAHANGHOA: "", TENHANGHOA: "", LOAIHANG: "", NHOMHANG: "ĐỒ ĂN", 
-    DINHMUCTON: "", GIABAN: "", GIANIEMYET: "", TONKHO: "", MOTA: "", HINHANH: null
+    DINHMUCTON_DUOI: 0, DINHMUCTON_TREN: 999, // <--- Sửa ở đây
+    GIABAN: "", GIANIEMYET: "", TONKHO: "", MOTA: "", HINHANH: null
   });
 
   // =========================================================================
@@ -125,6 +126,18 @@ function Product() {
   };
 
   const openModal = (product = null, defaultType = "") => {
+    // NẾU LÀ SỬA COMBO -> Bật thanh Combo phía dưới, chặn mở Modal
+    if (product && product.LOAIHANG === "Combo, gọi món") {
+      setComboName(product.TENHANGHOA);
+      setComboPrice(product.GIABAN || product.DONGIABAN || 0);
+      // Lấy danh sách các món đã tick chọn cũ (CHITIETCOMBO)
+      setSelectedItemsForCombo(product.CHITIETCOMBO || {});
+      setEditingProduct(product);
+      setIsAddingCombo(true);
+      return; 
+    }
+
+    // NẾU LÀ HÀNG THƯỜNG / DỊCH VỤ -> Mở Modal bình thường
     if (product) {
       setEditingProduct(product);
       setFormData({ ...product });
@@ -134,8 +147,11 @@ function Product() {
         MAHANGHOA: generateNextId(),
         TENHANGHOA: "",
         LOAIHANG: defaultType, 
-        NHOMHANG: categories.length > 1 ? categories[1].name : "",
-        DINHMUCTON: "",
+        // Ép mặc định thành Khác nếu là Dịch vụ
+        MADANHMUC: defaultType === "Dịch vụ" ? "Khác" : "DM001",
+        NHOMHANG: defaultType === "Dịch vụ" ? "Khác" : "ĐỒ UỐNG", 
+        DINHMUCTON_DUOI: 0,
+        DINHMUCTON_TREN: 999,
         GIABAN: "",
         GIANIEMYET: "",
         TONKHO: "",
@@ -174,7 +190,16 @@ function Product() {
       await fetch(url, {
         method: method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          // Nếu là Dịch vụ thì ép Nhóm hàng = Khác, Giá niêm yết = 0
+          MADANHMUC: formData.LOAIHANG === "Dịch vụ" ? "Khác" : formData.MADANHMUC,
+          GIANIEMYET: formData.LOAIHANG === "Dịch vụ" ? 0 : Number(formData.GIANIEMYET || 0),
+          GIABAN: Number(formData.GIABAN || 0),
+          TONKHO: Number(formData.TONKHO || 0),
+          DINHMUCTON_DUOI: Number(formData.DINHMUCTON_DUOI || 0),
+          DINHMUCTON_TREN: Number(formData.DINHMUCTON_TREN || 0)  
+        })
       });
       
       // Load lại Database sau khi lưu
@@ -182,11 +207,17 @@ function Product() {
     } catch (error) {
       console.error("Lưu API thất bại, lưu tạm vào State:", error);
     } finally {
-      // Cơ chế dự phòng (Cập nhật UI ngay cả khi API lỗi)
+      // Đảm bảo chữ "Khác" hiển thị ngay lập tức trên bảng mà không cần F5
+      const finalProductData = {
+        ...formData,
+        NHOMHANG: formData.LOAIHANG === "Dịch vụ" ? "Khác" : formData.NHOMHANG,
+        TRANGTHAI: editingProduct ? editingProduct.TRANGTHAI : 1
+      };
+
       if (editingProduct) {
-        setProducts(products.map(p => p.MAHANGHOA === formData.MAHANGHOA ? { ...formData, TRANGTHAI: p.TRANGTHAI } : p));
+        setProducts(products.map(p => p.MAHANGHOA === formData.MAHANGHOA ? finalProductData : p));
       } else {
-        setProducts([{ ...formData, TRANGTHAI: 1 }, ...products]);
+        setProducts([finalProductData, ...products]);
       }
       setIsModalOpen(false);
     }
@@ -217,21 +248,32 @@ function Product() {
   // Logic Combo
   const toggleComboMode = () => {
     setIsAddingCombo(!isAddingCombo);
-    if (isAddingCombo) {
+    if (isAddingCombo) { // Khi đang mở mà bấm Hủy/Tắt
         setSelectedItemsForCombo({});
         setComboName("");
         setComboPrice("");
+        setEditingProduct(null); // Reset trạng thái đang sửa
     }
   };
 
   const handleItemComboCheck = (id) => {
+    // Tìm sản phẩm đang được tick
+    const product = products.find(p => p.MAHANGHOA === id);
+    
+    // Nếu là Combo thì chặn lại và thông báo
+    if (product && product.LOAIHANG === "Combo, gọi món") {
+        alert("Không được phép thêm Combo vào trong một Combo khác!");
+        return;
+    }
+    
     setSelectedItemsForCombo(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const totalOriginalPrice = Object.keys(selectedItemsForCombo).reduce((sum, itemId) => {
     if (selectedItemsForCombo[itemId]) {
         const product = products.find(p => p.MAHANGHOA === itemId);
-        if (product) sum += Number(product.GIABAN);
+        // Sửa thành cộng GIANIEMYET thay vì GIABAN
+        if (product) sum += Number(product.GIANIEMYET || 0); 
     }
     return sum;
   }, 0);
@@ -242,15 +284,27 @@ function Product() {
         return;
     }
     
+    // BƯỚC 1: Lấy danh sách các món đã tick chọn
+    const selectedProducts = Object.keys(selectedItemsForCombo)
+      .filter(itemId => selectedItemsForCombo[itemId])
+      .map(itemId => products.find(p => p.MAHANGHOA === itemId))
+      .filter(Boolean); // Lọc bỏ undefined
+
+    // BƯỚC 2: Tính tồn kho của combo = tồn kho NHỎ NHẤT của các món thành phần
+    const comboInventory = selectedProducts.length > 0 
+      ? Math.min(...selectedProducts.map(p => Number(p.TONKHO || p.SOLUONGTONKHO || 0)))
+      : 0;
+
     const newComboProduct = {
       MAHANGHOA: generateNextId(),
       TENHANGHOA: comboName,
       LOAIHANG: "Combo, gọi món",
       NHOMHANG: "Khác", 
-      DINHMUCTON: "",
+      DINHMUCTON_DUOI: 0,
+      DINHMUCTON_TREN: 999,
       GIABAN: Number(comboPrice),
       GIANIEMYET: totalOriginalPrice,
-      TONKHO: 100,
+      TONKHO: comboInventory, // <--- Gán tồn kho nhỏ nhất vào đây thay vì số 100
       MOTA: "Combo bao gồm các món đã chọn",
       HINHANH: null,
       TRANGTHAI: 1
@@ -262,7 +316,9 @@ function Product() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newComboProduct)
       });
-    } catch(err) {}
+    } catch(err) {
+      console.error(err);
+    }
 
     setProducts([newComboProduct, ...products]);
     toggleComboMode();
@@ -274,10 +330,18 @@ function Product() {
     const matchCategory = selectedCategory === "Tất cả" || p.NHOMHANG === selectedCategory;
     const matchType = selectedTypes.length === 0 || selectedTypes.includes(p.LOAIHANG);
     let matchInventory = true;
-    if (selectedInventory === "con_hang") matchInventory = p.TONKHO > 0;
-    if (selectedInventory === "het_hang") matchInventory = p.TONKHO <= 0;
+    const tonKho = Number(p.TONKHO || p.SOLUONGTONKHO || 0);
+    const dinhMucDuoi = Number(p.DINHMUCTON_DUOI || 0);
+    const dinhMucTren = Number(p.DINHMUCTON_TREN || 999999);
 
-    return matchSearch && matchCategory && matchType && matchInventory;
+    if (selectedInventory === "con_hang") matchInventory = tonKho > 0;
+    if (selectedInventory === "het_hang") matchInventory = tonKho <= 0;
+    if (selectedInventory === "duoi") matchInventory = tonKho < dinhMucDuoi;
+    if (selectedInventory === "vuot") matchInventory = tonKho > dinhMucTren;
+    
+    const isNotNestedCombo = !(isAddingCombo && p.LOAIHANG === "Combo, gọi món");
+    
+    return matchSearch && matchCategory && matchType && matchInventory && isNotNestedCombo;
   });
 
   return (
@@ -406,7 +470,7 @@ function Product() {
         <section className="col-span-9 space-y-4">
           <div className="flex justify-between items-center bg-white p-5 rounded-t-lg border-b border-gray-100 shadow-sm">
             <h2 className="text-2xl font-bold text-gray-800 tracking-tight">
-              {isAddingCombo ? "Tạo Combo mới" : "Danh sách hàng hóa"}
+              {isAddingCombo ? (editingProduct ? "Cập nhật Combo" : "Tạo Combo mới") : "Danh sách hàng hóa"}
             </h2>
             
             {!isAddingCombo && (
@@ -504,7 +568,7 @@ function Product() {
                               <div className="text-gray-500">Mã hàng hóa:</div><div className="font-bold text-gray-800">{p.MAHANGHOA}</div>
                               <div className="text-gray-500">Nhóm hàng:</div><div className="text-gray-800">{p.NHOMHANG}</div>
                               <div className="text-gray-500">Loại hàng:</div><div className="text-gray-800">{p.LOAIHANG}</div>
-                              <div className="text-gray-500">Định mức tồn:</div><div className="text-gray-800">{p.DINHMUCTON || "0 > 1,000"}</div>
+                              <div className="text-gray-800">{p.DINHMUCTON_DUOI || 0} - {p.DINHMUCTON_TREN || 0}</div>   
                               <div className="text-gray-500">Giá bán:</div><div className="font-bold text-blue-600">{Number(p.GIABAN).toLocaleString()} đ</div>
                               <div className="text-gray-500">Giá niêm yết:</div><div className="text-gray-800">{Number(p.GIANIEMYET).toLocaleString()} đ</div>
                               <div className="text-gray-500">Trạng thái:</div>
@@ -636,35 +700,67 @@ function Product() {
               </div>
 
               {/* CÁC THÔNG TIN KHÁC */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Nhóm hàng</label>
-                  <select value={formData.MADANHMUC} onChange={(e) => setFormData({ ...formData, MADANHMUC: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500">
-                    <option value="DM001">ĐỒ UỐNG</option>
-                    <option value="DM002">THỨC ĂN NHẸ</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Giá bán</label>
-                  <input type="number" value={formData.GIABAN} onChange={(e) => setFormData({ ...formData, GIABAN: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-                </div>
-              </div>
+              {/* CÁC THÔNG TIN KHÁC (TÙY BIẾN THEO LOẠI HÀNG) */}
+              {formData.LOAIHANG === "Dịch vụ" ? (
+                // --- GIAO DIỆN RÚT GỌN CHO DỊCH VỤ ---
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Giá bán</label>
+                      <input type="number" value={formData.GIABAN} onChange={(e) => setFormData({ ...formData, GIABAN: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Tồn kho ban đầu</label>
+                      <input type="number" value={formData.TONKHO} onChange={(e) => setFormData({ ...formData, TONKHO: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Định mức (Dưới - Trên)</label>
+                    <div className="flex items-center gap-2">
+                      <input type="number" value={formData.DINHMUCTON_DUOI} onChange={(e) => setFormData({ ...formData, DINHMUCTON_DUOI: e.target.value })} placeholder="Ít nhất" className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                      <span className="text-gray-500 font-bold">-</span>
+                      <input type="number" value={formData.DINHMUCTON_TREN} onChange={(e) => setFormData({ ...formData, DINHMUCTON_TREN: e.target.value })} placeholder="Nhiều nhất" className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                // --- GIAO DIỆN ĐẦY ĐỦ CHO HÀNG BÌNH THƯỜNG ---
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Nhóm hàng</label>
+                      <select value={formData.MADANHMUC} onChange={(e) => setFormData({ ...formData, MADANHMUC: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500">
+                        <option value="DM001">ĐỒ UỐNG</option>
+                        <option value="DM002">THỨC ĂN NHẸ</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Giá bán</label>
+                      <input type="number" value={formData.GIABAN} onChange={(e) => setFormData({ ...formData, GIABAN: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Định mức tồn</label>
-                  <input type="text" value={formData.DINHMUCTON} onChange={(e) => setFormData({ ...formData, DINHMUCTON: e.target.value })} placeholder="VD: 0 > 1000" className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Giá niêm yết</label>
-                  <input type="number" value={formData.GIANIEMYET} onChange={(e) => setFormData({ ...formData, GIANIEMYET: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Định mức (Dưới - Trên)</label>
+                      <div className="flex items-center gap-2">
+                        <input type="number" value={formData.DINHMUCTON_DUOI} onChange={(e) => setFormData({ ...formData, DINHMUCTON_DUOI: e.target.value })} placeholder="Ít nhất" className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                        <span className="text-gray-500 font-bold">-</span>
+                        <input type="number" value={formData.DINHMUCTON_TREN} onChange={(e) => setFormData({ ...formData, DINHMUCTON_TREN: e.target.value })} placeholder="Nhiều nhất" className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Giá niêm yết</label>
+                      <input type="number" value={formData.GIANIEMYET} onChange={(e) => setFormData({ ...formData, GIANIEMYET: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Tồn kho ban đầu</label>
-                <input type="number" value={formData.TONKHO} onChange={(e) => setFormData({ ...formData, TONKHO: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-              </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Tồn kho ban đầu</label>
+                    <input type="number" value={formData.TONKHO} onChange={(e) => setFormData({ ...formData, TONKHO: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">Mô tả</label>
