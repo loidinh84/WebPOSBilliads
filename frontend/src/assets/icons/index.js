@@ -39,6 +39,7 @@ import checkbox from "./checkbox.svg";
 import ArrowBack from "./arrowBack.svg";
 
 import SaveFile from "./saveFile.svg";
+import Calendar from "./Calendar.svg";
 
 // Export để sử dụng ở nơi khác
 export {
@@ -80,6 +81,6 @@ export {
   Person,
   checkbox,
   ArrowBack,
-  SaveFile
+  SaveFile,
+  Calendar,
 };
-
