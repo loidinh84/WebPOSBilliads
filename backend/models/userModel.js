@@ -33,10 +33,11 @@ const User = {
         .input("email", sql.VarChar, data.EMAIL)
         .input("address", sql.NVarChar, data.DIACHI || null)
         .input("dob", sql.Date, data.NGAYSINH || null)
-        .input("gender", sql.NVarChar, data.GIOITINH || null).query(`
+        .input("gender", sql.NVarChar, data.GIOITINH || null)
+        .input("image", sql.NVarChar(sql.MAX), data.HINHANH || null).query(`
             UPDATE NHANVIEN 
             SET TENNGUOIDUNG = @name, SDT = @phone, EMAIL = @email,
-                DIACHI = @address, NGAYSINH = @dob, GIOITINH = @gender
+                DIACHI = @address, NGAYSINH = @dob, GIOITINH = @gender, HINHANH = @image
             WHERE TENDANGNHAP = @username
         `);
       return { success: true };

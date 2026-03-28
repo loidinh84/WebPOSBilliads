@@ -25,7 +25,6 @@ function Account() {
     fetch(`http://localhost:5000/api/user/profile/${loginName}`)
       .then((res) => res.json())
       .then((data) => {
-        console.log("Dữ liệu nhận được:", data);
         if (data.NGAYSINH) data.NGAYSINH = data.NGAYSINH.split("T")[0];
         setUser(data);
         setTempUser(data);
@@ -98,6 +97,19 @@ function Account() {
     setShowPasswordModal(false);
   };
 
+  // 6. API: Đổi hình ảnh
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result;
+        setUser((prev) => ({ ...prev, HINHANH: base64String }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   if (isLoading)
     return <div className="p-10 text-center font-bold">Đang tải...</div>;
 
@@ -136,6 +148,7 @@ function Account() {
                   ref={fileInputRef}
                   className="hidden"
                   accept="image/*"
+                  onChange={handleAvatarChange}
                 />
               </div>
               <h3 className="text-2xl font-black text-gray-900 tracking-tight">
