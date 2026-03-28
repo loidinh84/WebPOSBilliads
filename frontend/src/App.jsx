@@ -17,6 +17,7 @@ import TimeSheet from "./pages/Employee/TimeSheet";
 import Schedule from "./pages/Employee/Schedule";
 import Salary from "./pages/Employee/Salary";
 import StaffSetup from "./pages/Employee/StaffSetup";
+import Account from "./pages/Account";
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
         <Route path="/reports/revenue" element={<RevenueReport />} />
         <Route path="/reports/cost" element={<CostReport />} />
         <Route path="/reports" element={<RevenueReport />} />
+        <Route path="/account" element={<Account />} />
       </Routes>
     </Router>
   );

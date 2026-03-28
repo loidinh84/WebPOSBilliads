@@ -1,15 +1,77 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import BackgroundLogin from "../assets/images/BackgroundLogin.png";
 import * as Icons from "../assets/icons/index";
 
 function Login() {
+  const navigate = useNavigate();
+
+  // 1. Các State cũ của bạn
   const [isSetupOpen, setIsSetupOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // 2. State quản lý Đăng nhập
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 3. THÊM MỚI: State để hứng tên cửa hàng trong Modal Setup
+  const [tempStoreName, setTempStoreName] = useState("");
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setErrorMessage("");
+
+    if (!username || !password) {
+      setErrorMessage("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        if (data.user.QUYENHAN === "Quản lý") {
+          setIsSetupOpen(true);
+        } else {
+          navigate("/dashboard");
+        }
+      } else {
+        setErrorMessage(data.message || "Đăng nhập thất bại!");
+      }
+    } catch (error) {
+      console.error("Lỗi:", error);
+      setErrorMessage("Không thể kết nối đến máy chủ!");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 4. THÊM MỚI: Hàm xử lý khi bấm nút "Vào cửa hàng ngay"
+  const handleFinalSetup = () => {
+    if (tempStoreName.trim() !== "") {
+      // Lưu tên cửa hàng vào LocalStorage
+      localStorage.setItem("storeName", tempStoreName);
+    }
+    setIsSetupOpen(false);
+    navigate("/dashboard");
+  };
+
   return (
     <div className="min-h-screen w-full flex bg-white overflow-hidden">
-      {/* 1. BÊN TRÁI: Ảnh nền nghệ thuật */}
+      {/* ---  Ảnh nền  --- */}
       <div className="hidden lg:block lg:w-1/2 relative">
         <img
           src={BackgroundLogin}
@@ -28,9 +90,8 @@ function Login() {
         </Link>
       </div>
 
-      {/* 2. BÊN PHẢI: Form Đăng nhập */}
+      {/* --- Form Đăng nhập --- */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-20 bg-white relative">
-        {/* Nút đóng cho Mobile */}
         <Link to="/" className="lg:hidden absolute top-8 right-8 p-2">
           <img src={Icons.Close} alt="Đóng" className="w-15 h-15 opacity-40" />
         </Link>
@@ -43,26 +104,26 @@ function Login() {
             <p className="text-gray-500 text-lg">Chào mừng bạn trở lại!</p>
           </div>
 
-          <form
-            className="space-y-8"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setIsSetupOpen(true);
-            }}
-          >
-            {/* Tên đăng nhập */}
+          <form className="space-y-8" onSubmit={handleLogin}>
+            {errorMessage && (
+              <div className="bg-red-50 text-red-600 p-4 rounded-[20px] text-sm font-semibold border border-red-100 text-center">
+                {errorMessage}
+              </div>
+            )}
+
             <div className="space-y-3">
               <label className="text-base font-bold text-gray-800 ml-2">
                 Tên đăng nhập
               </label>
               <input
                 type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 placeholder="Nhập tài khoản của bạn..."
                 className="w-full p-5 bg-gray-50 border border-gray-200 rounded-[25px] outline-none text-lg focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 focus:bg-white transition-all shadow-sm"
               />
             </div>
 
-            {/* Mật khẩu */}
             <div className="space-y-3 relative">
               <label className="text-base font-bold text-gray-800 ml-2">
                 Mật Khẩu
@@ -70,8 +131,10 @@ function Login() {
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full p-5 bg-gray-50 border border-gray-200 rounded-[25px] outline-none text-lg focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 focus:bg-white transition-all shadow-sm"
+                  className="w-full p-5 bg-gray-50 border border-gray-200 rounded-[25px] outline-none text-lg focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 focus:bg-white transition-all shadow-sm pr-16"
                 />
                 <button
                   type="button"
@@ -87,7 +150,6 @@ function Login() {
               </div>
             </div>
 
-            {/* Duy trì & Quên mật khẩu */}
             <div className="flex items-center justify-between text-sm font-bold px-4 -mt-5">
               <label className="flex items-center gap-3 text-gray-500 cursor-pointer group">
                 <input
@@ -98,12 +160,13 @@ function Login() {
                   Duy trì đăng nhập
                 </span>
               </label>
-              <a
-                href="#"
+              <button
+                type="button"
+                onClick={() => setIsSetupOpen(true)}
                 className="text-purple-600 hover:underline underline-offset-4"
               >
                 Quên mật khẩu?
-              </a>
+              </button>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-5 pt-4 mt-10">
@@ -117,9 +180,14 @@ function Login() {
               </Link>
               <button
                 type="submit"
-                className="flex-1 py-5 bg-green-600 text-white rounded-[25px] font-bold text-lg hover:bg-green-700 transition-all shadow-lg shadow-green-100 active:scale-95"
+                disabled={isLoading}
+                className={`flex-1 py-5 text-white rounded-[25px] font-bold text-lg transition-all shadow-lg shadow-green-100 active:scale-95 ${
+                  isLoading
+                    ? "bg-green-400 cursor-wait"
+                    : "bg-green-600 hover:bg-green-700"
+                }`}
               >
-                Đăng nhập
+                {isLoading ? "Đang xử lý..." : "Đăng nhập"}
               </button>
             </div>
           </form>
@@ -149,6 +217,8 @@ function Login() {
               <SetupInput
                 label="Tên cửa hàng"
                 placeholder="Nhập tên cửa hàng của bạn..."
+                value={tempStoreName}
+                onChange={(e) => setTempStoreName(e.target.value)}
               />
               <SetupInput
                 label="Số điện thoại"
@@ -165,11 +235,12 @@ function Login() {
                 placeholder="Nhập lại mật khẩu..."
               />
 
-              <Link to="/dashboard">
-                <button className="w-full py-5 bg-blue-700 text-white rounded-[25px] font-bold text-xl hover:bg-blue-800 transition-all mt-8 shadow-2xl shadow-blue-200 active:scale-95">
-                  Vào cửa hàng ngay
-                </button>
-              </Link>
+              <button
+                onClick={handleFinalSetup}
+                className="w-full py-5 bg-blue-700 text-white rounded-[25px] font-bold text-xl hover:bg-blue-800 transition-all mt-8 shadow-2xl shadow-blue-200 active:scale-95"
+              >
+                Vào cửa hàng ngay
+              </button>
             </div>
           </div>
         </div>
@@ -178,8 +249,8 @@ function Login() {
   );
 }
 
-// Component SetupInput dùng chung
-function SetupInput({ label, type = "text", placeholder }) {
+// Component SetupInput dùng chung 
+function SetupInput({ label, type = "text", placeholder, value, onChange }) {
   const [show, setShow] = useState(false);
   const isPassword = type === "password";
 
@@ -190,6 +261,8 @@ function SetupInput({ label, type = "text", placeholder }) {
         <input
           type={isPassword ? (show ? "text" : "password") : type}
           placeholder={placeholder}
+          value={value}
+          onChange={onChange}
           className="w-full p-5 bg-gray-50 border border-gray-200 rounded-[25px] outline-none text-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
         />
         {isPassword && (
