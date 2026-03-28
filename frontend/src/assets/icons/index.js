@@ -37,7 +37,7 @@ import NewRight from "./NewRight.svg";
 import Person from "./Person.svg";
 import checkbox from "./checkbox.svg";
 import ArrowBack from "./arrowBack.svg";
-
+import Box from "./Box.svg";
 import SaveFile from "./saveFile.svg";
 import Calendar from "./Calendar.svg";
 
@@ -83,4 +83,5 @@ export {
   ArrowBack,
   SaveFile,
   Calendar,
+  Box,
 };
