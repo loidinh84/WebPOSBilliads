@@ -72,7 +72,7 @@ function ReturnImportedGood() {
             <div className="flex justify-between items-center mb-3 cursor-pointer">
               <h3 className="font-semibold text-gray-800">Trạng thái</h3>
               <div className="w-4 h-4">
-                <img src={Icons.ArrowDown} alt="" className="w-full h-full object-contain" />
+                <img src={Icons.ArrowUp} alt="" className="w-full h-full object-contain" />
               </div>
             </div>
             <div className="space-y-2">

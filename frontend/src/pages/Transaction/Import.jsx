@@ -120,7 +120,7 @@ function Import() {
               <h3 className="font-semibold text-gray-800">Trạng thái</h3>
               <div className="w-4 h-4">
                 {/* Đã áp dụng filter brightness-0 để đảm bảo icon màu đen */}
-                <img src={Icons.ArrowDown} alt="" className="w-full h-full object-contain filter brightness-0" />
+                <img src={Icons.ArrowUp} alt="" className="w-full h-full object-contain filter brightness-0" />
               </div>
             </div>
             <div className="space-y-2">
