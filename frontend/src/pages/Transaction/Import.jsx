@@ -118,10 +118,8 @@ function Import() {
           <div className="bg-white p-4 rounded shadow-sm border border-gray-200">
             <div className="flex justify-between items-center mb-3 cursor-pointer">
               <h3 className="font-semibold text-gray-800">Trạng thái</h3>
-              <div className="w-4 h-4">
                 {/* Đã áp dụng filter brightness-0 để đảm bảo icon màu đen */}
-                <img src={Icons.ArrowUp} alt="" className="w-full h-full object-contain filter brightness-0" />
-              </div>
+                <img src={Icons.ArrowUp} alt="" className="w-5 h-5 object-contain brightness-0" />
             </div>
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">

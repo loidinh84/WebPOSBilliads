@@ -41,6 +41,8 @@ import Box from "./Box.svg";
 import SaveFile from "./saveFile.svg";
 import Calendar from "./Calendar.svg";
 import Export from "./Export.svg";
+import ArrowUp from "./ArrowUp.svg";
+import Calendar2 from "./Calendar2.svg";
 
 // Export để sử dụng ở nơi khác
 export {
@@ -86,4 +88,6 @@ export {
   Calendar,
   Box,
   Export,
+  ArrowUp,
+  Calendar2,
 };
