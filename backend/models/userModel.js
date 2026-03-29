@@ -45,6 +45,35 @@ const User = {
       throw error;
     }
   },
+
+  changePassword: async (username, newPassword) => {
+    try {
+      const pool = await poolPromise;
+      await pool
+        .request()
+        .input("username", sql.VarChar, username)
+        .input("password", sql.VarChar, newPassword).query(`
+                UPDATE TAIKHOAN 
+                SET MATKHAU = @password 
+                WHERE TENDANGNHAP = @username
+            `);
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  verifyPassword: async (username) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input("username", sql.VarChar, username)
+            .query("SELECT MATKHAU FROM TAIKHOAN WHERE TENDANGNHAP = @username");
+        return result.recordset[0];
+    } catch (error) {
+        throw error;
+    }
+}
 };
 
 module.exports = User;

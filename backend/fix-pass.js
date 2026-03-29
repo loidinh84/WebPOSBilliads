@@ -20,7 +20,7 @@ async function resetPassword() {
     console.log(
       "Cập nhật thành công! Mật khẩu của tài khoản admin hiện tại là: 123456",
     );
-    process.exit(0); // Tắt script sau khi chạy xong
+    process.exit(0); 
   } catch (error) {
     console.log("Lỗi:", error);
     process.exit(1);

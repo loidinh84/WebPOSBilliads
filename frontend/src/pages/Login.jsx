@@ -15,6 +15,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // 3. THÊM MỚI: State để hứng tên cửa hàng trong Modal Setup
   const [tempStoreName, setTempStoreName] = useState("");
@@ -22,12 +23,6 @@ function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMessage("");
-
-    if (!username || !password) {
-      setErrorMessage("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -40,10 +35,12 @@ function Login() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("token", data.token);
 
-        if (data.user.QUYENHAN === "Quản lý") {
+        const savedStoreName = localStorage.getItem("storeName");
+
+        if (data.user.QUYENHAN === "Quản lý" && !savedStoreName) {
           setIsSetupOpen(true);
         } else {
           navigate("/dashboard");
@@ -52,14 +49,13 @@ function Login() {
         setErrorMessage(data.message || "Đăng nhập thất bại!");
       }
     } catch (error) {
-      console.error("Lỗi:", error);
-      setErrorMessage("Không thể kết nối đến máy chủ!");
+      setErrorMessage("Không thể kết nối đến máy chủ!", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 4. THÊM MỚI: Hàm xử lý khi bấm nút "Vào cửa hàng ngay"
+  // 4. Hàm xử lý khi bấm nút "Vào cửa hàng ngay"
   const handleFinalSetup = () => {
     if (tempStoreName.trim() !== "") {
       // Lưu tên cửa hàng vào LocalStorage
@@ -154,6 +150,8 @@ function Login() {
               <label className="flex items-center gap-3 text-gray-500 cursor-pointer group">
                 <input
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-5 h-5 rounded-lg border-gray-300 text-purple-600 focus:ring-purple-500 transition-all cursor-pointer"
                 />
                 <span className="group-hover:text-gray-700">
@@ -162,7 +160,7 @@ function Login() {
               </label>
               <button
                 type="button"
-                onClick={() => setIsSetupOpen(true)}
+                onClick={() => navigate("/forgot-password")}
                 className="text-purple-600 hover:underline underline-offset-4"
               >
                 Quên mật khẩu?
@@ -249,7 +247,7 @@ function Login() {
   );
 }
 
-// Component SetupInput dùng chung 
+// Component SetupInput dùng chung
 function SetupInput({ label, type = "text", placeholder, value, onChange }) {
   const [show, setShow] = useState(false);
   const isPassword = type === "password";

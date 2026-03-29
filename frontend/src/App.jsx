@@ -18,6 +18,7 @@ import Schedule from "./pages/Employee/Schedule";
 import Salary from "./pages/Employee/Salary";
 import StaffSetup from "./pages/Employee/StaffSetup";
 import Account from "./pages/Account";
+import ForgotPassword from "./pages/ForgotPassword";
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
         <Route path="/reports/cost" element={<CostReport />} />
         <Route path="/reports" element={<RevenueReport />} />
         <Route path="/account" element={<Account />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
     </Router>
   );

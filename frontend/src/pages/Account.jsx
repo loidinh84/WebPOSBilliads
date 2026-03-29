@@ -87,14 +87,42 @@ function Account() {
   // 5. API: Đổi mật khẩu
   const handleChangePassword = async (e) => {
     e.preventDefault();
+
+    // Kiểm tra khớp mật khẩu mới
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       alert("Mật khẩu xác nhận không khớp!");
       return;
     }
-    // Logic fetch API đổi mật khẩu sẽ đặt ở đây tương tự như update profile
-    console.log("Gửi yêu cầu đổi mật khẩu:", passwordData);
-    alert("Tính năng đổi mật khẩu đang được kết nối...");
-    setShowPasswordModal(false);
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/user/change-password/${user.TENDANGNHAP}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            oldPassword: passwordData.oldPassword,
+            newPassword: passwordData.newPassword,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("Đổi mật khẩu thành công!");
+        setShowPasswordModal(false); // Đóng modal
+        setPasswordData({
+          oldPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      alert("Lỗi server, vui lòng thử lại sau!", err);
+    }
   };
 
   // 6. API: Đổi hình ảnh
@@ -122,8 +150,8 @@ function Account() {
           <div className="w-full lg:w-[350px] space-y-8">
             <div className="bg-white rounded-[25px] p-10 shadow-lg border border-gray-100 text-center relative">
               <div
-                className="relative w-36 h-36 mx-auto mb-6 group cursor-pointer"
-                onClick={() => fileInputRef.current.click()}
+                className="relative w-36 h-36 mx-auto mb-6 group"
+                onClick={() => isEditing && fileInputRef.current.click()}
               >
                 <div className="w-full h-full bg-gray-50 rounded-full flex items-center justify-center border-4 border-white shadow-xl overflow-hidden transition-all group-hover:border-purple-100">
                   <img
@@ -136,13 +164,15 @@ function Account() {
                     }
                   />
                 </div>
-                <div className="absolute inset-0 bg-purple-600/60 rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm">
-                  <img
-                    src={Icons.Setting}
-                    alt="change"
-                    className="w-8 h-8 invert"
-                  />
-                </div>
+                {isEditing && (
+                  <div className="absolute inset-0 bg-purple-600/60 rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm cursor-pointer">
+                    <img
+                      src={Icons.Setting}
+                      alt="change"
+                      className="w-8 h-8 invert"
+                    />
+                  </div>
+                )}
                 <input
                   type="file"
                   ref={fileInputRef}
