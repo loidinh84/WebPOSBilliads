@@ -37,9 +37,12 @@ import NewRight from "./NewRight.svg";
 import Person from "./Person.svg";
 import checkbox from "./checkbox.svg";
 import ArrowBack from "./arrowBack.svg";
-
+import Box from "./Box.svg";
 import SaveFile from "./saveFile.svg";
 import Calendar from "./Calendar.svg";
+import Export from "./Export.svg";
+import ArrowUp from "./ArrowUp.svg";
+import Calendar2 from "./Calendar2.svg";
 
 // Export để sử dụng ở nơi khác
 export {
@@ -83,4 +86,8 @@ export {
   ArrowBack,
   SaveFile,
   Calendar,
+  Box,
+  Export,
+  ArrowUp,
+  Calendar2,
 };
