@@ -131,7 +131,7 @@ const sendOTP = async (req, res) => {
       await transporter.sendMail(mailOptions);
       res.json({ success: true, message: "Đã gửi mail thành công!" });
     } else if (method === "phone") {
-      // GIẢ LẬP SMS: Thay vì tốn tiền mua dịch vụ, ta in ra màn hình để test
+      // GIẢ LẬP SMS: Thay vì tốn tiền mua dịch vụ, in ra màn hình để test
       console.log("-----------------------------------------");
       console.log(`[HỆ THỐNG SMS] Đang gửi mã xác thực...`);
       console.log(`Gửi tới số: ${destination}`);

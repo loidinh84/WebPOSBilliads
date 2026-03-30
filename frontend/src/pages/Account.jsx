@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardHeader from "../components/DashboardHeader";
 import * as Icons from "../assets/icons/index";
 
@@ -9,6 +10,7 @@ function Account() {
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [tempUser, setTempUser] = useState(null);
+  const navigate = useNavigate();
 
   // State dành cho đổi mật khẩu
   const [passwordData, setPasswordData] = useState({
@@ -19,10 +21,15 @@ function Account() {
 
   // 1. Lấy dữ liệu profile khi vào trang
   const fetchProfile = () => {
+    const token = localStorage.getItem("token");
     const savedUser = JSON.parse(localStorage.getItem("user"));
     const loginName = savedUser?.TENDANGNHAP || savedUser?.username;
 
-    fetch(`http://localhost:5000/api/user/profile/${loginName}`)
+    fetch(`http://localhost:5000/api/user/profile/${loginName}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then((res) => res.json())
       .then((data) => {
         if (data.NGAYSINH) data.NGAYSINH = data.NGAYSINH.split("T")[0];
@@ -87,6 +94,7 @@ function Account() {
   // 5. API: Đổi mật khẩu
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem("token");
 
     // Kiểm tra khớp mật khẩu mới
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -99,7 +107,10 @@ function Account() {
         `http://localhost:5000/api/user/change-password/${user.TENDANGNHAP}`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({
             oldPassword: passwordData.oldPassword,
             newPassword: passwordData.newPassword,
@@ -221,12 +232,31 @@ function Account() {
           {/* CỘT PHẢI: FORM THÔNG TIN */}
           <div className="flex-1 bg-white rounded-[30px] p-10 shadow-2xl border border-gray-100">
             <div className="flex justify-between items-center mb-10 pb-5 border-b border-gray-100">
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-                Hồ sơ cá nhân
-              </h2>
+              <div className="flex items-center gap-6">
+                {/* NÚT QUAY LẠI ĐÃ SỬA CỦA BẠN */}
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-xl transition-all group cursor-pointer"
+                  title="Quay lại"
+                >
+                  <img
+                    src={Icons.ArrowBackLong}
+                    alt="Quay lại"
+                    className="w-5 h-5 opacity-60 group-hover:opacity-100 group-hover:-translate-x-1 transition-all"
+                  />
+                  <span className="font-bold text-gray-500 group-hover:text-[#5D5FEF] text-sm">
+                    Trở về
+                  </span>
+                </button>
+
+                <h2 className="text-2xl font-black text-gray-900 tracking-tight self-center items-center">
+                  Hồ sơ cá nhân
+                </h2>
+              </div>
               <button
                 onClick={toggleEdit}
-                className="flex items-center gap-2.5 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-200 transition-all"
+                className="flex gap-2.5 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-200 transition-all"
               >
                 <img src={Icons.Setting} alt="Edit" className="w-4 h-4" />
                 {isEditing ? "Hủy chỉnh sửa" : "Chỉnh sửa"}

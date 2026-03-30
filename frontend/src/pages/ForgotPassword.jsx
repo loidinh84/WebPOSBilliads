@@ -107,7 +107,7 @@ function ForgotPassword() {
         showMessage(data.message);
       }
     } catch (err) {
-      showMessage("Lỗi xác thực!");
+      showMessage("Lỗi xác thực!", err);
     }
   };
 

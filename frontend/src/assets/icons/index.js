@@ -43,6 +43,7 @@ import Calendar from "./Calendar.svg";
 import Export from "./Export.svg";
 import ArrowUp from "./ArrowUp.svg";
 import Calendar2 from "./Calendar2.svg";
+import ArrowBackLong from "./ArrowBackLong.svg";
 
 // Export để sử dụng ở nơi khác
 export {
@@ -90,4 +91,5 @@ export {
   Export,
   ArrowUp,
   Calendar2,
+  ArrowBackLong,
 };
