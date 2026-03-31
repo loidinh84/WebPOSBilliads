@@ -6,7 +6,7 @@ import * as Icons from "../../assets/icons/index";
 import EmployeeModal from "./Modal";
 
 function StaffList() {
-  const [employees] = useState([
+  const [employees, setEmployees] = useState([
     {
       id: 1,
       staffId: "NV001",
@@ -15,8 +15,50 @@ function StaffList() {
       phone: "0344999655",
       idCard: "12345678910",
       avatar: null,
+      status: "working", // "working" | "off"
     },
   ]);
+
+  // Danh sách yêu cầu chờ duyệt
+  const [requests, setRequests] = useState([
+    { id: 1, employeeId: 1, employeeName: "Trần Thanh Khang", type: "nghỉ phép", date: "05/04/2026" },
+  ]);
+
+  // Tự động tạo mã nhân viên mới dựa trên số lượng hiện tại
+  const handleAddEmployee = (formData) => {
+    const nextId = employees.length + 1;
+    const newEmployee = {
+      id: nextId,
+      staffId: `NV${String(nextId).padStart(3, "0")}`,
+      checkInId: formData.checkInId,
+      name: formData.name,
+      phone: formData.phone,
+      idCard: formData.idCard,
+      role: formData.role,
+      avatar: null,
+    };
+    setEmployees((prev) => [...prev, newEmployee]);
+  };
+
+  // Cập nhật thông tin nhân viên theo id
+  const handleUpdateEmployee = (updatedData) => {
+    setEmployees((prev) =>
+      prev.map((emp) => (emp.id === updatedData.id ? { ...emp, ...updatedData } : emp))
+    );
+  };
+
+  // Duyệt yêu cầu: đổi trạng thái nhân viên sang "off" và xóa yêu cầu khỏi danh sách
+  const handleApproveRequest = (requestId, employeeId) => {
+    setEmployees((prev) =>
+      prev.map((emp) => (emp.id === employeeId ? { ...emp, status: "off" } : emp))
+    );
+    setRequests((prev) => prev.filter((r) => r.id !== requestId));
+  };
+
+  // Từ chối yêu cầu: chỉ xóa yêu cầu khỏi danh sách, không đổi trạng thái
+  const handleRejectRequest = (requestId) => {
+    setRequests((prev) => prev.filter((r) => r.id !== requestId));
+  };
 
   const [modalState, setModalState] = useState({
     isOpen: false,
@@ -138,7 +180,7 @@ function StaffList() {
             </h2>
             <div className="flex gap-3">
               <button 
-                onClick={() => openModal("EDIT")}
+                onClick={() => openModal("ADD")}
                 className="bg-white hover:bg-gray-50 text-[#5D5FEF] border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold transition-all shadow-sm active:scale-95 leading-none cursor-pointer"
               >
                 <span className="text-xl">+</span>
@@ -157,21 +199,7 @@ function StaffList() {
                 </div>
                 <span>Duyệt yêu cầu</span>
               </button>
-              <div className="relative group">
-                <button className="bg-white hover:bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 shadow-sm transition-all active:scale-95 flex items-center justify-center h-full">
-                  <span className="text-gray-600 font-bold text-lg leading-none mb-1">
-                    ...
-                  </span>
-                </button>
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
-                  <button onClick={() => openModal("IMPORT")} className="w-full text-left px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors">Import nhân viên</button>
-                  <button onClick={() => openModal("EXPORT")} className="w-full text-left px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors">Xuất file</button>
-                  <hr className="my-1 border-gray-100" />
-                  <button onClick={() => openModal("VIEW_BY_SHIFT")} className="w-full text-left px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors">Xem theo ca</button>
-                  <button onClick={() => openModal("APPROVE_ATTENDANCE")} className="w-full text-left px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors">Duyệt chấm công</button>
-                  <button onClick={() => openModal("SALARY")} className="w-full text-left px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors">Bảng tính lương</button>
-                </div>
-              </div>
+
             </div>
           </div>
 
@@ -274,11 +302,16 @@ function StaffList() {
         </section>
       </main>
 
-      <EmployeeModal 
+      <EmployeeModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
         type={modalState.type}
         data={modalState.data}
+        onAddEmployee={handleAddEmployee}
+        onUpdateEmployee={handleUpdateEmployee}
+        requests={requests}
+        onApproveRequest={handleApproveRequest}
+        onRejectRequest={handleRejectRequest}
       />
     </div>
   );
