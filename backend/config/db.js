@@ -11,8 +11,6 @@ const dbConfig = {
     trustServerCertificate: true,
   },
 };
-
-// Khởi tạo kết nối dạng Promise để tái sử dụng ở các Controller
 const poolPromise = new sql.ConnectionPool(dbConfig)
   .connect()
   .then((pool) => {

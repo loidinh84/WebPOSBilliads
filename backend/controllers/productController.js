@@ -1,0 +1,175 @@
+const { sql, poolPromise } = require("../config/db");
+
+const productController = {
+  // Cập nhật trạng thái hàng hóa
+  toggleStatus: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { TRANGTHAI } = req.body;
+      const pool = await poolPromise;
+
+      await pool
+        .request()
+        .input("MAHANGHOA", sql.VarChar, id)
+        .input("TRANGTHAI", sql.Bit, TRANGTHAI)
+        .query(
+          "UPDATE HANGHOA SET TRANGTHAI = @TRANGTHAI WHERE MAHANGHOA = @MAHANGHOA",
+        );
+      res.json({ success: true, message: "Cập nhật trạng thái thành công" });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 1. Lấy danh sách hàng hóa
+  getAllProducts: async (req, res) => {
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().query(`
+                SELECT hh.*, dm.TENDANHMUC as NHOMHANG
+                FROM HANGHOA hh
+                LEFT JOIN DANHMUC dm ON hh.MADANHMUC = dm.MADANHMUC
+                ORDER BY hh.MAHANGHOA DESC
+            `);
+      res.json(result.recordset);
+    } catch (err) {
+      res.status(500).send({ message: err.message });
+    }
+  },
+
+  // 2. Thêm mới hàng hóa
+  createProduct: async (req, res) => {
+    const {
+      MAHANGHOA,
+      TENHANGHOA,
+      MADANHMUC,
+      DONGIABAN,
+      DONVITINH,
+      GIANIEMYET,
+      TONKHO,
+      MOTA,
+      HINHANH,
+      LOAIHANG,
+    } = req.body;
+
+    try {
+      const pool = await poolPromise;
+      await pool
+        .request()
+        .input("MAHANGHOA", sql.VarChar, MAHANGHOA)
+        .input("TENHANGHOA", sql.NVarChar, TENHANGHOA)
+        .input("MADANHMUC", sql.VarChar, MADANHMUC)
+        .input("DONGIABAN", sql.Decimal(18, 0), parseFloat(DONGIABAN) || 0)
+        .input("DONVITINH", sql.NVarChar, DONVITINH || "Cái")
+        .input("GIANIEMYET", sql.Decimal(18, 0), parseFloat(GIANIEMYET) || 0)
+        .input("SOLUONGTONKHO", sql.Int, parseInt(TONKHO) || 0)
+        .input("HINHANH", sql.NVarChar, HINHANH || null)
+        .input("LOAIHANG", sql.NVarChar, LOAIHANG || "Hàng thường")
+        .input("MOTA", sql.NVarChar, MOTA || "").query(`
+                INSERT INTO HANGHOA (
+                    MAHANGHOA, TENHANGHOA, MADANHMUC, DONVITINH, 
+                    DONGIABAN, GIANIEMYET, SOLUONGTONKHO, 
+                    HINHANH, TRANGTHAI, LOAIHANG, MOTA
+                )
+                VALUES (
+                    @MAHANGHOA, @TENHANGHOA, @MADANHMUC, @DONVITINH,
+                    @DONGIABAN, @GIANIEMYET, @SOLUONGTONKHO, 
+                    @HINHANH, 1, @LOAIHANG, @MOTA
+                )
+            `);
+      res.json({ success: true, message: "Thêm hàng hóa thành công!" });
+    } catch (err) {
+      console.error("Lỗi thêm hàng hóa:", err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 3. Cập nhật hàng hóa
+  updateProduct: async (req, res) => {
+    const { MAHANGHOA } = req.params;
+    const {
+      TENHANGHOA,
+      DONGIABAN,
+      GIANIEMYET,
+      SOLUONGTONKHO,
+      DONVITINH,
+      HINHANH,
+      MOTA,
+    } = req.body;
+
+    try {
+      const pool = await poolPromise;
+      let queryUpdate = `
+            UPDATE HANGHOA 
+            SET TENHANGHOA = @TENHANGHOA, 
+                DONGIABAN = @DONGIABAN, 
+                GIANIEMYET = @GIANIEMYET, 
+                SOLUONGTONKHO = @SOLUONGTONKHO, 
+                DONVITINH = @DONVITINH,
+                MOTA = @MOTA
+        `;
+      if (HINHANH && HINHANH.startsWith("data:image")) {
+        queryUpdate += `, HINHANH = @HINHANH`;
+      }
+
+      queryUpdate += ` WHERE MAHANGHOA = @MAHANGHOA`;
+
+      const request = pool
+        .request()
+        .input("MAHANGHOA", sql.VarChar, MAHANGHOA)
+        .input("TENHANGHOA", sql.NVarChar, TENHANGHOA)
+        .input("DONGIABAN", sql.Decimal(18, 0), DONGIABAN)
+        .input("DONVITINH", sql.NVarChar, DONVITINH)
+        .input("GIANIEMYET", sql.Decimal(18, 0), GIANIEMYET)
+        .input("SOLUONGTONKHO", sql.Int, SOLUONGTONKHO)
+        .input("MOTA", sql.NVarChar, MOTA);
+
+      if (HINHANH && HINHANH.startsWith("data:image")) {
+        request.input("HINHANH", sql.NVarChar, HINHANH);
+      }
+
+      await request.query(queryUpdate);
+      res.json({ success: true, message: "Cập nhật thành công!" });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 4. Xóa hàng hóa
+  deleteProduct: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const pool = await poolPromise;
+
+      const result = await pool
+        .request()
+        .input("id", sql.VarChar, id)
+        .query("DELETE FROM HANGHOA WHERE MAHANGHOA = @id");
+      if (result.rowsAffected[0] > 0) {
+        res.json({ success: true, message: "Đã xóa hàng hóa thành công" });
+      } else {
+        res
+          .status(404)
+          .json({ success: false, message: "Không tìm thấy mã hàng để xóa" });
+      }
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  getCategories: async (req, res) => {
+    try {
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .query("SELECT MADANHMUC, TENDANHMUC FROM DANHMUC WHERE TRANGTHAI = 1");
+
+      res.json(result.recordset);
+    } catch (err) {
+      console.error("Lỗi lấy danh mục:", err);
+      res.status(500).json({ message: "Lỗi Server", error: err.message });
+    }
+  },
+};
+
+module.exports = productController;

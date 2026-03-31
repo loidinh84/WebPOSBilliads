@@ -15,7 +15,6 @@ const verifyToken = (req, res, next) => {
 };
 
 // Hàm phân quyền: Truyền vào danh sách các quyền được phép
-// Ví dụ: authorize(['Admin', 'Quản lý'])
 const authorize = (allowedRoles = []) => {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ message: "Chưa xác thực!" });

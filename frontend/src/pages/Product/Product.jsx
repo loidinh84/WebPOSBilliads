@@ -2,18 +2,13 @@ import React, { useState, useEffect } from "react";
 import * as Icons from "../../assets/icons/index";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
+import Swal from "sweetalert2";
 
 function Product() {
   // =========================================================================
   // 1. STATE DỮ LIỆU (Mock data & DB)
   // =========================================================================
-  const [categories, setCategories] = useState([
-    { id: "ALL", name: "Tất cả" },
-    { id: "DO_AN", name: "ĐỒ ĂN" },
-    { id: "DO_UONG", name: "ĐỒ UỐNG" },
-    { id: "THUOC_LA", name: "THUỐC LÁ" },
-    { id: "LOAI_BAN", name: "LOẠI BÀN" },
-  ]);
+  const [categories, setCategories] = useState([{ id: "ALL", name: "Tất cả" }]);
 
   const [products, setProducts] = useState([
     {
@@ -27,7 +22,7 @@ function Product() {
       TONKHO: 236,
       MOTA: "Chưa có mô tả",
       HINHANH: null,
-      TRANGTHAI: 1, // 1: Đang hoạt động, 0: Ngừng hoạt động
+      TRANGTHAI: 1,
     },
     {
       MAHANGHOA: "SP000013",
@@ -47,14 +42,52 @@ function Product() {
   // Tự động fetch dữ liệu từ Database khi load trang
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5000/api/products/categories", {
+        // Đường dẫn API của bạn
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const mappedCategories = data.map((cat) => ({
+          id: cat.MADANHMUC,
+          name: cat.TENDANHMUC,
+        }));
+        setCategories([{ id: "ALL", name: "Tất cả" }, ...mappedCategories]);
+      }
+    } catch (error) {
+      console.error("Lỗi fetch danh mục:", error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/products");
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5000/api/products", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (res.ok) {
         const data = await res.json();
-        if (data.length > 0) setProducts(data);
+        const mappedData = data.map((item) => ({
+          ...item,
+          GIABAN: item.DONGIABAN || 0,
+          TONKHO: item.SOLUONGTONKHO || 0,
+          NHOMHANG: item.NHOMHANG || "Khác",
+        }));
+        setProducts(mappedData);
       }
     } catch (error) {
       console.error("Chưa kết nối API, dùng dữ liệu mẫu", error);
@@ -96,7 +129,7 @@ function Product() {
     LOAIHANG: "",
     NHOMHANG: "ĐỒ ĂN",
     DINHMUCTON_DUOI: 0,
-    DINHMUCTON_TREN: 999, // <--- Sửa ở đây
+    DINHMUCTON_TREN: 999,
     GIABAN: "",
     GIANIEMYET: "",
     TONKHO: "",
@@ -109,12 +142,16 @@ function Product() {
   // =========================================================================
 
   const generateNextId = () => {
-    if (products.length === 0) return "SP000001";
+    if (products.length === 0) return "HH00001";
     const ids = products
-      .map((p) => parseInt(p.MAHANGHOA.replace("SP", ""), 10))
-      .filter((id) => !isNaN(id));
-    const maxId = Math.max(...ids, 0);
-    return `SP${String(maxId + 1).padStart(6, "0")}`;
+      .map((p) => {
+        const match = p.MAHANGHOA.match(/^HH(\d+)$/);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter((id) => id > 0);
+    const maxId = ids.length > 0 ? Math.max(...ids) : 0;
+
+    return `HH${String(maxId + 1).padStart(5, "0")}`;
   };
 
   const toggleRow = (id) => {
@@ -139,30 +176,34 @@ function Product() {
   };
 
   const openModal = (product = null, defaultType = "") => {
-    // NẾU LÀ SỬA COMBO -> Bật thanh Combo phía dưới, chặn mở Modal
-    if (product && product.LOAIHANG === "Combo, gọi món") {
-      setComboName(product.TENHANGHOA);
-      setComboPrice(product.GIABAN || product.DONGIABAN || 0);
-      // Lấy danh sách các món đã tick chọn cũ (CHITIETCOMBO)
-      setSelectedItemsForCombo(product.CHITIETCOMBO || {});
-      setEditingProduct(product);
-      setIsAddingCombo(true);
-      return;
-    }
-
-    // NẾU LÀ HÀNG THƯỜNG / DỊCH VỤ -> Mở Modal bình thường
     if (product) {
       setEditingProduct(product);
       setFormData({ ...product });
+
+      if (product.LOAIHANG === "Combo, gọi món") {
+        const savedItems = {};
+        if (product.DANHSACH_ID_MON && Array.isArray(product.DANHSACH_ID_MON)) {
+          product?.DANHSACH_ID_MON?.forEach((id) => {
+            savedItems[id] = true;
+          });
+        } else {
+          console.warn("Sản phẩm này chưa có danh sách món gộp trong DB");
+        }
+
+        setSelectedItemsForCombo(savedItems);
+      } else {
+        setSelectedItemsForCombo({});
+      }
     } else {
       setEditingProduct(null);
+      setSelectedItemsForCombo({});
       setFormData({
         MAHANGHOA: generateNextId(),
         TENHANGHOA: "",
         LOAIHANG: defaultType,
-        // Ép mặc định thành Khác nếu là Dịch vụ
-        MADANHMUC: defaultType === "Dịch vụ" ? "Khác" : "DM001",
+        MADANHMUC: defaultType === "Dịch vụ" ? "DM002" : "DM001",
         NHOMHANG: defaultType === "Dịch vụ" ? "Khác" : "ĐỒ UỐNG",
+        DONVITINH: defaultType === "Combo, gọi món" ? "Combo" : "Cái",
         DINHMUCTON_DUOI: 0,
         DINHMUCTON_TREN: 999,
         GIABAN: "",
@@ -179,20 +220,53 @@ function Product() {
     openModal(null, type);
   };
 
-  // Xử lý upload ảnh ảo
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setFormData({ ...formData, HINHANH: imageUrl });
+      if (file.size > 2 * 1024 * 1024) {
+        Swal.fire({
+          icon: "error",
+          title: "Ảnh quá lớn",
+          text: "Vui lòng chọn ảnh dưới 2MB.",
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result;
+        setFormData({ ...formData, HINHANH: base64String });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleSaveModal = async () => {
     if (!formData.TENHANGHOA) {
-      alert("Vui lòng nhập tên hàng hóa!");
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi!",
+        text: "Tên hàng hóa không thể trống!",
+      });
       return;
     }
+
+    const token = localStorage.getItem("token");
+    const dataToSave = {
+      ...formData,
+      DONGIABAN: Number(formData.GIABAN || 0),
+      NHOMHANG: formData.NHOMHANG || "Khác",
+      GIANIEMYET: Number(formData.GIANIEMYET || 0),
+      SOLUONGTONKHO: Number(formData.TONKHO || 0),
+      DONVITINH:
+        formData.DONVITINH && formData.DONVITINH.trim() !== ""
+          ? formData.DONVITINH
+          : "Cái",
+      HINHANH: formData.HINHANH?.startsWith("data:image")
+        ? formData.HINHANH
+        : null,
+      DINHMUCTON_DUOI: Number(formData.DINHMUCTON_DUOI || 0),
+      DINHMUCTON_TREN: Number(formData.DINHMUCTON_TREN || 999),
+    };
 
     try {
       const method = editingProduct ? "PUT" : "POST";
@@ -200,91 +274,157 @@ function Product() {
         ? `http://localhost:5000/api/products/${formData.MAHANGHOA}`
         : `http://localhost:5000/api/products`;
 
-      await fetch(url, {
+      const response = await fetch(url, {
         method: method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          // Nếu là Dịch vụ thì ép Nhóm hàng = Khác, Giá niêm yết = 0
-          MADANHMUC:
-            formData.LOAIHANG === "Dịch vụ" ? "Khác" : formData.MADANHMUC,
-          GIANIEMYET:
-            formData.LOAIHANG === "Dịch vụ"
-              ? 0
-              : Number(formData.GIANIEMYET || 0),
-          GIABAN: Number(formData.GIABAN || 0),
-          TONKHO: Number(formData.TONKHO || 0),
-          DINHMUCTON_DUOI: Number(formData.DINHMUCTON_DUOI || 0),
-          DINHMUCTON_TREN: Number(formData.DINHMUCTON_TREN || 0),
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(dataToSave),
       });
 
-      // Load lại Database sau khi lưu
-      fetchProducts();
-    } catch (error) {
-      console.error("Lưu API thất bại, lưu tạm vào State:", error);
-    } finally {
-      // Đảm bảo chữ "Khác" hiển thị ngay lập tức trên bảng mà không cần F5
-      const finalProductData = {
-        ...formData,
-        NHOMHANG: formData.LOAIHANG === "Dịch vụ" ? "Khác" : formData.NHOMHANG,
-        TRANGTHAI: editingProduct ? editingProduct.TRANGTHAI : 1,
-      };
-
-      if (editingProduct) {
-        setProducts(
-          products.map((p) =>
-            p.MAHANGHOA === formData.MAHANGHOA ? finalProductData : p,
-          ),
-        );
+      const result = await response.json();
+      if (response.ok) {
+        Swal.fire({
+          icon: "success",
+          title: "Thành công",
+          text: "Dữ liệu đã được lưu lại!",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+        fetchProducts();
+        setIsModalOpen(false);
       } else {
-        setProducts([finalProductData, ...products]);
+        Swal.fire({
+          icon: "error",
+          title: "Lỗi!",
+          text: "Lỗi: " + result.message,
+        });
       }
-      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Lỗi kết nối:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi!",
+        text: "Không thể kết nối đến máy chủ!",
+      });
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa hàng hóa này?")) {
+    const result = await Swal.fire({
+      title: "Bạn có chắc muốn xóa?",
+      text: "Hành động này không thể hoàn tác!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      cancelButtonText: "Hủy",
+      confirmButtonText: "Xóa",
+    });
+
+    if (result.isConfirmed) {
+      const token = localStorage.getItem("token");
       try {
-        await fetch(`http://localhost:5000/api/products/${id}`, {
+        const res = await fetch(`http://localhost:5000/api/products/${id}`, {
           method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
+
+        const resultData = await res.json();
+
+        if (res.ok && resultData.success) {
+          Swal.fire({
+            icon: "success",
+            title: "Thành công",
+            text: "Xóa hàng hóa thành công!",
+            timer: 1500,
+            showConfirmButton: false,
+          });
+          setProducts(products.filter((p) => p.MAHANGHOA !== id));
+        } else {
+          if (resultData.message.includes("REFERENCE constraint")) {
+            Swal.fire({
+              title: "Không thể xóa!",
+              text: "Mặt hàng này đã có trong hóa đơn cũ. Bạn nên chuyển sang trạng thái 'Ngừng kinh doanh' để ẩn nó đi thay vì xóa hẳn.",
+              icon: "info",
+              showCancelButton: true,
+              confirmButtonText: "Chuyển trạng thái ngay",
+              cancelButtonText: "Để sau",
+            }).then((res) => {
+              if (res.isConfirmed) handleToggleStatus(id);
+            });
+          } else {
+            Swal.fire("Lỗi!", resultData.message, "error");
+          }
+        }
       } catch (error) {
-        console.error("Lỗi:", error);
+        console.error("Lỗi kết nối:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Lỗi!",
+          text: "Lỗi kết nối đến máy chủ!",
+        });
       }
-      setProducts(products.filter((p) => p.MAHANGHOA !== id));
     }
   };
 
   const handleToggleStatus = async (id) => {
     const product = products.find((p) => p.MAHANGHOA === id);
-    const newStatus = product.TRANGTHAI === 1 ? 0 : 1;
+    const currentStatus = Number(product.TRANGTHAI);
+    const newStatus = currentStatus === 0 ? 1 : 0;
+    const token = localStorage.getItem("token");
+
     try {
-      await fetch(`http://localhost:5000/api/products/${id}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ TRANGTHAI: newStatus }),
-      });
+      const res = await fetch(
+        `http://localhost:5000/api/products/${id}/status`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ TRANGTHAI: newStatus }),
+        },
+      );
+
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success) {
+          setProducts((prev) =>
+            prev.map((p) =>
+              p.MAHANGHOA === id ? { ...p, TRANGTHAI: newStatus } : p,
+            ),
+          );
+        }
+      } else {
+        const errorData = await res.json();
+        Swal.fire({
+          icon: "error",
+          title: "Lỗi!",
+          text: "Lỗi từ server: " + (errorData.message || "Không thể cập nhật"),
+        });
+      }
     } catch (error) {
-      console.error("Lỗi:", error);
+      console.error("Lỗi kết nối:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi!",
+        text: "Không thể kết nối đến máy chủ!",
+      });
     }
-    setProducts(
-      products.map((p) =>
-        p.MAHANGHOA === id ? { ...p, TRANGTHAI: newStatus } : p,
-      ),
-    );
   };
 
   // Logic Combo
   const toggleComboMode = () => {
     setIsAddingCombo(!isAddingCombo);
     if (isAddingCombo) {
-      // Khi đang mở mà bấm Hủy/Tắt
       setSelectedItemsForCombo({});
       setComboName("");
       setComboPrice("");
-      setEditingProduct(null); // Reset trạng thái đang sửa
+      setEditingProduct(null);
     }
   };
 
@@ -294,7 +434,11 @@ function Product() {
 
     // Nếu là Combo thì chặn lại và thông báo
     if (product && product.LOAIHANG === "Combo, gọi món") {
-      alert("Không được phép thêm Combo vào trong một Combo khác!");
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi!",
+        text: "Không được phép thêm Combo vào trong một Combo khác!",
+      });
       return;
     }
 
@@ -305,7 +449,6 @@ function Product() {
     (sum, itemId) => {
       if (selectedItemsForCombo[itemId]) {
         const product = products.find((p) => p.MAHANGHOA === itemId);
-        // Sửa thành cộng GIANIEMYET thay vì GIABAN
         if (product) sum += Number(product.GIANIEMYET || 0);
       }
       return sum;
@@ -315,17 +458,19 @@ function Product() {
 
   const handleConfirmCombo = async () => {
     if (!comboName || !comboPrice) {
-      alert("Vui lòng nhập tên combo và giá bán combo!");
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi!",
+        text: "Tên combo và giá combo không được để trống!",
+      });
       return;
     }
 
-    // BƯỚC 1: Lấy danh sách các món đã tick chọn
     const selectedProducts = Object.keys(selectedItemsForCombo)
       .filter((itemId) => selectedItemsForCombo[itemId])
       .map((itemId) => products.find((p) => p.MAHANGHOA === itemId))
-      .filter(Boolean); // Lọc bỏ undefined
+      .filter(Boolean);
 
-    // BƯỚC 2: Tính tồn kho của combo = tồn kho NHỎ NHẤT của các món thành phần
     const comboInventory =
       selectedProducts.length > 0
         ? Math.min(
@@ -344,7 +489,7 @@ function Product() {
       DINHMUCTON_TREN: 999,
       GIABAN: Number(comboPrice),
       GIANIEMYET: totalOriginalPrice,
-      TONKHO: comboInventory, // <--- Gán tồn kho nhỏ nhất vào đây thay vì số 100
+      TONKHO: comboInventory,
       MOTA: "Combo bao gồm các món đã chọn",
       HINHANH: null,
       TRANGTHAI: 1,
@@ -512,8 +657,12 @@ function Product() {
 
             <ul className="text-sm space-y-2 text-gray-600 max-h-40 overflow-y-auto">
               {categories
-                .filter((c) =>
-                  c.name.toLowerCase().includes(groupSearchQuery.toLowerCase()),
+                .filter(
+                  (cat) =>
+                    cat.name &&
+                    cat.name
+                      .toLowerCase()
+                      .includes(groupSearchQuery.toLowerCase()),
                 )
                 .map((cat) => (
                   <li
@@ -626,7 +775,7 @@ function Product() {
                 </button>
 
                 <button
-                  onClick={toggleComboMode}
+                  onClick={() => openModal(null, "Combo, gọi món")}
                   className="flex items-center gap-1 bg-[#2563EB] text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm cursor-pointer"
                 >
                   <img
@@ -687,6 +836,9 @@ function Product() {
                   <th className="p-3 border-b border-gray-300 text-right">
                     Tồn kho
                   </th>
+                  <th className="p-3 border-b border-gray-300 text-right">
+                    Trạng thái
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -725,7 +877,12 @@ function Product() {
                       <td className="p-3 font-medium text-blue-700">
                         {p.MAHANGHOA}
                       </td>
-                      <td className="p-3 font-medium">{p.TENHANGHOA}</td>
+                      <td className="p-3 font-medium">
+                        {p.TENHANGHOA}{" "}
+                        <span className="text-xs text-gray-400 font-normal ml-1 italic">
+                          ({p.DONVITINH})
+                        </span>
+                      </td>
                       <td className="p-3 text-center">{p.LOAIHANG}</td>
                       <td className="p-3 text-right">{p.NHOMHANG}</td>
                       <td className="p-3 text-right">
@@ -735,9 +892,20 @@ function Product() {
                         {Number(p.GIANIEMYET).toLocaleString()}
                       </td>
                       <td className="p-3 text-right font-bold">{p.TONKHO}</td>
+                      <td className="p-3 text-end">
+                        {p.TRANGTHAI === 0 || p.TRANGTHAI === false ? (
+                          <span className=" text-green-700 px-2 py-1 text-[13px] font-bold">
+                            Đang bán
+                          </span>
+                        ) : (
+                          <span className=" text-red-700 px-2 py-1  text-[13px] font-bold">
+                            Ngừng bán
+                          </span>
+                        )}
+                      </td>
                     </tr>
 
-                    {expandedRows[p.MAHANGHOA] && !isAddingCombo && (
+                    {expandedRows[p.MAHANGHOA] && (
                       <tr>
                         <td
                           colSpan="8"
@@ -767,8 +935,11 @@ function Product() {
                               </div>
                               <div className="text-gray-500">Nhóm hàng:</div>
                               <div className="text-gray-800">{p.NHOMHANG}</div>
+
                               <div className="text-gray-500">Loại hàng:</div>
                               <div className="text-gray-800">{p.LOAIHANG}</div>
+
+                              <div className="text-gray-500">Định mức tồn:</div>
                               <div className="text-gray-800">
                                 {p.DINHMUCTON_DUOI || 0} -{" "}
                                 {p.DINHMUCTON_TREN || 0}
@@ -784,12 +955,12 @@ function Product() {
                               <div className="text-gray-500">Trạng thái:</div>
                               <div
                                 className={
-                                  p.TRANGTHAI === 1
+                                  p.TRANGTHAI === 0 || p.TRANGTHAI === false
                                     ? "text-[#10B981] font-bold"
                                     : "text-[#EF4444] font-bold"
                                 }
                               >
-                                {p.TRANGTHAI === 1
+                                {p.TRANGTHAI === 0 || p.TRANGTHAI === false
                                   ? "Đang hoạt động"
                                   : "Ngừng hoạt động"}
                               </div>
@@ -829,7 +1000,7 @@ function Product() {
                                     className="h-4 w-4 brightness-0 invert"
                                   />
                                   <span>
-                                    {p.TRANGTHAI === 1
+                                    {p.TRANGTHAI === 0 || p.TRANGTHAI === false
                                       ? "Ngừng hoạt động"
                                       : "Mở hoạt động"}
                                   </span>
@@ -862,70 +1033,12 @@ function Product() {
         </section>
       </main>
 
-      {/* ================= THANH TẠO COMBO (Fixed Bottom) ================= */}
-      {isAddingCombo && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-10">
-          <div className="max-w-[1440px] mx-auto grid grid-cols-4 gap-4 items-center pl-[25%]">
-            <div className="col-span-1">
-              <label className="block text-xs font-bold text-gray-600 mb-1">
-                Tên combo <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={comboName}
-                onChange={(e) => setComboName(e.target.value)}
-                placeholder="Ví dụ: Combo Nhậu Đêm"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div className="col-span-1">
-              <label className="block text-xs font-bold text-gray-600 mb-1">
-                Tổng giá gốc các sản phẩm
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={totalOriginalPrice.toLocaleString() + " đ"}
-                  disabled
-                  className="w-full border border-gray-300 bg-gray-100 rounded px-3 py-2 text-sm text-gray-500 cursor-not-allowed font-bold"
-                />
-              </div>
-            </div>
-            <div className="col-span-1">
-              <label className="block text-xs font-bold text-gray-600 mb-1">
-                Giá bán combo <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={comboPrice}
-                onChange={(e) => setComboPrice(e.target.value)}
-                placeholder="Giá bán thực tế"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 font-bold text-blue-600"
-              />
-            </div>
-            <div className="col-span-1 flex justify-end gap-3 mt-4">
-              <button
-                onClick={toggleComboMode}
-                className="bg-white border border-gray-300 text-gray-700 rounded px-5 py-2 text-sm font-bold hover:bg-gray-100 transition-colors whitespace-nowrap"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleConfirmCombo}
-                className="bg-[#2563EB] text-white rounded px-5 py-2 text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
-              >
-                Xác nhận
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ================= MODAL THÊM / SỬA HÀNG HÓA ================= */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
-            <div className="p-6 border-b border-gray-100">
+          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full mx-4 overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Header Modal */}
+            <div className="p-6 border-b border-gray-100 flex-shrink-0">
               <h2 className="text-xl font-bold text-gray-800">
                 {editingProduct
                   ? "Chỉnh sửa hàng hóa"
@@ -933,29 +1046,19 @@ function Product() {
               </h2>
             </div>
 
-            <div className="p-6 space-y-4">
-              {/* VÙNG CHỌN ẢNH VÀ MÃ/TÊN HÀNG */}
+            {/* Body Modal (Có Scroll nếu nội dung dài) */}
+            <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
+              {/* VÙNG 1: ẢNH VÀ TÊN  */}
               <div className="flex gap-4 mb-2">
-                {/* Ô Upload Ảnh */}
-                <div className="w-32 h-32 flex-shrink-0 border border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 overflow-hidden relative cursor-pointer hover:bg-gray-100 transition-colors group">
+                <div className="w-32 h-32 flex-shrink-0 border border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 relative overflow-hidden group">
                   {formData.HINHANH ? (
-                    <>
-                      <img
-                        src={formData.HINHANH}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-white text-xs font-semibold">
-                          Đổi ảnh
-                        </span>
-                      </div>
-                    </>
+                    <img
+                      src={formData.HINHANH}
+                      className="w-full h-full object-cover"
+                      alt="Preview"
+                    />
                   ) : (
-                    <div className="text-center text-gray-500 text-xs flex flex-col items-center">
-                      <span className="text-2xl block leading-none mb-1 text-gray-400">
-                        +
-                      </span>
+                    <div className="text-center text-gray-400 text-[10px]">
                       Thêm ảnh
                     </div>
                   )}
@@ -966,23 +1069,21 @@ function Product() {
                     onChange={handleImageUpload}
                   />
                 </div>
-
-                {/* Mã và Tên */}
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-3">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">
-                      Mã hàng hóa <span className="text-red-500">*</span>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Mã hàng hóa
                     </label>
                     <input
                       type="text"
                       value={formData.MAHANGHOA}
                       disabled
-                      className="w-full border border-gray-300 bg-gray-100 rounded px-3 py-2 text-sm text-gray-500 cursor-not-allowed"
+                      className="w-full border border-gray-200 bg-gray-50 rounded px-3 py-2 text-sm text-gray-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">
-                      Tên hàng hóa <span className="text-red-500">*</span>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Tên hàng hóa *
                     </label>
                     <input
                       type="text"
@@ -990,185 +1091,255 @@ function Product() {
                       onChange={(e) =>
                         setFormData({ ...formData, TENHANGHOA: e.target.value })
                       }
-                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                      placeholder="VD: Snack khoai tây..."
+                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* CÁC THÔNG TIN KHÁC */}
-              {/* CÁC THÔNG TIN KHÁC (TÙY BIẾN THEO LOẠI HÀNG) */}
-              {formData.LOAIHANG === "Dịch vụ" ? (
-                // --- GIAO DIỆN RÚT GỌN CHO DỊCH VỤ ---
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-1">
-                        Giá bán
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.GIABAN}
-                        onChange={(e) =>
-                          setFormData({ ...formData, GIABAN: e.target.value })
-                        }
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-1">
-                        Tồn kho ban đầu
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.TONKHO}
-                        onChange={(e) =>
-                          setFormData({ ...formData, TONKHO: e.target.value })
-                        }
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
+              {/* VÙNG 2: DÀNH RIÊNG CHO DỊCH VỤ */}
+              {formData.LOAIHANG === "Dịch vụ" && (
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">
-                      Định mức (Dưới - Trên)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={formData.DINHMUCTON_DUOI}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            DINHMUCTON_DUOI: e.target.value,
-                          })
-                        }
-                        placeholder="Ít nhất"
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                      />
-                      <span className="text-gray-500 font-bold">-</span>
-                      <input
-                        type="number"
-                        value={formData.DINHMUCTON_TREN}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            DINHMUCTON_TREN: e.target.value,
-                          })
-                        }
-                        placeholder="Nhiều nhất"
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-                </>
-              ) : (
-                // --- GIAO DIỆN ĐẦY ĐỦ CHO HÀNG BÌNH THƯỜNG ---
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-1">
-                        Nhóm hàng
-                      </label>
-                      <select
-                        value={formData.MADANHMUC}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            MADANHMUC: e.target.value,
-                          })
-                        }
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500"
-                      >
-                        <option value="DM001">ĐỒ UỐNG</option>
-                        <option value="DM002">THỨC ĂN NHẸ</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-1">
-                        Giá bán
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.GIABAN}
-                        onChange={(e) =>
-                          setFormData({ ...formData, GIABAN: e.target.value })
-                        }
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-1">
-                        Định mức (Dưới - Trên)
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={formData.DINHMUCTON_DUOI}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              DINHMUCTON_DUOI: e.target.value,
-                            })
-                          }
-                          placeholder="Ít nhất"
-                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                        />
-                        <span className="text-gray-500 font-bold">-</span>
-                        <input
-                          type="number"
-                          value={formData.DINHMUCTON_TREN}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              DINHMUCTON_TREN: e.target.value,
-                            })
-                          }
-                          placeholder="Nhiều nhất"
-                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-1">
-                        Giá niêm yết
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.GIANIEMYET}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            GIANIEMYET: e.target.value,
-                          })
-                        }
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">
-                      Tồn kho ban đầu
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Giá bán
                     </label>
                     <input
                       type="number"
-                      value={formData.TONKHO}
+                      value={formData.GIABAN}
                       onChange={(e) =>
-                        setFormData({ ...formData, TONKHO: e.target.value })
+                        setFormData({ ...formData, GIABAN: e.target.value })
                       }
-                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                     />
                   </div>
-                </>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Đơn vị tính
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.DONVITINH}
+                      onChange={(e) =>
+                        setFormData({ ...formData, DONVITINH: e.target.value })
+                      }
+                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
               )}
 
+              {/* VÙNG 3: DÀNH RIÊNG CHO COMBO */}
+              {formData.LOAIHANG === "Combo, gọi món" && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Giá Combo
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.GIABAN}
+                        onChange={(e) =>
+                          setFormData({ ...formData, GIABAN: e.target.value })
+                        }
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-blue-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Đơn vị
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.DONVITINH}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            DONVITINH: e.target.value,
+                          })
+                        }
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <p className="text-xs font-bold text-blue-700 mb-2">
+                      Thành phần món:
+                    </p>
+                    <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                      {products
+                        .filter(
+                          (p) =>
+                            p.LOAIHANG !== "Combo, gọi món" &&
+                            p.LOAIHANG !== "Dịch vụ",
+                        )
+                        .map((p) => (
+                          <label
+                            key={p.MAHANGHOA}
+                            className="flex items-center justify-between bg-white p-2 rounded text-xs cursor-pointer border border-transparent hover:border-blue-300"
+                          >
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={!!selectedItemsForCombo[p.MAHANGHOA]}
+                                onChange={() =>
+                                  handleItemComboCheck(p.MAHANGHOA)
+                                }
+                              />
+                              <span>{p.TENHANGHOA}</span>
+                            </div>
+                            <span className="text-gray-400">
+                              {Number(p.GIABAN).toLocaleString()}đ
+                            </span>
+                          </label>
+                        ))}
+                    </div>
+                    <div className="mt-2 text-right text-xs font-bold text-blue-800">
+                      Tổng gốc: {totalOriginalPrice.toLocaleString()}đ
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* VÙNG 4: DÀNH RIÊNG CHO HÀNG THƯỜNG / CHẾ BIẾN */}
+              {formData.LOAIHANG !== "Dịch vụ" &&
+                formData.LOAIHANG !== "Combo, gọi món" && (
+                  <div className="space-y-4">
+                    {/* Hàng 1: Nhóm hàng & ĐVT */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                          Nhóm hàng
+                        </label>
+                        <select
+                          value={formData.MADANHMUC}
+                          onChange={(e) => {
+                            const selectedCat = categories.find(
+                              (c) => c.id === e.target.value,
+                            );
+                            setFormData({
+                              ...formData,
+                              MADANHMUC: e.target.value,
+                              NHOMHANG: selectedCat ? selectedCat.name : "",
+                            });
+                          }}
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500"
+                        >
+                          {categories
+                            .filter((c) => c.id !== "ALL")
+                            .map((cat) => (
+                              <option key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                          Đơn vị tính
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.DONVITINH}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              DONVITINH: e.target.value,
+                            })
+                          }
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Hàng 2: Giá bán & Giá niêm yết */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                          Giá bán
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.GIABAN}
+                          onChange={(e) =>
+                            setFormData({ ...formData, GIABAN: e.target.value })
+                          }
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-green-600 font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                          Giá niêm yết
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.GIANIEMYET}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              GIANIEMYET: e.target.value,
+                            })
+                          }
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-400"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Hàng 3: Tồn kho & Định mức tồn */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                          Tồn kho hiện tại
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.TONKHO}
+                          onChange={(e) =>
+                            setFormData({ ...formData, TONKHO: e.target.value })
+                          }
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1 text-gray-700">
+                          Định mức tồn (Dưới - Trên)
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={formData.DINHMUCTON_DUOI}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                DINHMUCTON_DUOI: e.target.value,
+                              })
+                            }
+                            className="w-1/2 border border-gray-300 rounded px-2 py-2 text-sm"
+                          />
+                          <span className="text-gray-400">-</span>
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={formData.DINHMUCTON_TREN}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                DINHMUCTON_TREN: e.target.value,
+                              })
+                            }
+                            className="w-1/2 border border-gray-300 rounded px-2 py-2 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              {/* VÙNG 5: MÔ TẢ (Chung) */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">
+                <label className="block text-xs font-bold text-gray-700 mb-1">
                   Mô tả
                 </label>
                 <textarea
@@ -1177,21 +1348,22 @@ function Product() {
                     setFormData({ ...formData, MOTA: e.target.value })
                   }
                   rows="2"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none focus:outline-none focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none outline-none focus:border-blue-500"
                 ></textarea>
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+            {/* Footer Modal */}
+            <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 flex-shrink-0">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded font-bold text-sm hover:bg-gray-100 transition-colors whitespace-nowrap"
+                className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded font-bold text-sm hover:bg-gray-100"
               >
                 Hủy
               </button>
               <button
                 onClick={handleSaveModal}
-                className="px-6 py-2 bg-[#2563EB] text-white rounded font-bold text-sm hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
+                className="px-6 py-2 bg-blue-600 text-white rounded font-bold text-sm hover:bg-blue-700"
               >
                 Lưu thông tin
               </button>
