@@ -3,18 +3,25 @@ import { Link } from "react-router-dom";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import * as Icons from "../../assets/icons/index";
+import EmployeeModal from "./Modal";
 
 /**
  * Trang Bảng lương (Salary)
  * Quản lý danh sách bảng lương của nhân viên, hỗ trợ lọc và tìm kiếm.
  */
 function Salary() {
-  // Trạng thái danh sách bảng lương (Hiện tại để trống để hiển thị giao diện không có dữ liệu)
+  // Trạng thái danh sách bảng lương
   const [payrolls] = useState([]);
 
   // Trạng thái tìm kiếm và bộ lọc
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Đang tạo");
+
+  // ─── State: Modal ─────────────────────────────────────────────────────────
+  const [modal, setModal] = useState({ isOpen: false, type: "" });
+
+  const openModal = (type) => setModal({ isOpen: true, type });
+  const closeModal = () => setModal({ isOpen: false, type: "" });
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] font-inter text-gray-900 pb-10">
@@ -118,13 +125,20 @@ function Salary() {
                 />
               </div>
 
-              {/* Các nút hành động */}
-              <button className="bg-[#5D5FEF] hover:bg-[#4B4DDB] text-white px-5 py-2.5 rounded-lg flex items-center gap-2 text-[14px] font-bold transition-all shadow-md active:scale-95">
+              {/* Nút Tạo Bảng Tính Lương -> mở modal SALARY */}
+              <button
+                onClick={() => openModal("SALARY")}
+                className="bg-[#5D5FEF] hover:bg-[#4B4DDB] text-white px-5 py-2.5 rounded-lg flex items-center gap-2 text-[14px] font-bold transition-all shadow-md active:scale-95"
+              >
                 <span className="text-lg leading-none">+</span>
                 <span>Bảng Tính Lương</span>
               </button>
 
-              <button className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 text-[14px] font-bold transition-all shadow-sm active:scale-95">
+              {/* Nút Xuất file -> mở modal EXPORT */}
+              <button
+                onClick={() => openModal("EXPORT")}
+                className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 text-[14px] font-bold transition-all shadow-sm active:scale-95"
+              >
                 <img
                   src={Icons.SaveFile}
                   className="w-4 h-4 opacity-70"
@@ -185,6 +199,12 @@ function Salary() {
           </div>
         </section>
       </main>
+      {/* Modal trung tâm - xử lý Bảng lương và Xuất file */}
+      <EmployeeModal
+        isOpen={modal.isOpen}
+        onClose={closeModal}
+        type={modal.type}
+      />
     </div>
   );
 }
