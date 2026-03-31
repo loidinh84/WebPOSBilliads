@@ -44,9 +44,19 @@ import Export from "./Export.svg";
 import ArrowUp from "./ArrowUp.svg";
 import Calendar2 from "./Calendar2.svg";
 import ArrowBackLong from "./ArrowBackLong.svg";
+import Dinner from "./Dinner.svg";
+import Home from "./Home.svg";
+import Clock from "./Clock.svg";
+import Discount from "./Discount.svg";
+import Timekeep from "./Timekeep.svg";
 
 // Export để sử dụng ở nơi khác
 export {
+  Timekeep,
+  Discount,
+  Clock,
+  Home,
+  Dinner,
   ArrowRight,
   Cafe,
   Devices,

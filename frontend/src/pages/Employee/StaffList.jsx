@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import * as Icons from "../../assets/icons/index";
+import EmployeeModal from "./Modal";
 
 function StaffList() {
-  const [employees] = useState([
+  // ─── State: Danh sách nhân viên ───────────────────────────────────────────
+  const [employees, setEmployees] = useState([
     {
       id: 1,
       staffId: "NV001",
@@ -13,9 +15,77 @@ function StaffList() {
       name: "Trần Thanh Khang",
       phone: "0344999655",
       idCard: "12345678910",
+      role: "Quản lý",
+      status: "working",
       avatar: null,
     },
   ]);
+
+  // ─── State: Danh sách yêu cầu nghỉ phép đang chờ duyệt ───────────────────
+  const [requests, setRequests] = useState([
+    {
+      id: 1,
+      name: "Trần Thanh Khang",
+      reason: "Gửi yêu cầu nghỉ phép: 05/04/2026",
+      employeeId: 1,
+    },
+  ]);
+
+  // ─── State: Modal ─────────────────────────────────────────────────────────
+  const [modal, setModal] = useState({
+    isOpen: false,
+    type: "",
+    data: null,
+  });
+
+  // Mở modal với loại và dữ liệu tương ứng
+  const openModal = (type, data = null) => {
+    setModal({ isOpen: true, type, data });
+  };
+
+  // Đóng modal
+  const closeModal = () => {
+    setModal({ isOpen: false, type: "", data: null });
+  };
+
+  // ─── Handlers ─────────────────────────────────────────────────────────────
+
+  // Thêm nhân viên mới từ form ADD
+  const handleAddEmployee = (formData) => {
+    const newEmp = {
+      ...formData,
+      id: Date.now(),
+      staffId: `NV${String(employees.length + 1).padStart(3, "0")}`,
+      status: "working",
+      avatar: null,
+    };
+    setEmployees((prev) => [...prev, newEmp]);
+  };
+
+  // Cập nhật thông tin nhân viên từ form EDIT
+  const handleUpdateEmployee = (updatedData) => {
+    setEmployees((prev) =>
+      prev.map((emp) => (emp.id === updatedData.id ? updatedData : emp))
+    );
+  };
+
+  // Duyệt yêu cầu: xóa yêu cầu khỏi danh sách + cập nhật status nhân viên thành "off"
+  const handleApproveRequest = (reqId) => {
+    const req = requests.find((r) => r.id === reqId);
+    if (req) {
+      setEmployees((prev) =>
+        prev.map((emp) =>
+          emp.id === req.employeeId ? { ...emp, status: "off" } : emp
+        )
+      );
+    }
+    setRequests((prev) => prev.filter((r) => r.id !== reqId));
+  };
+
+  // Từ chối yêu cầu: chỉ xóa yêu cầu khỏi danh sách
+  const handleRejectRequest = (reqId) => {
+    setRequests((prev) => prev.filter((r) => r.id !== reqId));
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] font-inter text-gray-900">
@@ -122,11 +192,20 @@ function StaffList() {
               Danh sách nhân viên
             </h2>
             <div className="flex gap-3">
-              <button className="bg-white hover:bg-gray-50 text-[#5D5FEF] border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold transition-all shadow-sm active:scale-95 leading-none cursor-pointer">
+              {/* Nút Thêm nhân viên -> mở modal ADD */}
+              <button
+                onClick={() => openModal("ADD")}
+                className="bg-white hover:bg-gray-50 text-[#5D5FEF] border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold transition-all shadow-sm active:scale-95 leading-none cursor-pointer"
+              >
                 <span className="text-xl">+</span>
                 <span>Nhân viên</span>
               </button>
-              <button className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold transition-all shadow-sm active:scale-95">
+
+              {/* Nút Duyệt yêu cầu -> mở modal APPROVE_REQUESTS, kèm badge số lượng */}
+              <button
+                onClick={() => openModal("APPROVE_REQUESTS")}
+                className="relative bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold transition-all shadow-sm active:scale-95"
+              >
                 <div className="bg-black rounded-md p-1 flex items-center justify-center">
                   <img
                     src={Icons.insertPage}
@@ -135,17 +214,19 @@ function StaffList() {
                   />
                 </div>
                 <span>Duyệt yêu cầu</span>
-              </button>
-              <button className="bg-white hover:bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 shadow-sm transition-all active:scale-95 flex items-center justify-center">
-                <span className="text-gray-600 font-bold text-lg leading-none mb-1">
-                  ...
-                </span>
+                {/* Badge hiển thị số yêu cầu đang chờ */}
+                {requests.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
+                    {requests.length}
+                  </span>
+                )}
               </button>
             </div>
           </div>
 
           {/* Table Area */}
           <div className="bg-white rounded border border-gray-200 shadow-sm min-h-[500px] flex flex-col">
+            {/* Header bảng */}
             <div className="grid grid-cols-[50px_100px_1.2fr_1.2fr_1.8fr_1.2fr_1.4fr] bg-[#EDF2F9] border-b border-gray-200">
               <div className="p-4 flex justify-center border-r border-gray-200">
                 <input
@@ -171,7 +252,7 @@ function StaffList() {
               </div>
             </div>
 
-            {/* Table Rows or Empty State */}
+            {/* Các hàng nhân viên hoặc trạng thái trống */}
             {employees.length > 0 ? (
               <div className="flex-1 overflow-y-auto">
                 {employees.map((emp) => (
@@ -208,7 +289,11 @@ function StaffList() {
                     <div className="p-4 text-[14px] text-gray-700 font-medium flex items-center border-r border-gray-50">
                       {emp.checkInId}
                     </div>
-                    <div className="p-4 text-[14px] text-gray-800 font-bold flex items-center border-r border-gray-50 group-hover:text-[#5D5FEF] transition-colors">
+                    {/* Tên nhân viên - click để mở hồ sơ (VIEW_BY_EMPLOYEE) */}
+                    <div
+                      className="p-4 text-[14px] text-gray-800 font-bold flex items-center border-r border-gray-50 group-hover:text-[#5D5FEF] transition-colors cursor-pointer"
+                      onClick={() => openModal("VIEW_BY_EMPLOYEE", emp)}
+                    >
                       {emp.name}
                     </div>
                     <div className="p-4 text-[14px] text-gray-600 flex items-center border-r border-gray-50">
@@ -231,7 +316,10 @@ function StaffList() {
                   Gian hàng chưa có nhân viên.
                   <br />
                   Nhấn{" "}
-                  <span className="text-[#5D5FEF] font-bold cursor-pointer hover:underline">
+                  <span
+                    className="text-[#5D5FEF] font-bold cursor-pointer hover:underline"
+                    onClick={() => openModal("ADD")}
+                  >
                     vào đây
                   </span>{" "}
                   để thêm mới nhân viên.
@@ -241,6 +329,19 @@ function StaffList() {
           </div>
         </section>
       </main>
+
+      {/* Modal trung tâm - xử lý tất cả loại modal nhân viên */}
+      <EmployeeModal
+        isOpen={modal.isOpen}
+        onClose={closeModal}
+        type={modal.type}
+        data={modal.data}
+        onAddEmployee={handleAddEmployee}
+        onUpdateEmployee={handleUpdateEmployee}
+        requests={requests}
+        onApproveRequest={handleApproveRequest}
+        onRejectRequest={handleRejectRequest}
+      />
     </div>
   );
 }
