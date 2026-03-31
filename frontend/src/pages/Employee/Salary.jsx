@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import * as Icons from "../../assets/icons/index";
+import EmployeeModal from "./Modal";
 
 /**
  * Trang Bảng lương (Salary)
@@ -15,6 +16,20 @@ function Salary() {
   // Trạng thái tìm kiếm và bộ lọc
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Đang tạo");
+
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    type: "SALARY",
+    data: null,
+  });
+
+  const openModal = (type, data = null) => {
+    setModalState({ isOpen: true, type, data });
+  };
+
+  const closeModal = () => {
+    setModalState({ ...modalState, isOpen: false });
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] font-inter text-gray-900 pb-10">
@@ -119,12 +134,18 @@ function Salary() {
               </div>
 
               {/* Các nút hành động */}
-              <button className="bg-[#5D5FEF] hover:bg-[#4B4DDB] text-white px-5 py-2.5 rounded-lg flex items-center gap-2 text-[14px] font-bold transition-all shadow-md active:scale-95">
+              <button 
+                onClick={() => openModal("SALARY")}
+                className="bg-[#5D5FEF] hover:bg-[#4B4DDB] text-white px-5 py-2.5 rounded-lg flex items-center gap-2 text-[14px] font-bold transition-all shadow-md active:scale-95"
+              >
                 <span className="text-lg leading-none">+</span>
                 <span>Bảng Tính Lương</span>
               </button>
 
-              <button className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 text-[14px] font-bold transition-all shadow-sm active:scale-95">
+              <button 
+                onClick={() => openModal("EXPORT")}
+                className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 text-[14px] font-bold transition-all shadow-sm active:scale-95"
+              >
                 <img
                   src={Icons.SaveFile}
                   className="w-4 h-4 opacity-70"
@@ -185,6 +206,13 @@ function Salary() {
           </div>
         </section>
       </main>
+
+      <EmployeeModal 
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        type={modalState.type}
+        data={modalState.data}
+      />
     </div>
   );
 }
