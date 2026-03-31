@@ -46,8 +46,12 @@ import Calendar2 from "./Calendar2.svg";
 import ArrowBackLong from "./ArrowBackLong.svg";
 import Dinner from "./Dinner.svg";
 import Home from "./Home.svg";
+import Clock from "./Clock.svg";
+import Discount from "./Discount.svg";
 // Export để sử dụng ở nơi khác
 export {
+  Discount,
+  Clock,
   Home,
   Dinner,
   ArrowRight,
