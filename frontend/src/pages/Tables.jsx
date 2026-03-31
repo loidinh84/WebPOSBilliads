@@ -1,54 +1,127 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import DashboardHeader from "../components/DashboardHeader";
 import DashboardNav from "../components/DashboardNav";
 import EditTableModal from "../components/EditTableModal";
 import AddTableModal from "../components/AddTableModal";
+import * as Icons from "../assets/icons/index";
 
 function Tables() {
-  const [tables, setTables] = useState([
-    {
-      id: 1,
-      name: "Bàn 1",
-      note: "Bàn 9 bi tầng trệt",
-      area: "Tầng trệt",
-      status: "Trống",
-    },
-    {
-      id: 2,
-      name: "Bàn 2",
-      note: "Bàn 9 bi tầng trệt",
-      area: "Tầng trệt",
-      status: "Đang chơi",
-    },
-    {
-      id: 3,
-      name: "Bàn 3",
-      note: "Bàn 8 bi tầng trệt",
-      area: "Tầng trệt",
-      status: "Trống",
-    },
-  ]);
+  const [tables, setTables] = useState([]);
   const [expandedRow, setExpandedRow] = useState(null);
   const [activeTab, setActiveTab] = useState("Thông tin");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [filterArea, setFilterArea] = useState("--Tất cả--");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("Tất cả");
+
+  const filteredTables = tables.filter((table) => {
+    const matchesArea =
+      filterArea === "--Tất cả--" || table.KHUVUC === filterArea;
+    const matchesSearch = table.TENBAN?.toLowerCase().includes(
+      searchQuery.toLowerCase(),
+    );
+
+    const matchesStatus =
+      filterStatus === "Tất cả" ||
+      (filterStatus === "Đang hoạt động" &&
+        table.TRANGTHAI !== "Ngừng hoạt động") ||
+      (filterStatus === "Ngừng hoạt động" &&
+        table.TRANGTHAI === "Ngừng hoạt động");
+
+    return matchesArea && matchesSearch && matchesStatus;
+  });
+
+  useEffect(() => {
+    fetchTables();
+  }, []);
+
+  const fetchTables = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5000/api/tables", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Dữ liệu bàn nhận được:", data);
+        setTables(data);
+      } else {
+        console.error("Lỗi xác thực hoặc không tìm thấy API");
+      }
+    } catch (err) {
+      console.error("Lỗi fetch bàn:", err);
+    }
+  };
+
+  // Hàm thêm bàn mới
+  const handleAddSave = async (newTableData) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5000/api/tables", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newTableData),
+      });
+
+      if (res.ok) {
+        alert("Thêm bàn thành công!");
+        fetchTables();
+        setIsAddModalOpen(false);
+      } else {
+        const error = await res.json();
+        alert("Lỗi: " + error.message);
+      }
+    } catch (err) {
+      console.error("Lỗi thêm bàn:", err);
+    }
+  };
 
   // Hàm chỉnh sửa bàn
   const handleEdit = (tableId) => {
-    const table = tables.find((t) => t.id === tableId);
-    setEditingTable(table);
-    setIsEditModalOpen(true);
+    const table = tables.find((t) => t.MABAN === tableId);
+    if (table) {
+      setEditingTable(table);
+      setIsEditModalOpen(true);
+    } else {
+      console.error("Không tìm thấy dữ liệu bàn với mã:", tableId);
+    }
   };
 
   // Hàm lưu chỉnh sửa
-  const handleSave = (editedData) => {
-    const updatedTables = tables.map((table) =>
-      table.id === editedData.id ? editedData : table,
-    );
-    setTables(updatedTables);
-    setIsEditModalOpen(false);
-    setEditingTable(null);
+  const handleSave = async (editedData) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `http://localhost:5000/api/tables/${editedData.MABAN}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(editedData),
+        },
+      );
+
+      if (res.ok) {
+        alert("Cập nhật thành công!");
+        fetchTables();
+        setIsEditModalOpen(false);
+        setEditingTable(null);
+      }
+    } catch (err) {
+      console.error("Lỗi cập nhật:", err);
+    }
   };
 
   // Hàm hủy chỉnh sửa
@@ -57,30 +130,41 @@ function Tables() {
     setEditingTable(null);
   };
 
-  // Hàm thêm bàn mới
-  const handleAddSave = (newTable) => {
-    setTables([...tables, newTable]);
-    setIsAddModalOpen(false);
-  };
-
   const handleAddCancel = () => {
     setIsAddModalOpen(false);
   };
 
   // Hàm ngừng hoạt động
-  const handleDisable = (tableId) => {
-    const updatedTables = tables.map((table) =>
-      table.id === tableId ? { ...table, status: "Ngừng hoạt động" } : table,
-    );
-    setTables(updatedTables);
-    setExpandedRow(null);
+  const handleDisable = async (tableId) => {
+    const table = tables.find((t) => t.MABAN === tableId);
+    if (!table) return;
+
+    const updatedData = {
+      ...table,
+      TRANGTHAI: "Ngừng hoạt động",
+    };
+    await handleSave(updatedData);
   };
 
   // Hàm xóa bàn
-  const handleDelete = (tableId) => {
-    const updatedTables = tables.filter((table) => table.id !== tableId);
-    setTables(updatedTables);
-    setExpandedRow(null);
+  const handleDelete = async (MABAN) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa bàn ${MABAN}?`)) {
+      try {
+        const token = localStorage.getItem("token");
+        // Gửi đúng MABAN lên URL
+        const res = await fetch(`http://localhost:5000/api/tables/${MABAN}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          await fetchTables();
+          setExpandedRow(null);
+          alert("Xóa thành công!");
+        }
+      } catch (err) {
+        console.error("Lỗi xóa bàn:", err);
+      }
+    }
   };
 
   return (
@@ -96,7 +180,11 @@ function Tables() {
             <label className="block text-sm font-bold text-gray-700 mb-2">
               Khu vực
             </label>
-            <select className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+            <select
+              value={filterArea}
+              onChange={(e) => setFilterArea(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            >
               <option>--Tất cả--</option>
               <option>Tầng trệt</option>
               <option>Lầu 1</option>
@@ -111,6 +199,8 @@ function Tables() {
             </label>
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Theo tên bàn"
               className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
             />
@@ -126,8 +216,9 @@ function Tables() {
                 <input
                   type="radio"
                   name="status"
+                  checked={filterStatus === "Đang hoạt động"}
+                  onChange={() => setFilterStatus("Đang hoạt động")}
                   className="w-4 h-4 text-blue-600"
-                  defaultChecked
                 />
                 <span>Đang hoạt động</span>
               </label>
@@ -135,6 +226,8 @@ function Tables() {
                 <input
                   type="radio"
                   name="status"
+                  checked={filterStatus === "Ngừng hoạt động"}
+                  onChange={() => setFilterStatus("Ngừng hoạt động")}
                   className="w-4 h-4 text-blue-600"
                 />
                 <span>Ngừng hoạt động</span>
@@ -143,6 +236,8 @@ function Tables() {
                 <input
                   type="radio"
                   name="status"
+                  checked={filterStatus === "Tất cả"}
+                  onChange={() => setFilterStatus("Tất cả")}
                   className="w-4 h-4 text-blue-600"
                 />
                 <span>Tất cả</span>
@@ -154,15 +249,22 @@ function Tables() {
         {/* Nội dung chính */}
         <div className="bg-white rounded border border-gray-200 shadow-sm md:col-span-3 pb-8">
           {/* Đầu trang */}
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-800 mb-3">
+          <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h2 className="text-2xl font-bold text-gray-800 mb-3">
               Danh sách bàn
             </h2>
-            <button 
+            <button
               onClick={() => setIsAddModalOpen(true)}
-              className="bg-[#4CAF50] hover:bg-[#45a049] text-white px-4 py-2 rounded font-medium text-sm flex items-center gap-2 transition-all cursor-pointer hover:scale-105 hover:shadow-lg"
+              className="bg-[#4CAF50] hover:bg-[#45a049] text-white px-4 py-2 rounded font-medium text-sm flex items-center gap-2 transition-all cursor-pointer hover:shadow-lg"
             >
-              <span className="text-lg leading-none">+</span> Thêm bàn
+              <span className="text-lg leading-none">
+                <img
+                  src={Icons.Add}
+                  alt="Thêm bàn"
+                  className="w-5 h-5 brightness-0 invert"
+                />
+              </span>{" "}
+              Thêm bàn
             </button>
           </div>
 
@@ -178,6 +280,9 @@ function Tables() {
                     Ghi chú
                   </th>
                   <th className="py-3 px-6 font-semibold border-b border-t border-gray-200 w-1/4">
+                    Giá giờ
+                  </th>
+                  <th className="py-3 px-6 font-semibold border-b border-t border-gray-200 w-1/4">
                     Khu vực
                   </th>
                   <th className="py-3 px-6 font-semibold border-b border-t border-gray-200 w-1/4">
@@ -186,42 +291,64 @@ function Tables() {
                 </tr>
               </thead>
               <tbody>
-                {tables.length === 0 ? (
+                {filteredTables.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="py-8 text-center text-gray-500">
-                      Chưa có dữ liệu bàn.
+                    <td colSpan="5" className="py-8 text-center text-gray-500">
+                      Không tìm thấy bàn nào phù hợp.
                     </td>
                   </tr>
                 ) : (
-                  tables.map((table) => (
-                    <React.Fragment key={table.id}>
-                      {/* Hàng */}
+                  filteredTables.map((table) => (
+                    <React.Fragment key={table.MABAN}>
+                      {/* Hàng chính */}
                       <tr
                         className={`border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors ${
-                          expandedRow === table.id ? "bg-[#F5F8FA]" : ""
+                          expandedRow === table.MABAN ? "bg-[#F5F8FA]" : ""
                         }`}
                         onClick={() =>
                           setExpandedRow(
-                            expandedRow === table.id ? null : table.id,
+                            expandedRow === table.MABAN ? null : table.MABAN,
                           )
                         }
                       >
-                        <td className="py-4 px-6 font-medium text-gray-800">
-                          {table.name}
+                        {/* 1. Tên bàn */}
+                        <td className="py-4 px-6 font-bold text-gray-800">
+                          {table.TENBAN}
                         </td>
+
+                        {/* 2. Loại bàn  */}
                         <td className="py-4 px-6 text-gray-600">
-                          {table.note}
+                          {table.LOAIBAN || "Chưa xác định"}
                         </td>
-                        <td className="py-4 px-6 text-gray-600">
-                          {table.area}
+
+                        {/* 3. Giá giờ  */}
+                        <td className="py-4 px-6 font-black text-blue-600">
+                          {table.GIAGIO
+                            ? `${Number(table.GIAGIO).toLocaleString()} đ`
+                            : "0 đ"}
                         </td>
+
+                        {/* 4. Khu vực */}
                         <td className="py-4 px-6 text-gray-600">
-                          {table.status}
+                          {table.KHUVUC}
+                        </td>
+
+                        {/* 5. Trạng thái */}
+                        <td className="py-4 px-6">
+                          <span
+                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
+                              table.TRANGTHAI === "Trống"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-orange-100 text-orange-700"
+                            }`}
+                          >
+                            {table.TRANGTHAI}
+                          </span>
                         </td>
                       </tr>
 
                       {/* Nội dung mở rộng */}
-                      {expandedRow === table.id && (
+                      {expandedRow === table.MABAN && (
                         <tr className="border-b border-gray-200">
                           <td colSpan="4" className="p-0">
                             <div className="bg-white border-x-4 border-l-[#5D5FEF] border-r-transparent py-2">
@@ -292,7 +419,7 @@ function Tables() {
                                   {/* Tác vụ */}
                                   <div className="flex justify-end gap-3 mt-6">
                                     <button
-                                      onClick={() => handleEdit(table.id)}
+                                      onClick={() => handleEdit(table.MABAN)}
                                       className="bg-[#F59E0B] hover:bg-yellow-600 text-white px-4 py-2 rounded font-medium text-sm flex items-center gap-2 cursor-pointer transition-all"
                                     >
                                       <svg
@@ -367,12 +494,15 @@ function Tables() {
       </main>
 
       {/* Modal chỉnh sửa bàn */}
-      <EditTableModal
-        isOpen={isEditModalOpen}
-        table={editingTable}
-        onSave={handleSave}
-        onCancel={handleCancel}
-      />
+      {isEditModalOpen && editingTable && (
+        <EditTableModal
+          isOpen={isEditModalOpen}
+          table={editingTable}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          onDelete={() => handleDelete(editingTable.MABAN)}
+        />
+      )}
 
       {/* Modal thêm bàn mới */}
       <AddTableModal

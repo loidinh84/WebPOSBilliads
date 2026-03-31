@@ -3,7 +3,6 @@ import React, { useState } from "react";
 function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
   const [edits, setEdits] = useState({});
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-
   const formData = table ? { ...table, ...edits } : {};
 
   if (!isOpen || !table) return null;
@@ -36,7 +35,7 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
     e.preventDefault();
     e.stopPropagation();
     if (onDelete) {
-      onDelete(table);
+      onDelete();
     }
     setEdits({});
     setIsConfirmingDelete(false);
@@ -44,7 +43,6 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      {/* Thêm onClick chặn sự kiện lan ra ngoài nếu lỡ click vào khoảng trắng của Modal */}
       <div
         className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 transition-all"
         onClick={(e) => e.stopPropagation()}
@@ -75,7 +73,7 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
             <p className="text-gray-600 mb-8">
               Bạn có chắc chắn muốn xóa bàn{" "}
               <span className="font-bold text-gray-900">
-                {formData.name || "này"}
+                {formData.TENBAN || "này"}
               </span>{" "}
               không?
               <br />
@@ -104,7 +102,7 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
           </div>
         ) : (
           /* ==========================================
-             GIAO DIỆN 2: FORM CHỈNH SỬA (Mặc định)
+            GIAO DIỆN 2: FORM CHỈNH SỬA (Mặc định)
              ========================================== */
           <>
             <div className="border-b border-gray-200 p-6">
@@ -118,8 +116,8 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
                 </label>
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name || ""}
+                  name="TENBAN"
+                  value={formData.TENBAN || ""}
                   onChange={handleInputChange}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
                   placeholder="Nhập tên bàn"
@@ -128,11 +126,25 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Loại bàn
+                </label>
+                <select
+                  name="MAHANGHOA"
+                  value={formData.TENHANGHOA || ""}
+                  onChange={handleInputChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                >
+                  <option value="">-- Chọn loại bàn --</option>
+                  <option value="Bàn lỗ">Bàn lỗ</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ghi chú
                 </label>
                 <textarea
-                  name="note"
-                  value={formData.note || ""}
+                  name="GHICHU"
+                  value={formData.GHICHU || ""}
                   onChange={handleInputChange}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 resize-none"
                   rows="3"
@@ -145,8 +157,8 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
                   Khu vực
                 </label>
                 <select
-                  name="area"
-                  value={formData.area || ""}
+                  name="KHUVUC"
+                  value={formData.KHUVUC || ""}
                   onChange={handleInputChange}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
                 >
@@ -161,8 +173,8 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
                   Trạng thái
                 </label>
                 <select
-                  name="status"
-                  value={formData.status || ""}
+                  name="TRANGTHAI"
+                  value={formData.TRANGTHAI || ""}
                   disabled
                   className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-500 cursor-not-allowed focus:outline-none"
                 >
@@ -181,8 +193,8 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
               <button
                 type="button"
                 onClick={(e) => {
-                  e.preventDefault(); // Chặn hành vi submit mặc định
-                  e.stopPropagation(); // Chặn sự kiện lan ra ngoài
+                  e.preventDefault();
+                  e.stopPropagation();
                   setIsConfirmingDelete(true);
                 }}
                 className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded font-medium text-sm transition-all"

@@ -10,34 +10,7 @@ function Product() {
   // =========================================================================
   const [categories, setCategories] = useState([{ id: "ALL", name: "Tất cả" }]);
 
-  const [products, setProducts] = useState([
-    {
-      MAHANGHOA: "SP000012",
-      TENHANGHOA: "Snack tôm cay (Lớn)",
-      LOAIHANG: "Hàng thường",
-      NHOMHANG: "Khác",
-      DINHMUCTON: "0 > 1,000",
-      GIABAN: 15000,
-      GIANIEMYET: 9000,
-      TONKHO: 236,
-      MOTA: "Chưa có mô tả",
-      HINHANH: null,
-      TRANGTHAI: 1,
-    },
-    {
-      MAHANGHOA: "SP000013",
-      TENHANGHOA: "Bia Tiger Lon 330ml",
-      LOAIHANG: "Hàng thường",
-      NHOMHANG: "ĐỒ UỐNG",
-      DINHMUCTON: "0 > 500",
-      GIABAN: 25000,
-      GIANIEMYET: 20000,
-      TONKHO: 150,
-      MOTA: "Chưa có mô tả",
-      HINHANH: null,
-      TRANGTHAI: 1,
-    },
-  ]);
+  const [products, setProducts] = useState([]);
 
   // Tự động fetch dữ liệu từ Database khi load trang
   useEffect(() => {
@@ -49,7 +22,6 @@ function Product() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch("http://localhost:5000/api/products/categories", {
-        // Đường dẫn API của bạn
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -58,11 +30,7 @@ function Product() {
       });
       if (res.ok) {
         const data = await res.json();
-        const mappedCategories = data.map((cat) => ({
-          id: cat.MADANHMUC,
-          name: cat.TENDANHMUC,
-        }));
-        setCategories([{ id: "ALL", name: "Tất cả" }, ...mappedCategories]);
+        setCategories([{ MADANHMUC: "ALL", TENDANHMUC: "Tất cả" }, ...data]);
       }
     } catch (error) {
       console.error("Lỗi fetch danh mục:", error);
@@ -164,14 +132,149 @@ function Product() {
     );
   };
 
-  const handleSaveNewCategory = () => {
-    if (newCategoryName.trim()) {
-      setCategories([
-        ...categories,
-        { id: `NEW_${Date.now()}`, name: newCategoryName.trim().toUpperCase() },
-      ]);
-      setNewCategoryName("");
-      setIsAddingCategory(false);
+  const handleSaveNewCategory = async () => {
+    if (!newCategoryName.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi!",
+        text: "Tên nhóm hàng không được để trống!",
+      });
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const newId = "DM" + Date.now().toString().slice(-4);
+
+      const res = await fetch("http://localhost:5000/api/products/categories", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          MADANHMUC: newId,
+          TENDANHMUC: newCategoryName.trim().toUpperCase(),
+        }),
+      });
+
+      if (res.ok) {
+        setNewCategoryName("");
+        setIsAddingCategory(false);
+        fetchCategories();
+        Swal.fire({
+          icon: "success",
+          title: "Thành công",
+          text: "Đã thêm nhóm hàng mới!",
+          timer: 1000,
+          showConfirmButton: false,
+        });
+      } else {
+        const errData = await res.json();
+        Swal.fire({
+          icon: "error",
+          title: "Lỗi!",
+          text:
+            "Lỗi từ server: " +
+            (errData.message || "Không thể thêm nhóm hàng."),
+        });
+      }
+    } catch (err) {
+      console.error("Lỗi thêm nhóm hàng:", err);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    setIsAddingCategory(true);
+    setNewCategoryName("");
+  };
+
+  const handleUpdateCategory = async (id, currentName) => {
+    const { value: newName } = await Swal.fire({
+      title: "Chỉnh sửa tên nhóm",
+      input: "text",
+      inputValue: currentName,
+      showCancelButton: true,
+      confirmButtonText: "Cập nhật",
+      cancelButtonText: "Hủy",
+      inputValidator: (value) => {
+        if (!value) return "Tên nhóm không được để trống!";
+      },
+    });
+
+    if (newName && newName !== currentName) {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `http://localhost:5000/api/products/categories/${id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              TENDANHMUC: newName.trim().toUpperCase(),
+              TRANGTHAI: 1,
+            }),
+          },
+        );
+
+        if (res.ok) {
+          fetchCategories();
+          Swal.fire("Thành công", "Đã cập nhật tên nhóm!", "success");
+        }
+      } catch (err) {
+        console.error("Lỗi cập nhật:", err);
+      }
+    }
+  };
+
+  const handleDeleteCategory = async (id, name) => {
+    const result = await Swal.fire({
+      title: "Xác nhận xóa?",
+      text: `Bạn có chắc chắn muốn xóa nhóm hàng "${name}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#EF4444",
+      cancelButtonColor: "#6B7280",
+      confirmButtonText: "Xóa ngay",
+      cancelButtonText: "Hủy",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `http://localhost:5000/api/products/categories/${id}`,
+          {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+
+        const data = await res.json();
+
+        if (res.ok) {
+          Swal.fire({
+            icon: "success",
+            title: "Đã xóa!",
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false,
+          });
+          fetchCategories();
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Không thể xóa",
+            text: data.message || "Có lỗi xảy ra khi xóa nhóm hàng.",
+          });
+        }
+      } catch (err) {
+        console.error("Lỗi xóa nhóm:", err);
+        Swal.fire("Lỗi!", "Không thể kết nối đến máy chủ.", "error");
+      }
     }
   };
 
@@ -510,24 +613,45 @@ function Product() {
   };
 
   // Lọc dữ liệu hiển thị
-  const filteredProducts = products.filter((p) => {
-    const matchSearch =
-      p.TENHANGHOA.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.MAHANGHOA.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredProducts = (products || []).filter((p) => {
+    if (!p) return false;
+
+    // 1. Kiểm tra tìm kiếm
+    const tenHang = p.TENHANGHOA ? String(p.TENHANGHOA).toLowerCase() : "";
+    const maHang = p.MAHANGHOA ? String(p.MAHANGHOA).toLowerCase() : "";
+    const search = searchQuery ? String(searchQuery).toLowerCase() : "";
+
+    const matchSearch = tenHang.includes(search) || maHang.includes(search);
+
+    // 2. Kiểm tra Nhóm hàng
     const matchCategory =
-      selectedCategory === "Tất cả" || p.NHOMHANG === selectedCategory;
+      !selectedCategory ||
+      selectedCategory === "Tất cả" ||
+      selectedCategory === "ALL"
+        ? true
+        : (p.NHOMHANG && String(p.NHOMHANG) === String(selectedCategory)) ||
+          (p.MADANHMUC && String(p.MADANHMUC) === String(selectedCategory));
+
+    // 3. Kiểm tra Loại hàng
     const matchType =
-      selectedTypes.length === 0 || selectedTypes.includes(p.LOAIHANG);
+      !selectedTypes ||
+      selectedTypes.length === 0 ||
+      (p.LOAIHANG && selectedTypes.includes(p.LOAIHANG));
+
+    // 4. Kiểm tra Tồn kho
     let matchInventory = true;
     const tonKho = Number(p.TONKHO || p.SOLUONGTONKHO || 0);
     const dinhMucDuoi = Number(p.DINHMUCTON_DUOI || 0);
     const dinhMucTren = Number(p.DINHMUCTON_TREN || 999999);
 
     if (selectedInventory === "con_hang") matchInventory = tonKho > 0;
-    if (selectedInventory === "het_hang") matchInventory = tonKho <= 0;
-    if (selectedInventory === "duoi") matchInventory = tonKho < dinhMucDuoi;
-    if (selectedInventory === "vuot") matchInventory = tonKho > dinhMucTren;
+    else if (selectedInventory === "het_hang") matchInventory = tonKho <= 0;
+    else if (selectedInventory === "duoi")
+      matchInventory = tonKho < dinhMucDuoi;
+    else if (selectedInventory === "vuot")
+      matchInventory = tonKho > dinhMucTren;
 
+    // 5. Kiểm tra lồng Combo
     const isNotNestedCombo = !(
       isAddingCombo && p.LOAIHANG === "Combo, gọi món"
     );
@@ -603,13 +727,13 @@ function Product() {
                 src={Icons.Add}
                 alt="add"
                 className="cursor-pointer"
-                onClick={() => setIsAddingCategory(!isAddingCategory)}
+                onClick={handleAddCategory}
               />
             </div>
 
             {/* Khung nhập Nhóm hàng / hoặc Tìm kiếm */}
             {isAddingCategory ? (
-              <div className="mb-3 bg-gray-50 p-2 rounded border border-gray-200">
+              <div className="mb-3 bg-gray-50 p-2 rounded border border-gray-200 animate-in fade-in duration-300">
                 <p className="text-xs font-bold text-blue-600 mb-2">
                   Thêm nhóm hàng mới
                 </p>
@@ -618,18 +742,22 @@ function Product() {
                   placeholder="Tên nhóm mới..."
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm mb-2 focus:outline-none"
+                  className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm mb-2 focus:outline-none focus:border-blue-500"
+                  autoFocus
                 />
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setIsAddingCategory(false)}
-                    className="flex-1 bg-gray-200 text-gray-700 rounded py-1 text-xs font-bold"
+                    onClick={() => {
+                      setIsAddingCategory(false);
+                      setNewCategoryName("");
+                    }}
+                    className="flex-1 bg-gray-200 text-gray-700 rounded py-1 text-xs font-bold hover:bg-gray-300"
                   >
                     Hủy
                   </button>
                   <button
                     onClick={handleSaveNewCategory}
-                    className="flex-1 bg-blue-600 text-white rounded py-1 text-xs font-bold"
+                    className="flex-1 bg-blue-600 text-white rounded py-1 text-xs font-bold hover:bg-blue-700"
                   >
                     Lưu
                   </button>
@@ -641,8 +769,7 @@ function Product() {
                   <img
                     src={Icons.Search}
                     alt="Tìm kiếm"
-                    className="h-4 w-4 text-gray-400"
-                    style={{ filter: "grayscale(1) opacity(0.5)" }}
+                    className="h-4 w-4 text-gray-400 opacity-50"
                   />
                 </div>
                 <input
@@ -650,29 +777,94 @@ function Product() {
                   placeholder="Tìm kiếm nhóm hàng"
                   value={groupSearchQuery}
                   onChange={(e) => setGroupSearchQuery(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                 />
               </div>
             )}
 
-            <ul className="text-sm space-y-2 text-gray-600 max-h-40 overflow-y-auto">
-              {categories
-                .filter(
-                  (cat) =>
-                    cat.name &&
-                    cat.name
-                      .toLowerCase()
-                      .includes(groupSearchQuery.toLowerCase()),
-                )
-                .map((cat) => (
-                  <li
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.name)}
-                    className={`cursor-pointer hover:text-blue-600 ${selectedCategory === cat.name ? "font-bold text-blue-600" : ""}`}
-                  >
-                    {cat.name}
-                  </li>
-                ))}
+            <ul className="mt-4 space-y-1 max-h-[400px] overflow-y-auto">
+              <li
+                className={`p-2 rounded text-sm cursor-pointer hover:bg-blue-50 ${selectedCategory === null ? "bg-blue-100 text-blue-700 font-bold" : ""}`}
+                onClick={() => setSelectedCategory(null)}
+              >
+                Tất cả
+              </li>
+
+              {categories &&
+                categories
+                  .filter((cat) => {
+                    // Bảo vệ dữ liệu tránh lỗi toLowerCase
+                    const tenNhom = cat.TENDANHMUC
+                      ? String(cat.TENDANHMUC).toLowerCase()
+                      : "";
+                    const search = groupSearchQuery
+                      ? String(groupSearchQuery).toLowerCase()
+                      : "";
+                    return tenNhom.includes(search) && cat.MADANHMUC !== "ALL";
+                  })
+                  .map((cat) => (
+                    <li
+                      key={cat.MADANHMUC}
+                      className={`group flex items-center justify-between p-2 rounded text-sm cursor-pointer hover:bg-blue-50 transition-all ${
+                        selectedCategory === cat.MADANHMUC
+                          ? "bg-blue-100 text-blue-700 font-bold"
+                          : ""
+                      }`}
+                      onClick={() => setSelectedCategory(cat.MADANHMUC)}
+                    >
+                      <span className="truncate">{cat.TENDANHMUC}</span>
+
+                      {/* Nhóm nút Sửa/Xóa hiện khi hover */}
+                      <div className="hidden group-hover:flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateCategory(cat.MADANHMUC, cat.TENDANHMUC);
+                          }}
+                          className="p-1 hover:text-blue-600 text-gray-400"
+                          title="Sửa tên nhóm"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3.5 w-3.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCategory(cat.MADANHMUC, cat.TENDANHMUC);
+                          }}
+                          className="p-1 hover:text-red-600 text-gray-400"
+                          title="Xóa nhóm"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3.5 w-3.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </li>
+                  ))}
             </ul>
           </div>
 
@@ -921,7 +1113,11 @@ function Product() {
                                 />
                               ) : (
                                 <img
-                                  src="https://via.placeholder.com/150"
+                                  src={p.HINHANH}
+                                  onError={(e) => {
+                                    e.target.src =
+                                      "https://via.placeholder.com/150";
+                                  }}
                                   alt={p.TENHANGHOA}
                                   className="max-h-full object-contain opacity-50"
                                 />
@@ -1221,16 +1417,22 @@ function Product() {
                             setFormData({
                               ...formData,
                               MADANHMUC: e.target.value,
-                              NHOMHANG: selectedCat ? selectedCat.name : "",
+                              NHOMHANG: selectedCat
+                                ? selectedCat.TENDANHMUC
+                                : "",
                             });
                           }}
                           className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500"
                         >
                           {categories
-                            .filter((c) => c.id !== "ALL")
+                            .filter(
+                              (c) =>
+                                c.MADANHMUC !== "ALL" &&
+                                c.MADANHMUC !== "Tất cả",
+                            )
                             .map((cat) => (
-                              <option key={cat.id} value={cat.id}>
-                                {cat.name}
+                              <option key={cat.MADANHMUC} value={cat.MADANHMUC}>
+                                {cat.TENDANHMUC}
                               </option>
                             ))}
                         </select>
