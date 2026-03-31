@@ -2,10 +2,25 @@ import React, { useState } from "react";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import * as Icons from "../../assets/icons/index";
+import EmployeeModal from "./Modal";
 
 function Timesheet() {
   // Bro có thể dùng state này sau để xử lý logic lùi/tiến tuần
   const [currentWeek, setCurrentWeek] = useState("Tuần 1 - Th. 3 2026");
+
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    type: "VIEW_BY_SHIFT",
+    data: null,
+  });
+
+  const openModal = (type, data = null) => {
+    setModalState({ isOpen: true, type, data });
+  };
+
+  const closeModal = () => {
+    setModalState({ ...modalState, isOpen: false });
+  };
 
   return (
     <div className="min-h-screen bg-[#F0F2F5] font-sans text-black text-[13px]">
@@ -52,11 +67,17 @@ function Timesheet() {
 
           {/* Cụm Nút Thao tác */}
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 border border-gray-300 rounded-md px-4 py-1.5 bg-white hover:bg-gray-50 text-gray-700 font-medium shadow-sm cursor-pointer transition-colors">
+            <button 
+              onClick={() => openModal("VIEW_BY_SHIFT")}
+              className="flex items-center gap-2 border border-gray-300 rounded-md px-4 py-1.5 bg-white hover:bg-gray-50 text-gray-700 font-medium shadow-sm cursor-pointer transition-colors"
+            >
               <img src={Icons.Calendar2} alt="view" className="w-4 h-4 filter brightness-0 opacity-70" />
               Xem theo ca
             </button>
-            <button className="flex items-center gap-2 border border-gray-300 rounded-md px-4 py-1.5 bg-white hover:bg-gray-50 text-gray-700 font-medium shadow-sm cursor-pointer transition-colors">
+            <button 
+              onClick={() => openModal("APPROVE_ATTENDANCE")}
+              className="flex items-center gap-2 border border-gray-300 rounded-md px-4 py-1.5 bg-white hover:bg-gray-50 text-gray-700 font-medium shadow-sm cursor-pointer transition-colors"
+            >
               <img src={Icons.Calendar} alt="approve" className="w-4 h-4 filter brightness-0 opacity-70" />
               Duyệt chấm công
             </button>
@@ -138,6 +159,13 @@ function Timesheet() {
 
         </div>
       </main>
+
+      <EmployeeModal 
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        type={modalState.type}
+        data={modalState.data}
+      />
     </div>
   );
 }

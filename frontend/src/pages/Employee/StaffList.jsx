@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import * as Icons from "../../assets/icons/index";
+import EmployeeModal from "./Modal";
 
 function StaffList() {
   const [employees] = useState([
@@ -16,6 +17,20 @@ function StaffList() {
       avatar: null,
     },
   ]);
+
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    type: "EDIT",
+    data: null,
+  });
+
+  const openModal = (type, data = null) => {
+    setModalState({ isOpen: true, type, data });
+  };
+
+  const closeModal = () => {
+    setModalState({ ...modalState, isOpen: false });
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] font-inter text-gray-900">
@@ -122,11 +137,17 @@ function StaffList() {
               Danh sách nhân viên
             </h2>
             <div className="flex gap-3">
-              <button className="bg-white hover:bg-gray-50 text-[#5D5FEF] border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold transition-all shadow-sm active:scale-95 leading-none cursor-pointer">
+              <button 
+                onClick={() => openModal("EDIT")}
+                className="bg-white hover:bg-gray-50 text-[#5D5FEF] border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold transition-all shadow-sm active:scale-95 leading-none cursor-pointer"
+              >
                 <span className="text-xl">+</span>
                 <span>Nhân viên</span>
               </button>
-              <button className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold transition-all shadow-sm active:scale-95">
+              <button 
+                onClick={() => openModal("APPROVE_REQUESTS")}
+                className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold transition-all shadow-sm active:scale-95"
+              >
                 <div className="bg-black rounded-md p-1 flex items-center justify-center">
                   <img
                     src={Icons.insertPage}
@@ -136,11 +157,21 @@ function StaffList() {
                 </div>
                 <span>Duyệt yêu cầu</span>
               </button>
-              <button className="bg-white hover:bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 shadow-sm transition-all active:scale-95 flex items-center justify-center">
-                <span className="text-gray-600 font-bold text-lg leading-none mb-1">
-                  ...
-                </span>
-              </button>
+              <div className="relative group">
+                <button className="bg-white hover:bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 shadow-sm transition-all active:scale-95 flex items-center justify-center h-full">
+                  <span className="text-gray-600 font-bold text-lg leading-none mb-1">
+                    ...
+                  </span>
+                </button>
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                  <button onClick={() => openModal("IMPORT")} className="w-full text-left px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors">Import nhân viên</button>
+                  <button onClick={() => openModal("EXPORT")} className="w-full text-left px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors">Xuất file</button>
+                  <hr className="my-1 border-gray-100" />
+                  <button onClick={() => openModal("VIEW_BY_SHIFT")} className="w-full text-left px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors">Xem theo ca</button>
+                  <button onClick={() => openModal("APPROVE_ATTENDANCE")} className="w-full text-left px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors">Duyệt chấm công</button>
+                  <button onClick={() => openModal("SALARY")} className="w-full text-left px-4 py-2 text-[14px] text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] transition-colors">Bảng tính lương</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -177,9 +208,10 @@ function StaffList() {
                 {employees.map((emp) => (
                   <div
                     key={emp.id}
-                    className="grid grid-cols-[50px_100px_1.2fr_1.2fr_1.8fr_1.2fr_1.4fr] border-b border-gray-100 hover:bg-white hover:shadow-md transition-all group items-center"
+                    onClick={() => openModal("VIEW_BY_EMPLOYEE", emp)}
+                    className="grid grid-cols-[50px_100px_1.2fr_1.2fr_1.8fr_1.2fr_1.4fr] border-b border-gray-100 hover:bg-white hover:shadow-md transition-all group items-center cursor-pointer"
                   >
-                    <div className="p-4 flex justify-center border-r border-gray-50 h-full items-center">
+                    <div className="p-4 flex justify-center border-r border-gray-50 h-full items-center" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         className="w-4 h-4 rounded border-gray-300 text-[#5D5FEF] focus:ring-[#5D5FEF] cursor-pointer"
@@ -241,6 +273,13 @@ function StaffList() {
           </div>
         </section>
       </main>
+
+      <EmployeeModal 
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        type={modalState.type}
+        data={modalState.data}
+      />
     </div>
   );
 }
