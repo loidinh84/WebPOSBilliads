@@ -1,53 +1,57 @@
 import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 
-function AddTableModal({ isOpen, onSave, onCancel }) {
+function AddTableModal({ isOpen, onSave, onCancel, tables }) {
   const [formData, setFormData] = useState({
     MABAN: "",
     TENBAN: "",
-    KHUVUC: "Tầng trệt",
+    KHUVUC: "",
     MAHANGHOA: "",
     GHICHU: "",
-    TRANGTHAI: "Trống",
+    TRANGTHAI: "Hoạt động",
   });
 
   const [serviceProducts, setServiceProducts] = useState([]);
-  const [currentTables, setCurrentTables] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
       fetchServices();
-      let nextCode = "B00001";
-      if (currentTables && currentTables.length > 0) {
-        const numericParts = currentTables
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+
+      let nextCode = "B001";
+
+      if (tables && tables.length > 0) {
+        const numericParts = tables
           .map((t) => parseInt(t.MABAN.replace("B", "")))
           .filter((n) => !isNaN(n));
 
         if (numericParts.length > 0) {
           const maxNum = Math.max(...numericParts);
-          nextCode = "B" + (maxNum + 1).toString().padStart(5, "0");
+          nextCode = "B" + (maxNum + 1).toString().padStart(3, "0");
         }
       }
+
       setFormData((prev) => ({
         ...prev,
         MABAN: nextCode,
         TENBAN: "",
         MAHANGHOA: "",
         GHICHU: "",
+        KHUVUC: "",
+        TRANGTHAI: "Hoạt động",
       }));
-      fetchServices();
     }
-  }, [isOpen, currentTables]);
+  }, [isOpen, tables]);
 
   const fetchServices = async () => {
     try {
       const token = localStorage.getItem("token");
-      // Gọi API lấy danh sách hàng hóa
       const res = await fetch("http://localhost:5000/api/products", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       const filteredServices = data.filter(
-        (item) => item.LOAIHANG === "Dịch vụ" || item.TENNHOM === "Loại bàn",
+        (item) => item.MADANHMUC === "DM8227",
       );
 
       setServiceProducts(filteredServices);
@@ -66,7 +70,11 @@ function AddTableModal({ isOpen, onSave, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.TENBAN.trim() || !formData.MAHANGHOA) {
-      alert("Vui lòng nhập tên bàn và chọn loại bàn!");
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Vui lòng nhập đầy đủ Tên bàn, Loại bàn.",
+      });
       return;
     }
     onSave(formData);
@@ -108,24 +116,23 @@ function AddTableModal({ isOpen, onSave, onCancel }) {
               value={formData.TENBAN}
               onChange={handleInputChange}
               className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#5D5FEF] focus:ring-1 focus:ring-[#5D5FEF]/30 outline-none font-medium"
-              required
             />
           </div>
 
           {/* 3. Loại bàn */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Loại dịch vụ (Giá giờ) <span className="text-red-500">*</span>
+              Loại bàn (giá giờ) <span className="text-red-500">*</span>
             </label>
             <select
               name="MAHANGHOA"
               value={formData.MAHANGHOA}
               onChange={handleInputChange}
               className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#5D5FEF] outline-none cursor-pointer bg-white font-medium"
-              required
             >
               <option value="">-- Chọn loại bàn --</option>
               {serviceProducts.map((p) => (
+                /* Sửa thành p.MAHANGHOA và p.TENHANGHOA */
                 <option key={p.MAHANGHOA} value={p.MAHANGHOA}>
                   {p.TENHANGHOA} ({Number(p.DONGIABAN).toLocaleString()}đ/h)
                 </option>
@@ -153,16 +160,14 @@ function AddTableModal({ isOpen, onSave, onCancel }) {
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Khu vực
               </label>
-              <select
+              <input
+                type="text"
                 name="KHUVUC"
+                placeholder="VD: Lầu 1"
                 value={formData.KHUVUC}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#5D5FEF] outline-none cursor-pointer bg-white"
-              >
-                <option value="Tầng trệt">Tầng trệt</option>
-                <option value="Lầu 1">Lầu 1</option>
-                <option value="Lầu 2">Lầu 2</option>
-              </select>
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#5D5FEF] focus:ring-1 focus:ring-[#5D5FEF]/30 outline-none font-medium"
+              />
             </div>
 
             {/* 6. Trạng thái */}
@@ -174,11 +179,10 @@ function AddTableModal({ isOpen, onSave, onCancel }) {
                 name="TRANGTHAI"
                 value={formData.TRANGTHAI}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50 font-medium outline-none cursor-pointer"
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white font-medium outline-none cursor-pointer"
               >
-                <option value="Trống">Trống</option>
-                <option value="Đang chơi">Đang chơi</option>
-                <option value="Bảo trì">Bảo trì</option>
+                <option value="Hoạt động">Hoạt động</option>
+                <option value="Ngừng hoạt động">Ngừng hoạt động</option>
               </select>
             </div>
           </div>
@@ -196,19 +200,7 @@ function AddTableModal({ isOpen, onSave, onCancel }) {
               type="submit"
               className="bg-[#5D5FEF] hover:bg-[#4b4ce6] text-white px-5 py-2 rounded-lg font-semibold text-sm shadow-md flex items-center gap-2"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Thay mới
+              Thêm bàn
             </button>
           </div>
         </form>

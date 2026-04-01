@@ -17,5 +17,11 @@ const productRoutes = require("./routes/productRoutes");
 app.use("/api/products", productRoutes);
 app.use("/api/categories", productRoutes);
 
+const tableRoutes = require("./routes/tableRoutes");
+app.use("/api/tables", tableRoutes);
+
+const billRoutes = require("./routes/billRoutes");
+app.use("/api/bills", billRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server chạy tại cổng ${PORT}`));

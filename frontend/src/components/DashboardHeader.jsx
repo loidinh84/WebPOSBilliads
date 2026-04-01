@@ -6,7 +6,7 @@ import * as Icons from "../assets/icons/index";
 function DashboardHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-
+  // eslint-disable-next-line no-unused-vars
   const [userInfo, setUserInfo] = useState(() => {
     const savedUser = localStorage.getItem("user");
     return savedUser
@@ -14,6 +14,7 @@ function DashboardHeader() {
       : { QUYENHAN: "Chưa rõ", TENDANGNHAP: "" };
   });
 
+  // eslint-disable-next-line no-unused-vars
   const [storeName, setStoreName] = useState(() => {
     return localStorage.getItem("storeName") || "Billiards Lục Lợi";
   });

@@ -1,9 +1,31 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import * as Icons from "../assets/icons";
 
 function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
   const [edits, setEdits] = useState({});
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [serviceProducts, setServiceProducts] = useState([]);
   const formData = table ? { ...table, ...edits } : {};
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchServices = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const res = await fetch("http://localhost:5000/api/products", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await res.json();
+          // Lọc các mặt hàng thuộc nhóm Loại bàn
+          const filtered = data.filter((item) => item.MADANHMUC === "DM8227");
+          setServiceProducts(filtered);
+        } catch (err) {
+          console.error("Lỗi lấy loại bàn:", err);
+        }
+      };
+      fetchServices();
+    }
+  }, [isOpen]);
 
   if (!isOpen || !table) return null;
 
@@ -126,16 +148,20 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Loại bàn
+                  Loại bàn (Giá giờ)
                 </label>
                 <select
                   name="MAHANGHOA"
-                  value={formData.TENHANGHOA || ""}
+                  value={formData.MAHANGHOA || ""}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 pr-10 cursor-pointer focus:ring-1 focus:ring-blue-200"
                 >
                   <option value="">-- Chọn loại bàn --</option>
-                  <option value="Bàn lỗ">Bàn lỗ</option>
+                  {serviceProducts.map((p) => (
+                    <option key={p.MAHANGHOA} value={p.MAHANGHOA}>
+                      {p.TENHANGHOA} ({Number(p.DONGIABAN).toLocaleString()}đ/h)
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -156,16 +182,13 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Khu vực
                 </label>
-                <select
+                <input
                   name="KHUVUC"
                   value={formData.KHUVUC || ""}
                   onChange={handleInputChange}
+                  placeholder="VD: Lầu 1"
                   className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
-                >
-                  <option>Tầng trệt</option>
-                  <option>Lầu 1</option>
-                  <option>Lầu 2</option>
-                </select>
+                />
               </div>
 
               <div>
@@ -189,18 +212,7 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
               </div>
             </div>
 
-            <div className="border-t border-gray-200 p-6 flex justify-between items-center">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsConfirmingDelete(true);
-                }}
-                className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded font-medium text-sm transition-all"
-              >
-                Xóa bàn
-              </button>
+            <div className="border-t border-gray-200 p-6 flex justify-end items-center">
               <div className="flex gap-3">
                 <button
                   type="button"
