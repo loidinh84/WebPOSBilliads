@@ -30,6 +30,7 @@ import PrintTemplate from "./pages/SetupAdmin/PrintTemplate";
 import UserManagement from "./pages/SetupAdmin/UserManagement";
 import ActionHistory from "./pages/SetupAdmin/ActionHistory";
 import StoreSetup from "./pages/SetupAdmin/StoreSetup";
+import Discount  from "./pages/SetupAdmin/Discount";  
 
 // Component bảo vệ Route
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -69,6 +70,14 @@ function App() {
 
         {/* --- PHÂN QUYỀN CÁC TRANG CHUYÊN BIỆT --- */}
         <Route
+          path="/settings/store"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <StoreSetup />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/settings/print-templates"
           element={
             <ProtectedRoute allowedRoles={["Admin"]}>
@@ -86,11 +95,12 @@ function App() {
           }
         />
 
+
         <Route
-          path="/settings/store"
+          path="/settings/discount"
           element={
             <ProtectedRoute allowedRoles={["Admin"]}>
-              <StoreSetup />
+              <Discount />
             </ProtectedRoute>
           }
         />

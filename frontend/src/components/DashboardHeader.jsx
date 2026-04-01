@@ -94,7 +94,7 @@ function DashboardHeader() {
               {/* Dropdown Menu của Thiết lập */}
               <div className="absolute right-0 top-full w-56 bg-white border border-gray-100 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-hidden translate-y-2 group-hover:translate-y-0 ">
                 <button
-                  onClick={() => navigate("/settings/print-templates")}
+                  onClick={() => navigate("/settings/store")}
                   className="w-full text-left px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] font-bold transition-colors text-[14px] border-b border-gray-50 cursor-pointer"
                 >
                   Thiết lập cửa hàng
@@ -106,10 +106,16 @@ function DashboardHeader() {
                   Quản lý người dùng
                 </button>
                 <button
-                  onClick={() => navigate("/settings/store")}
+                  onClick={() => navigate("/settings/print-templates")}
                   className="w-full text-left px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] font-bold transition-colors text-[14px] border-b border-gray-50 cursor-pointer"
                 >
                   Quản lý mẫu in
+                </button>
+                <button
+                  onClick={() => navigate("/settings/discount")}
+                  className="w-full text-left px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] font-bold transition-colors text-[14px] border-b border-gray-50 cursor-pointer"
+                >
+                  Quản lý KM
                 </button>
                 <button
                   onClick={() => navigate("/settings/history")}
