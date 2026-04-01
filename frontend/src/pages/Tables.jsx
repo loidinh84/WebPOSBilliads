@@ -323,7 +323,7 @@ function Tables() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] font-inter text-gray-900">
-      <DashboardHeader storeName="Billiards Lục Lọi" />
+      <DashboardHeader storeName="" />
       <DashboardNav activeTab="Bàn" />
 
       <main className="max-w-[1440px] mx-auto p-4 md:p-8 grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
