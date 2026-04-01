@@ -157,6 +157,7 @@ const productController = {
     }
   },
 
+  // 1. Lấy danh sách danh mục
   getCategories: async (req, res) => {
     try {
       const pool = await poolPromise;
@@ -168,6 +169,75 @@ const productController = {
     } catch (err) {
       console.error("Lỗi lấy danh mục:", err);
       res.status(500).json({ message: "Lỗi Server", error: err.message });
+    }
+  },
+
+  // 2. Thêm mới danh mục
+  createCategory: async (req, res) => {
+    try {
+      const { MADANHMUC, TENDANHMUC } = req.body;
+      const pool = await poolPromise;
+      await pool
+        .request()
+        .input("MADANHMUC", sql.VarChar, MADANHMUC)
+        .input("TENDANHMUC", sql.NVarChar, TENDANHMUC).query(`
+          INSERT INTO DANHMUC (MADANHMUC, TENDANHMUC, TRANGTHAI)
+          VALUES (@MADANHMUC, @TENDANHMUC, 1)
+        `);
+      res.json({ success: true, message: "Thêm danh mục thành công!" });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 3. Cập nhật danh mục
+  updateCategory: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { TENDANHMUC, TRANGTHAI } = req.body;
+      const pool = await poolPromise;
+      await pool
+        .request()
+        .input("MADANHMUC", sql.VarChar, id)
+        .input("TENDANHMUC", sql.NVarChar, TENDANHMUC)
+        .input("TRANGTHAI", sql.Int, TRANGTHAI).query(`
+          UPDATE DANHMUC 
+          SET TENDANHMUC = @TENDANHMUC, TRANGTHAI = @TRANGTHAI
+          WHERE MADANHMUC = @MADANHMUC
+        `);
+      res.json({ success: true, message: "Cập nhật danh mục thành công!" });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 4. Xóa danh mục
+  deleteCategory: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const pool = await poolPromise;
+      const checkProduct = await pool
+        .request()
+        .input("MADANHMUC", sql.VarChar, id)
+        .query(
+          "SELECT COUNT(*) as count FROM HANGHOA WHERE MADANHMUC = @MADANHMUC",
+        );
+
+      if (checkProduct.recordset[0].count > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Không thể xóa danh mục này vì vẫn còn hàng hóa bên trong!",
+        });
+      }
+
+      await pool
+        .request()
+        .input("MADANHMUC", sql.VarChar, id)
+        .query("DELETE FROM DANHMUC WHERE MADANHMUC = @MADANHMUC");
+
+      res.json({ success: true, message: "Đã xóa danh mục thành công" });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 };

@@ -18,6 +18,7 @@ const EmployeeModal = ({
   requests,
   onApproveRequest,
   onRejectRequest,
+  onSave,
 }) => {
   const [modalType, setModalType] = useState(type);
 
@@ -48,6 +49,10 @@ const EmployeeModal = ({
         return "Duyệt chấm công";
       case "SALARY":
         return "Bảng tính lương chi tiết";
+      case "EDIT_SHIFT":
+        return `Sửa lịch làm: ${data?.name || ""}`;
+      case "EDIT_SALARY":
+        return `Cập nhật lương: ${data?.name || ""}`;
       default:
         return "Thông tin nhân viên";
     }
@@ -88,6 +93,7 @@ const EmployeeModal = ({
             requests,
             onApproveRequest,
             onRejectRequest,
+            onSave,
           )}
         </div>
 
@@ -123,6 +129,14 @@ const EmployeeModal = ({
                   Xuất file
                 </button>
               )}
+              {(modalType === "EDIT_SHIFT" || modalType === "EDIT_SALARY") && (
+                <button 
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-lg bg-[#5D5FEF] text-white font-bold hover:bg-[#4B4DDB] transition-all shadow-md active:scale-95"
+                >
+                  Hoàn tất
+                </button>
+              )}
             </div>
           )}
       </div>
@@ -143,6 +157,7 @@ const renderModalContent = (
   requests,
   onApproveRequest,
   onRejectRequest,
+  onSave,
 ) => {
   switch (type) {
     case "ADD":
@@ -176,6 +191,10 @@ const renderModalContent = (
       return <SalarySheetContent />;
     case "VIEW_BY_EMPLOYEE":
       return <ViewByEmployeeContent data={data} />;
+    case "EDIT_SHIFT":
+      return <EditShiftContent data={data} onSave={onSave} />;
+    case "EDIT_SALARY":
+      return <EditSalaryContent data={data} onSave={onSave} />;
     default:
       return (
         <div className="p-10 text-center text-gray-400">
@@ -676,58 +695,116 @@ const ViewByShiftContent = () => (
 /**
  * Giao diện Duyệt chấm công chi tiết
  */
-const ApproveAttendanceContent = () => (
-  <div className="space-y-4">
-    <p className="text-[14px] text-gray-500 mb-4 italic">
-      Xác nhận các bản ghi chấm công có sai sót hoặc cần duyệt thủ công.
-    </p>
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
-      <table className="w-full text-left">
-        <thead className="bg-gray-50 text-[12px] font-bold text-gray-600 uppercase tracking-wider">
-          <tr>
-            <th className="px-6 py-4">Nhân viên</th>
-            <th className="px-6 py-4">Ngày</th>
-            <th className="px-6 py-4">Vào/Ra</th>
-            <th className="px-6 py-4 text-center">Thao tác</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {[
-            {
-              name: "Phạm Văn Đức",
-              date: "31/03/2026",
-              time: "08:15 - 17:05 (Muộn 15p)",
-            },
-            {
-              name: "Hoàng Minh Thu",
-              date: "31/03/2026",
-              time: "07:55 - --:-- (Quên out)",
-            },
-          ].map((item, idx) => (
-            <tr
-              key={idx}
-              className="text-[14px] text-gray-700 hover:bg-gray-50/50 transition-colors"
-            >
-              <td className="px-6 py-4 font-bold">{item.name}</td>
-              <td className="px-6 py-4">{item.date}</td>
-              <td className="px-6 py-4 text-gray-500">{item.time}</td>
-              <td className="px-6 py-4">
-                <div className="flex justify-center gap-3">
-                  <button className="text-[12px] font-bold text-[#5D5FEF] hover:underline">
-                    Sửa
-                  </button>
-                  <button className="text-[12px] font-bold text-green-600 hover:underline">
-                    Duyệt
-                  </button>
-                </div>
-              </td>
+const ApproveAttendanceContent = () => {
+  const [records, setRecords] = useState([
+    {
+      id: 1,
+      name: "Phạm Văn Đức",
+      date: "31/03/2026",
+      time: "08:15 - 17:05 (Muộn 15p)",
+      isEditing: false,
+      isApproved: false,
+    },
+    {
+      id: 2,
+      name: "Hoàng Minh Thu",
+      date: "31/03/2026",
+      time: "07:55 - --:-- (Quên out)",
+      isEditing: false,
+      isApproved: false,
+    },
+  ]);
+
+  const handleEdit = (id) => {
+    setRecords(records.map(r => r.id === id ? { ...r, isEditing: !r.isEditing } : r));
+  };
+
+  const handleApprove = (id) => {
+    setRecords(records.map(r => r.id === id ? { ...r, isApproved: !r.isApproved, isEditing: false } : r));
+  };
+
+  const handleChangeTime = (id, newTime) => {
+    setRecords(records.map(r => r.id === id ? { ...r, time: newTime } : r));
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-[14px] text-gray-500 mb-4 italic">
+        Xác nhận các bản ghi chấm công có sai sót hoặc cần duyệt thủ công.
+      </p>
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-gray-50 text-[12px] font-bold text-gray-600 uppercase tracking-wider">
+            <tr>
+              <th className="px-6 py-4 border-b border-gray-100">Nhân viên</th>
+              <th className="px-6 py-4 border-b border-gray-100">Ngày</th>
+              <th className="px-6 py-4 border-b border-gray-100">Vào/Ra</th>
+              <th className="px-6 py-4 text-center border-b border-gray-100">Thao tác</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {records.map((item) => (
+              <tr
+                key={item.id}
+                className={`text-[14px] transition-colors ${
+                  item.isApproved ? "bg-green-50/30" : "hover:bg-gray-50/50"
+                }`}
+              >
+                <td className="px-6 py-4 font-bold text-gray-800">
+                  <div className="flex items-center gap-2">
+                    {item.isApproved && (
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    )}
+                    {item.name}
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-gray-600">{item.date}</td>
+                <td className="px-6 py-4">
+                  {item.isEditing ? (
+                    <input
+                      type="text"
+                      value={item.time}
+                      onChange={(e) => handleChangeTime(item.id, e.target.value)}
+                      className="w-full bg-blue-50 border border-[#5D5FEF] rounded-md px-3 py-1.5 text-[13px] outline-none font-medium focus:ring-2 focus:ring-[#5D5FEF]/10"
+                      autoFocus
+                    />
+                  ) : (
+                    <span className={`${item.isApproved ? "text-green-700 font-medium" : "text-gray-500"}`}>
+                      {item.time}
+                    </span>
+                  )}
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex justify-center gap-4">
+                    <button 
+                      onClick={() => handleEdit(item.id)}
+                      className={`text-[12px] font-bold transition-colors ${
+                        item.isEditing ? "text-[#5D5FEF] underline" : "text-gray-400 hover:text-[#5D5FEF]"
+                      }`}
+                    >
+                      {item.isEditing ? "Xong" : "Sửa"}
+                    </button>
+                    <button 
+                      onClick={() => handleApprove(item.id)}
+                      className={`text-[12px] font-bold transition-all px-3 py-1 rounded-md ${
+                        item.isApproved 
+                          ? "bg-green-100 text-green-700 border border-green-200" 
+                          : "text-green-600 hover:bg-green-50"
+                      }`}
+                    >
+                      {item.isApproved ? "Đã duyệt" : "Duyệt"}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
 
 /**
  * Giao diện chi tiết Bảng tính lương dự tính
@@ -886,5 +963,97 @@ const ViewByEmployeeContent = ({ data }) => (
     </div>
   </div>
 );
+
+/**
+ * Giao diện sửa Giờ làm việc (Ca làm)
+ */
+const EditShiftContent = ({ data, onSave }) => {
+  const [shift, setShift] = useState(data?.value || "08:00 - 17:00");
+  const isOff = shift === "OFF";
+
+  const handleToggleOff = () => {
+    const nextVal = isOff ? "08:00 - 17:00" : "OFF";
+    setShift(nextVal);
+    if (onSave) onSave(nextVal);
+  };
+
+  const handleChange = (e) => {
+    setShift(e.target.value);
+    if (onSave) onSave(e.target.value);
+  };
+
+  return (
+    <div className="py-4 space-y-6">
+      <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100">
+        <div>
+          <p className="text-[14px] font-bold text-gray-800">Trạng thái làm việc</p>
+          <p className="text-[12px] text-gray-500">Chọn nếu nhân viên nghỉ ngày này</p>
+        </div>
+        <button 
+          onClick={handleToggleOff}
+          className={`px-4 py-2 rounded-lg font-bold text-[13px] transition-all ${
+            isOff ? "bg-red-50 text-red-500" : "bg-green-50 text-green-600"
+          }`}
+        >
+          {isOff ? "Đang nghỉ" : "Đang làm"}
+        </button>
+      </div>
+
+      {!isOff && (
+        <div className="space-y-4">
+          <label className="block text-[13px] font-bold text-gray-700">Thời gian làm việc</label>
+          <div className="relative group">
+            <input 
+              type="text"
+              value={shift}
+              onChange={handleChange}
+              placeholder="VD: 08:00 - 17:00"
+              className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#5D5FEF] focus:ring-2 focus:ring-[#5D5FEF]/10 transition-all font-medium"
+            />
+          </div>
+          <p className="text-[12px] text-gray-400 italic">Gợi ý: 06:00 - 14:00, 14:00 - 22:00, 22:00 - 06:00</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/**
+ * Giao diện sửa Lương dự kiến
+ */
+const EditSalaryContent = ({ data, onSave }) => {
+  const [salary, setSalary] = useState(data?.value?.replace(/[^0-9]/g, "") || "");
+
+  const handleChange = (e) => {
+    const val = e.target.value.replace(/[^0-9]/g, "");
+    setSalary(val);
+    // Format lại hiển thị khi gửi về
+    const formatted = new Intl.NumberFormat("vi-VN").format(val || 0);
+    if (onSave) onSave(formatted);
+  };
+
+  return (
+    <div className="py-6 space-y-4">
+      <label className="block text-[13px] font-bold text-gray-700 uppercase tracking-wider">
+        Lương dự kiến (VNĐ)
+      </label>
+      <div className="relative group">
+        <input 
+          type="text"
+          value={salary}
+          onChange={handleChange}
+          placeholder="Nhập số tiền..."
+          className="w-full bg-white border border-gray-200 rounded-xl px-5 py-4 text-xl font-bold text-[#5D5FEF] outline-none focus:border-[#5D5FEF] focus:ring-4 focus:ring-[#5D5FEF]/5 transition-all"
+        />
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 font-bold">
+          VNĐ
+        </div>
+      </div>
+      <p className="text-[13px] text-gray-500 bg-blue-50 p-3 rounded-lg border border-blue-100 italic">
+        Lưu ý: Đây là lương dự kiến tính theo lịch trình, chưa bao gồm thưởng/phạt thực tế.
+      </p>
+    </div>
+  );
+};
 
 export default EmployeeModal;

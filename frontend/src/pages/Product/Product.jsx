@@ -16,6 +16,7 @@ function Product() {
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchCategories = async () => {
@@ -83,7 +84,9 @@ function Product() {
   // =========================================================================
   const [isAddingCombo, setIsAddingCombo] = useState(false);
   const [selectedItemsForCombo, setSelectedItemsForCombo] = useState({});
+  // eslint-disable-next-line no-unused-vars
   const [comboName, setComboName] = useState("");
+  // eslint-disable-next-line no-unused-vars
   const [comboPrice, setComboPrice] = useState("");
 
   // =========================================================================
@@ -552,65 +555,12 @@ function Product() {
     (sum, itemId) => {
       if (selectedItemsForCombo[itemId]) {
         const product = products.find((p) => p.MAHANGHOA === itemId);
-        if (product) sum += Number(product.GIANIEMYET || 0);
+        if (product) sum += Number(product.GIABAN || 0);
       }
       return sum;
     },
     0,
   );
-
-  const handleConfirmCombo = async () => {
-    if (!comboName || !comboPrice) {
-      Swal.fire({
-        icon: "error",
-        title: "Lỗi!",
-        text: "Tên combo và giá combo không được để trống!",
-      });
-      return;
-    }
-
-    const selectedProducts = Object.keys(selectedItemsForCombo)
-      .filter((itemId) => selectedItemsForCombo[itemId])
-      .map((itemId) => products.find((p) => p.MAHANGHOA === itemId))
-      .filter(Boolean);
-
-    const comboInventory =
-      selectedProducts.length > 0
-        ? Math.min(
-            ...selectedProducts.map((p) =>
-              Number(p.TONKHO || p.SOLUONGTONKHO || 0),
-            ),
-          )
-        : 0;
-
-    const newComboProduct = {
-      MAHANGHOA: generateNextId(),
-      TENHANGHOA: comboName,
-      LOAIHANG: "Combo, gọi món",
-      NHOMHANG: "Khác",
-      DINHMUCTON_DUOI: 0,
-      DINHMUCTON_TREN: 999,
-      GIABAN: Number(comboPrice),
-      GIANIEMYET: totalOriginalPrice,
-      TONKHO: comboInventory,
-      MOTA: "Combo bao gồm các món đã chọn",
-      HINHANH: null,
-      TRANGTHAI: 1,
-    };
-
-    try {
-      await fetch("http://localhost:5000/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newComboProduct),
-      });
-    } catch (err) {
-      console.error(err);
-    }
-
-    setProducts([newComboProduct, ...products]);
-    toggleComboMode();
-  };
 
   // Lọc dữ liệu hiển thị
   const filteredProducts = (products || []).filter((p) => {
