@@ -49,6 +49,8 @@ import Home from "./Home.svg";
 import Clock from "./Clock.svg";
 import Discount from "./Discount.svg";
 import Timekeep from "./Timekeep.svg";
+import ImportFile from "./ImportFile.svg";
+import FileExport from "./FilExport.svg";
 
 // Export để sử dụng ở nơi khác
 export {
@@ -102,4 +104,6 @@ export {
   ArrowUp,
   Calendar2,
   ArrowBackLong,
+  ImportFile,
+  FileExport,
 };

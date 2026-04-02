@@ -30,7 +30,8 @@ import PrintTemplate from "./pages/SetupAdmin/PrintTemplate";
 import UserManagement from "./pages/SetupAdmin/UserManagement";
 import ActionHistory from "./pages/SetupAdmin/ActionHistory";
 import StoreSetup from "./pages/SetupAdmin/StoreSetup";
-import Discount  from "./pages/SetupAdmin/Discount";  
+import Discount from "./pages/SetupAdmin/Discount";
+import CreateImport from "./pages/Transaction/CreateImport";
 
 // Component bảo vệ Route
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -95,7 +96,6 @@ function App() {
           }
         />
 
-
         <Route
           path="/settings/discount"
           element={
@@ -144,6 +144,7 @@ function App() {
           element={<ReturnImportedGood />}
         />
         <Route path="/transactions/exports" element={<Export />} />
+        <Route path="/import/create" element={<CreateImport />} />
 
         {/* Quản lý Nhân sự */}
         <Route path="/staff/list" element={<StaffList />} />

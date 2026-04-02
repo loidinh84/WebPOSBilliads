@@ -85,7 +85,7 @@ function Export() {
       <DashboardHeader storeName="Thành Lợi" />
       <DashboardNav activeTab="Giao dịch" />
 
-      <div className="flex p-4 gap-4">
+      <main className="max-w-[1440px] mx-auto p-4 flex gap-4">
         {/* ---------------- SIDEBAR BỘ LỌC ---------------- */}
         <div className="w-[260px] flex-shrink-0 flex flex-col gap-4">
           {/* Cụm Tìm kiếm */}
@@ -292,7 +292,7 @@ function Export() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
