@@ -360,7 +360,7 @@ function CreateImport() {
       <DashboardHeader storeName="" />
       <DashboardNav activeTab="Giao dịch" />
 
-      <main className="max-w-[1440px] mx-auto p-4 flex flex-col gap-4">
+      <main className="max-w-[1600px] mx-auto p-4 flex flex-col gap-4">
         {/* Nút quay lại */}
         <div className="flex items-center gap-2">
           <button

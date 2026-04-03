@@ -722,16 +722,6 @@ function Import() {
                                   >
                                     Thông tin
                                   </button>
-                                  <button
-                                    onClick={() => setActiveTab("Lịch sử")}
-                                    className={`pb-2 font-medium cursor-pointer ${
-                                      activeTab === "Lịch sử"
-                                        ? "border-b-2 border-blue-600 text-blue-600"
-                                        : "text-gray-500"
-                                    }`}
-                                  >
-                                    Lịch sử thanh toán
-                                  </button>
                                 </div>
 
                                 {/* Thông tin chung */}

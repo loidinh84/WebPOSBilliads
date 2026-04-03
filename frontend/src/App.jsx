@@ -32,6 +32,7 @@ import ActionHistory from "./pages/SetupAdmin/ActionHistory";
 import StoreSetup from "./pages/SetupAdmin/StoreSetup";
 import Discount from "./pages/SetupAdmin/Discount";
 import CreateImport from "./pages/Transaction/CreateImport";
+import CreateReturnImport from "./pages/Transaction/CreateReturnImport";
 
 // Component bảo vệ Route
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -145,6 +146,7 @@ function App() {
         />
         <Route path="/transactions/exports" element={<Export />} />
         <Route path="/import/create" element={<CreateImport />} />
+        <Route path="/return-imports/create" element={<CreateReturnImport />} />
 
         {/* Quản lý Nhân sự */}
         <Route path="/staff/list" element={<StaffList />} />
