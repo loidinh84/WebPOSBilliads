@@ -7,91 +7,175 @@ const TABS = ['Hóa đơn', 'Trả hàng', 'Nhập hàng', 'Phiếu thu', 'Phi�
 
 const DEFAULT_LABELS = {
   'Hóa đơn': {
-    title: "HÓA ĐƠN THANH TOÁN",
-    lblTableName: "{TENBAN}",
-    lblStoreName: "{TENCUAHANG}",
-    lblAddress: "{DIACHI}",
-    lblPhone: "{SDT}",
-    lblInvoice: "Hóa đơn:", lblInvoiceVal: "{MAHOADON}",
-    lblDate: "Ngày:", lblDateVal: "{NGAY}",
-    lblTime: "Giờ:", lblTimeVal: "{THOIGIAN}",
-    lblCashier: "Thu ngân:", lblCashierVal: "{TENNGUOIDUNG}",
-    lblTimeIn: "Giờ vào:", lblTimeInVal: "{GIOBATDAU}",
-    lblTimeOut: "Giờ ra:", lblTimeOutVal: "{GIOKETTHUC}",
-    lblPlayTime: "Giờ chơi:", lblPlayTimeVal: "{SOGIOPHUT}",
-    lblItem: "Tên hàng", lblQty: "SL", lblPrice: "Đơn giá", lblTotalItem: "Thành tiền",
-    lblItemVal: "{TENHANGHOA}", lblQtyVal: "{SOLUONG}", lblPriceVal: "{DONGIA}", lblTotalItemVal: "{THANHTIEN}",
-    qrText: "Quét QR để thanh toán!",
-    lblTotalRaw: "Tổng tiền giờ:", lblTotalRawVal: "{TONGTIENGIO}",
-    lblTotalGoods: "Dịch vụ:", lblTotalGoodsVal: "{TONGTIENHANG}",
-    lblDiscount: "Giảm giá:", lblDiscountVal: "{GIAMGIA}",
-    lblGrandTotal: "Tổng thanh toán:", lblGrandTotalVal: "{TONGTHANHTOAN}",
-    footerMsg: "Cảm ơn quý khách đã đến chơi tại Billiards Lục Lọi!"
+    title: { text: "HÓA ĐƠN THANH TOÁN", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
+    lblTableName: { text: "{TENBAN}", top: 10, left: 10, fontSize: 14, bold: true },
+    lblStoreName: { text: "{TENCUAHANG}", top: 20, left: 0, width: 380, align: 'center', fontSize: 13, bold: true },
+    lblAddress: { text: "{DIACHI}", top: 38, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblPhone: { text: "{SDT}", top: 54, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblInvoice: { text: "Hóa đơn:", top: 115, left: 130, fontSize: 12, bold: true },
+    lblInvoiceVal: { text: "{MAHOADON}", top: 115, left: 190, fontSize: 12 },
+    lblDate: { text: "Ngày:", top: 140, left: 10, fontSize: 11 },
+    lblDateVal: { text: "{NGAY}", top: 140, left: 60, fontSize: 11, bold: true },
+    lblTime: { text: "Giờ:", top: 155, left: 10, fontSize: 11 },
+    lblTimeVal: { text: "{THOIGIAN}", top: 155, left: 60, fontSize: 11, bold: true },
+    lblCashier: { text: "Thu ngân:", top: 170, left: 10, fontSize: 11 },
+    lblCashierVal: { text: "{TENNGUOIDUNG}", top: 170, left: 65, fontSize: 11, bold: true },
+    lblTimeIn: { text: "Giờ vào:", top: 140, left: 240, fontSize: 11 },
+    lblTimeInVal: { text: "{GIOBATDAU}", top: 140, left: 290, fontSize: 11, bold: true },
+    lblTimeOut: { text: "Giờ ra:", top: 155, left: 240, fontSize: 11 },
+    lblTimeOutVal: { text: "{GIOKETTHUC}", top: 155, left: 290, fontSize: 11, bold: true },
+    lblPlayTime: { text: "Giờ chơi:", top: 170, left: 240, fontSize: 11 },
+    lblPlayTimeVal: { text: "{SOGIOPHUT}", top: 170, left: 295, fontSize: 11, bold: true },
+    
+    // Items table headers
+    lblItem: { text: "Tên hàng", top: 200, left: 10, fontSize: 11, bold: true },
+    lblQty: { text: "SL", top: 200, left: 170, fontSize: 11, bold: true },
+    lblPrice: { text: "Đơn giá", top: 200, left: 230, fontSize: 11, bold: true },
+    lblTotalItem: { text: "Thành tiền", top: 200, left: 295, fontSize: 11, bold: true },
+    
+    // Items table values (representative of rows)
+    lblItemVal: { text: "{TENHANGHOA}", top: 220, left: 10, fontSize: 11 },
+    lblQtyVal: { text: "{SOLUONG}", top: 220, left: 170, fontSize: 11 },
+    lblPriceVal: { text: "{DONGIA}", top: 220, left: 230, fontSize: 11 },
+    lblTotalItemVal: { text: "{THANHTIEN}", top: 220, left: 300, fontSize: 11 },
+    
+    lblTotalRaw: { text: "Tổng tiền giờ:", top: 260, left: 200, fontSize: 11, bold: true },
+    lblTotalRawVal: { text: "{TONGTIENGIO}", top: 260, left: 290, fontSize: 11, width: 80, align: 'right' },
+    lblTotalGoods: { text: "Dịch vụ:", top: 275, left: 200, fontSize: 11, bold: true },
+    lblTotalGoodsVal: { text: "{TONGTIENHANG}", top: 275, left: 290, fontSize: 11, width: 80, align: 'right' },
+    lblDiscount: { text: "Giảm giá:", top: 290, left: 200, fontSize: 11, bold: true },
+    lblDiscountVal: { text: "{GIAMGIA}", top: 290, left: 290, fontSize: 11, width: 80, align: 'right' },
+    lblGrandTotal: { text: "Tổng thanh toán:", top: 315, left: 170, fontSize: 13, bold: true },
+    lblGrandTotalVal: { text: "{TONGTHANHTOAN}", top: 315, left: 280, fontSize: 14, width: 90, align: 'right', bold: true },
+    
+    qrText: { text: "Quét QR để thanh toán!", top: 260, left: 10, fontSize: 10 },
+    footerMsg: { text: "Cảm ơn quý khách đã đến chơi tại Billiards Lục Lọi!", top: 360, left: 0, width: 380, align: 'center', fontSize: 10, italic: true }
   },
   'Trả hàng': {
-    title: "PHIẾU TRẢ HÀNG",
-    lblStoreName: "{TENCUAHANG}", lblAddress: "{DIACHI}", lblPhone: "{SDT}",
-    lblInvoice: "Phiếu trả:", lblInvoiceVal: "{MAPHIEUTRA}",
-    lblDate: "Ngày:", lblDateVal: "{NGAY}",
-    lblTime: "Giờ:", lblTimeVal: "{THOIGIAN}",
-    lblCashier: "Nhân viên:", lblCashierVal: "{TENNGUOIDUNG}",
-    lblItem: "Tên hàng", lblQty: "SL trả", lblPrice: "Đơn giá", lblTotalItem: "Thành tiền",
-    lblItemVal: "{TENHANGHOA}", lblQtyVal: "{SOLUONG}", lblPriceVal: "{DONGIATRA}", lblTotalItemVal: "{THANHTIEN}",
-    lblTotalRaw: "Tiền trả lại:", lblTotalRawVal: "{TONGTHANHTOAN}",
-    footerMsg: "Cảm ơn quý khách!"
+    title: { text: "PHIẾU TRẢ HÀNG", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
+    lblStoreName: { text: "{TENCUAHANG}", top: 20, left: 0, width: 380, align: 'center', fontSize: 13, bold: true },
+    lblAddress: { text: "{DIACHI}", top: 38, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblPhone: { text: "{SDT}", top: 54, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblInvoice: { text: "Phiếu trả:", top: 115, left: 130, fontSize: 12, bold: true },
+    lblInvoiceVal: { text: "{MAPHIEUTRA}", top: 115, left: 190, fontSize: 12 },
+    lblDate: { text: "Ngày:", top: 140, left: 10, fontSize: 11 },
+    lblDateVal: { text: "{NGAY}", top: 140, left: 60, fontSize: 11, bold: true },
+    lblTime: { text: "Giờ:", top: 155, left: 10, fontSize: 11 },
+    lblTimeVal: { text: "{THOIGIAN}", top: 155, left: 60, fontSize: 11, bold: true },
+    lblCashier: { text: "Nhân viên:", top: 170, left: 10, fontSize: 11 },
+    lblCashierVal: { text: "{TENNGUOIDUNG}", top: 170, left: 65, fontSize: 11, bold: true },
+    lblItem: { text: "Tên hàng", top: 200, left: 10, fontSize: 11, bold: true },
+    lblQty: { text: "SL trả", top: 200, left: 170, fontSize: 11, bold: true },
+    lblPrice: { text: "Đơn giá", top: 200, left: 230, fontSize: 11, bold: true },
+    lblTotalItem: { text: "Thành tiền", top: 200, left: 295, fontSize: 11, bold: true },
+    lblItemVal: { text: "{TENHANGHOA}", top: 220, left: 10, fontSize: 11 },
+    lblQtyVal: { text: "{SOLUONG}", top: 220, left: 170, fontSize: 11 },
+    lblPriceVal: { text: "{DONGIATRA}", top: 220, left: 230, fontSize: 11 },
+    lblTotalItemVal: { text: "{THANHTIEN}", top: 220, left: 300, fontSize: 11 },
+    lblTotalRaw: { text: "Tiền trả lại:", top: 260, left: 200, fontSize: 13, bold: true },
+    lblTotalRawVal: { text: "{TONGTHANHTOAN}", top: 260, left: 290, fontSize: 14, width: 80, align: 'right', bold: true },
+    footerMsg: { text: "Cảm ơn quý khách!", top: 320, left: 0, width: 380, align: 'center', fontSize: 10, italic: true }
   },
   'Nhập hàng': {
-    title: "PHIẾU NHẬP HÀNG",
-    lblStoreName: "{TENCUAHANG}", lblAddress: "{DIACHI}", lblPhone: "{SDT}",
-    lblInvoice: "Mã phiếu:", lblInvoiceVal: "{MAPHIEUNHAP}",
-    lblDate: "Ngày nhập:", lblDateVal: "{THOIGIAN}",
-    lblCashier: "Người lập:", lblCashierVal: "{TENNHANVIEN}",
-    lblSupplier: "NCC:", lblSupplierVal: "{TENNCC}",
-    lblItem: "Tên hàng", lblQty: "SL", lblPrice: "Đơn giá", lblTotalItem: "Thành tiền",
-    lblItemVal: "{TENHANGHOA}", lblQtyVal: "{SOLUONGNHAP}", lblPriceVal: "{DONGIA}", lblTotalItemVal: "{THANHTIEN}",
-    lblTotalRaw: "Tổng tiển:", lblTotalRawVal: "{TONGTIEN}",
-    lblPaid: "Đã trả:", lblPaidVal: "{DATRA}",
-    lblDebt: "Công nợ:", lblDebtVal: "{CANTRANCC}",
-    footerMsg: "Phiếu lưu nội bộ"
+    title: { text: "PHIẾU NHẬP HÀNG", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
+    lblStoreName: { text: "{TENCUAHANG}", top: 20, left: 0, width: 380, align: 'center', fontSize: 13, bold: true },
+    lblAddress: { text: "{DIACHI}", top: 38, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblPhone: { text: "{SDT}", top: 54, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblInvoice: { text: "Mã phiếu:", top: 115, left: 130, fontSize: 12, bold: true },
+    lblInvoiceVal: { text: "{MAPHIEUNHAP}", top: 115, left: 190, fontSize: 12 },
+    lblDate: { text: "Ngày nhập:", top: 140, left: 10, fontSize: 11 },
+    lblDateVal: { text: "{THOIGIAN}", top: 140, left: 80, fontSize: 11, bold: true },
+    lblCashier: { text: "Người lập:", top: 155, left: 10, fontSize: 11 },
+    lblCashierVal: { text: "{TENNHANVIEN}", top: 155, left: 75, fontSize: 11, bold: true },
+    lblSupplier: { text: "NCC:", top: 170, left: 10, fontSize: 11 },
+    lblSupplierVal: { text: "{TENNCC}", top: 170, left: 45, fontSize: 11, bold: true },
+    lblItem: { text: "Tên hàng", top: 200, left: 10, fontSize: 11, bold: true },
+    lblQty: { text: "SL", top: 200, left: 170, fontSize: 11, bold: true },
+    lblPrice: { text: "Đơn giá", top: 200, left: 230, fontSize: 11, bold: true },
+    lblTotalItem: { text: "Thành tiền", top: 200, left: 295, fontSize: 11, bold: true },
+    lblItemVal: { text: "{TENHANGHOA}", top: 220, left: 10, fontSize: 11 },
+    lblQtyVal: { text: "{SOLUONGNHAP}", top: 220, left: 170, fontSize: 11 },
+    lblPriceVal: { text: "{DONGIA}", top: 220, left: 230, fontSize: 11 },
+    lblTotalItemVal: { text: "{THANHTIEN}", top: 220, left: 300, fontSize: 11 },
+    lblTotalRaw: { text: "Tổng tiền:", top: 260, left: 200, fontSize: 11, bold: true },
+    lblTotalRawVal: { text: "{TONGTIEN}", top: 260, left: 290, fontSize: 11, width: 80, align: 'right' },
+    lblPaid: { text: "Đã trả:", top: 275, left: 200, fontSize: 11, bold: true },
+    lblPaidVal: { text: "{DATRA}", top: 275, left: 290, fontSize: 11, width: 80, align: 'right' },
+    lblDebt: { text: "Công nợ:", top: 290, left: 200, fontSize: 11, bold: true },
+    lblDebtVal: { text: "{CANTRANCC}", top: 290, left: 290, fontSize: 11, width: 80, align: 'right' },
+    footerMsg: { text: "Phiếu lưu nội bộ", top: 330, left: 0, width: 380, align: 'center', fontSize: 10, italic: true }
   },
   'Phiếu thu': {
-    title: "PHIẾU THU TIỀN",
-    lblStoreName: "{TENCUAHANG}", lblAddress: "{DIACHI}", lblPhone: "{SDT}",
-    lblInvoice: "Mã phiếu:", lblInvoiceVal: "{MAPHIEUTHU}",
-    lblDate: "Ngày:", lblDateVal: "{THOIGIAN}",
-    lblCashier: "Người lập:", lblCashierVal: "{TENNGUOIDUNG}",
-    lblTarget: "Người nộp:", lblTargetVal: "{DOITUONG}",
-    lblReason: "Lý do:", lblReasonVal: "{LYDO}",
-    lblAmount: "Số tiền:", lblAmountVal: "{SOTIEN}",
-    lblAmountText: "Bằng chữ:", lblAmountTextVal: "{SOTIENCHU}",
-    lblSign1: "Người nộp", lblSign2: "Người lập phiếu"
+    title: { text: "PHIẾU THU TIỀN", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
+    lblStoreName: { text: "{TENCUAHANG}", top: 20, left: 0, width: 380, align: 'center', fontSize: 13, bold: true },
+    lblAddress: { text: "{DIACHI}", top: 38, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblPhone: { text: "{SDT}", top: 54, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblInvoice: { text: "Mã phiếu:", top: 115, left: 10, fontSize: 12, bold: true },
+    lblInvoiceVal: { text: "{MAPHIEUTHU}", top: 115, left: 80, fontSize: 12 },
+    lblDate: { text: "Ngày:", top: 140, left: 10, fontSize: 11 },
+    lblDateVal: { text: "{THOIGIAN}", top: 140, left: 60, fontSize: 11 },
+    lblCashier: { text: "Người lập:", top: 155, left: 10, fontSize: 11 },
+    lblCashierVal: { text: "{TENNGUOIDUNG}", top: 155, left: 75, fontSize: 11 },
+    lblTarget: { text: "Người nộp:", top: 170, left: 10, fontSize: 11 },
+    lblTargetVal: { text: "{DOITUONG}", top: 170, left: 80, fontSize: 11, bold: true },
+    lblReason: { text: "Lý do:", top: 185, left: 10, fontSize: 11 },
+    lblReasonVal: { text: "{LYDO}", top: 185, left: 55, fontSize: 11 },
+    lblAmount: { text: "Số tiền:", top: 220, left: 10, fontSize: 12, bold: true },
+    lblAmountVal: { text: "{SOTIEN}", top: 220, left: 65, fontSize: 16, bold: true },
+    lblAmountText: { text: "Bằng chữ:", top: 245, left: 10, fontSize: 11, italic: true },
+    lblAmountTextVal: { text: "{SOTIENCHU}", top: 245, left: 75, fontSize: 11, italic: true },
+    lblSign1: { text: "Người nộp", top: 290, left: 40, fontSize: 12, bold: true },
+    lblSign2: { text: "Người lập phiếu", top: 290, left: 240, fontSize: 12, bold: true }
   },
   'Phiếu chi': {
-    title: "PHIẾU CHI TIỀN",
-    lblStoreName: "{TENCUAHANG}", lblAddress: "{DIACHI}", lblPhone: "{SDT}",
-    lblInvoice: "Mã phiếu:", lblInvoiceVal: "{MAPHIEUCHI}",
-    lblDate: "Ngày:", lblDateVal: "{THOIGIAN}",
-    lblCashier: "Người lập:", lblCashierVal: "{TENNGUOIDUNG}",
-    lblTarget: "Người nhận:", lblTargetVal: "{DOITUONG}",
-    lblReason: "Lý do:", lblReasonVal: "{LYDO}",
-    lblAmount: "Số tiền:", lblAmountVal: "{SOTIEN}",
-    lblAmountText: "Bằng chữ:", lblAmountTextVal: "{SOTIENCHU}",
-    lblSign1: "Người nhận", lblSign2: "Người lập phiếu"
+    title: { text: "PHIẾU CHI TIỀN", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
+    lblStoreName: { text: "{TENCUAHANG}", top: 20, left: 0, width: 380, align: 'center', fontSize: 13, bold: true },
+    lblAddress: { text: "{DIACHI}", top: 38, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblPhone: { text: "{SDT}", top: 54, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblInvoice: { text: "Mã phiếu:", top: 115, left: 10, fontSize: 12, bold: true },
+    lblInvoiceVal: { text: "{MAPHIEUCHI}", top: 115, left: 80, fontSize: 12 },
+    lblDate: { text: "Ngày:", top: 140, left: 10, fontSize: 11 },
+    lblDateVal: { text: "{THOIGIAN}", top: 140, left: 60, fontSize: 11 },
+    lblCashier: { text: "Người lập:", top: 155, left: 10, fontSize: 11 },
+    lblCashierVal: { text: "{TENNGUOIDUNG}", top: 155, left: 75, fontSize: 11 },
+    lblTarget: { text: "Người nhận:", top: 170, left: 10, fontSize: 11 },
+    lblTargetVal: { text: "{DOITUONG}", top: 170, left: 85, fontSize: 11, bold: true },
+    lblReason: { text: "Lý do:", top: 185, left: 10, fontSize: 11 },
+    lblReasonVal: { text: "{LYDO}", top: 185, left: 55, fontSize: 11 },
+    lblAmount: { text: "Số tiền:", top: 220, left: 10, fontSize: 12, bold: true },
+    lblAmountVal: { text: "{SOTIEN}", top: 220, left: 65, fontSize: 16, bold: true },
+    lblAmountText: { text: "Bằng chữ:", top: 245, left: 10, fontSize: 11, italic: true },
+    lblAmountTextVal: { text: "{SOTIENCHU}", top: 245, left: 75, fontSize: 11, italic: true },
+    lblSign1: { text: "Người nhận", top: 290, left: 40, fontSize: 12, bold: true },
+    lblSign2: { text: "Người lập phiếu", top: 290, left: 240, fontSize: 12, bold: true }
   },
   'Phiếu bàn giao ca': {
-    title: "PHIẾU BÀN GIAO CA",
-    lblStoreName: "{TENCUAHANG}", lblAddress: "{DIACHI}", lblPhone: "{SDT}",
-    lblInvoice: "Mã phiếu:", lblInvoiceVal: "{MAPHIEU}",
-    lblDate: "Thời gian:", lblDateVal: "{THOIGIAN}",
-    lblShift: "Ca làm việc:", lblShiftVal: "{CALAM}",
-    lblHandover: "Người giao:", lblHandoverVal: "{NGUOIGIAO}",
-    lblReceiver: "Người nhận:", lblReceiverVal: "{NGUOINHAN}",
-    lblStartCash: "Tiền đầu ca:", lblStartCashVal: "{TIENDAUCA}",
-    lblTotalRevenue: "Tổng thu:", lblTotalRevenueVal: "{TONGTHU}",
-    lblTotalExpense: "Tổng chi:", lblTotalExpenseVal: "{TONGCHI}",
-    lblRealCash: "Tiền mặt thực tế:", lblRealCashVal: "{TIENTHUCTE}",
-    lblDiff: "Chênh lệch:", lblDiffVal: "{CHENHLECH}",
-    lblSign1: "Người giao", lblSign2: "Người nhận"
+    title: { text: "PHIẾU BÀN GIAO CA", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
+    lblStoreName: { text: "{TENCUAHANG}", top: 20, left: 0, width: 380, align: 'center', fontSize: 13, bold: true },
+    lblAddress: { text: "{DIACHI}", top: 38, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblPhone: { text: "{SDT}", top: 54, left: 0, width: 380, align: 'center', fontSize: 11 },
+    lblInvoice: { text: "Mã phiếu:", top: 115, left: 10, fontSize: 12, bold: true },
+    lblInvoiceVal: { text: "{MAPHIEU}", top: 115, left: 80, fontSize: 12 },
+    lblDate: { text: "Thời gian:", top: 140, left: 10, fontSize: 11 },
+    lblDateVal: { text: "{THOIGIAN}", top: 140, left: 80, fontSize: 11 },
+    lblShift: { text: "Ca làm việc:", top: 155, left: 10, fontSize: 11 },
+    lblShiftVal: { text: "{CALAM}", top: 155, left: 90, fontSize: 11, bold: true },
+    lblHandover: { text: "Người giao:", top: 170, left: 10, fontSize: 11 },
+    lblHandoverVal: { text: "{NGUOIGIAO}", top: 170, left: 85, fontSize: 11 },
+    lblReceiver: { text: "Người nhận:", top: 185, left: 10, fontSize: 11 },
+    lblReceiverVal: { text: "{NGUOINHAN}", top: 185, left: 90, fontSize: 11 },
+    lblStartCash: { text: "Tiền đầu ca:", top: 215, left: 10, fontSize: 11, bold: true },
+    lblStartCashVal: { text: "{TIENDAUCA}", top: 215, left: 280, fontSize: 11, width: 90, align: 'right' },
+    lblTotalRevenue: { text: "Tổng thu:", top: 230, left: 10, fontSize: 11, bold: true },
+    lblTotalRevenueVal: { text: "{TONGTHU}", top: 230, left: 280, fontSize: 11, width: 90, align: 'right' },
+    lblTotalExpense: { text: "Tổng chi:", top: 245, left: 10, fontSize: 11, bold: true },
+    lblTotalExpenseVal: { text: "{TONGCHI}", top: 245, left: 280, fontSize: 11, width: 90, align: 'right' },
+    lblRealCash: { text: "Tiền mặt thực tế:", top: 275, left: 10, fontSize: 13, bold: true },
+    lblRealCashVal: { text: "{TIENTHUCTE}", top: 275, left: 260, fontSize: 16, width: 110, align: 'right', bold: true },
+    lblDiff: { text: "Chênh lệch:", top: 300, left: 10, fontSize: 11, italic: true },
+    lblDiffVal: { text: "{CHENHLECH}", top: 300, left: 280, fontSize: 11, width: 90, align: 'right', italic: true },
+    lblSign1: { text: "Người giao", top: 350, left: 40, fontSize: 12, bold: true },
+    lblSign2: { text: "Người nhận", top: 350, left: 240, fontSize: 12, bold: true }
   }
 };
 
@@ -147,6 +231,89 @@ const parseTemplate = (templateStr, dataObj) => {
     });
 };
 
+const DraggableItem = ({ id, label, isPreview, onDrag, onChange, mockData, selectedId, setSelectedId }) => {
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [startPos, setStartPos] = React.useState({ x: 0, y: 0 });
+
+  const handleMouseDown = (e) => {
+    if (isPreview) return;
+    if (e.target.hasAttribute('contenteditable')) return;
+    
+    setIsDragging(true);
+    setStartPos({
+      x: e.clientX - (label.left || 0),
+      y: e.clientY - (label.top || 0)
+    });
+    e.preventDefault();
+  };
+
+  React.useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging) return;
+      // Constraint dragging within the 380px paper area
+      const newLeft = Math.max(0, Math.min(380 - (label.width || 50), e.clientX - startPos.x));
+      const newTop = Math.max(0, e.clientY - startPos.y);
+
+      onDrag(id, {
+        left: newLeft,
+        top: newTop
+      });
+    };
+    const handleMouseUp = () => setIsDragging(false);
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, startPos, id, onDrag, label.width]);
+
+  const style = {
+    position: 'absolute',
+    top: `${label.top || 0}px`,
+    left: `${label.left || 0}px`,
+    width: label.width ? (typeof label.width === 'number' ? `${label.width}px` : label.width) : 'auto',
+    textAlign: label.align || 'left',
+    fontSize: `${label.fontSize || 12}px`,
+    fontWeight: label.bold ? 'bold' : 'normal',
+    fontStyle: label.italic ? 'italic' : 'normal',
+    cursor: isPreview ? 'default' : (isDragging ? 'grabbing' : 'grab'),
+    userSelect: 'none',
+    border: isPreview ? 'none' : (id === selectedId ? '1px solid #4154F1' : '1px dashed #cbd5e1'),
+    background: isPreview ? 'transparent' : (id === selectedId ? 'rgba(65, 84, 241, 0.05)' : 'transparent'),
+    padding: '2px',
+    whiteSpace: 'nowrap',
+    zIndex: id === selectedId ? 50 : (isDragging ? 10 : (label.top < 100 ? 5 : 1)),
+    fontFamily: (id === 'title' || id.includes('lblInvoice')) ? 'inherit' : 'sans-serif'
+  };
+
+  const handleClick = (e) => {
+    if (isPreview) return;
+    setSelectedId(id);
+    e.stopPropagation();
+  };
+
+  return (
+    <div 
+      style={style} 
+      onMouseDown={handleMouseDown}
+      onClick={handleClick}
+      className={!isPreview ? 'hover:border-blue-400 group transition-all rounded' : ''}
+    >
+      {isPreview ? parseTemplate(label.text, mockData) : (
+        <EditableSpan 
+          value={label.text} 
+          onChange={(v) => onChange(id, v)} 
+          className="min-w-[10px]"
+        />
+      )}
+    </div>
+  );
+};
+
 const EditableSpan = ({ value, onChange, className = "" }) => {
   const handleBlur = (e) => {
     if (onChange) onChange(e.target.textContent);
@@ -173,6 +340,8 @@ const EditableSpan = ({ value, onChange, className = "" }) => {
 export default function PrintTemplate() {
   const [activeTab, setActiveTab] = useState('Hóa đơn');
   const [labels, setLabels] = useState(DEFAULT_LABELS['Hóa đơn']);
+  const [selectedId, setSelectedId] = useState(null);
+  const [showGrid, setShowGrid] = useState(true);
 
   useEffect(() => {
     const fetchTemplate = async () => {
@@ -181,7 +350,20 @@ export default function PrintTemplate() {
         const res = await fetch(`http://localhost:5000/api/templates/${activeTab}`);
         const result = await res.json();
         if (result.success && result.data) {
-           setLabels({ ...defaultForTab, ...result.data });
+           // Deep merge: prioritize backend values but ensure default coordinates if missing
+           const merged = { ...defaultForTab };
+           Object.keys(result.data).forEach(key => {
+             if (merged[key]) {
+               // Merge coordinates and styles: prioritize backend for text, top, left
+               merged[key] = { 
+                 ...merged[key], 
+                 ...result.data[key] 
+               };
+             } else {
+               merged[key] = result.data[key];
+             }
+           });
+           setLabels(merged);
         } else {
            setLabels(defaultForTab);
         }
@@ -193,8 +375,73 @@ export default function PrintTemplate() {
     fetchTemplate();
   }, [activeTab]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!selectedId || isDraggingAnywhere()) return;
+      
+      const step = e.shiftKey ? 10 : 1;
+      const current = labels[selectedId];
+      
+      if (e.key === 'ArrowUp') {
+        handleLabelDrag(selectedId, { top: Math.max(0, current.top - step) });
+        e.preventDefault();
+      } else if (e.key === 'ArrowDown') {
+        handleLabelDrag(selectedId, { top: current.top + step });
+        e.preventDefault();
+      } else if (e.key === 'ArrowLeft') {
+        handleLabelDrag(selectedId, { left: Math.max(0, current.left - step) });
+        e.preventDefault();
+      } else if (e.key === 'ArrowRight') {
+        const maxWidth = 380 - (current.width || 50);
+        handleLabelDrag(selectedId, { left: Math.min(maxWidth, current.left + step) });
+        e.preventDefault();
+      } else if (e.key === 'Delete' || (e.key === 'Backspace' && !e.target.hasAttribute('contenteditable'))) {
+        // Optional: delete logic if needed
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedId, labels]);
+
+  const isDraggingAnywhere = () => {
+    return document.body.style.cursor === 'grabbing';
+  };
+
+  const alignElement = (type) => {
+    if (!selectedId) return;
+    const current = labels[selectedId];
+    const width = current.width || 100;
+
+    if (type === 'center') {
+      handleLabelDrag(selectedId, { left: (380 - width) / 2, align: 'center', width: 380, left: 0 });
+    } else if (type === 'left') {
+      handleLabelDrag(selectedId, { left: 10, align: 'left', width: 'auto' });
+    } else if (type === 'right') {
+      handleLabelDrag(selectedId, { left: 380 - width - 10, align: 'right' });
+    }
+  };
+
+  const updateStyle = (key, value) => {
+    if (!selectedId) return;
+    setLabels(prev => ({
+      ...prev,
+      [selectedId]: { ...prev[selectedId], [key]: value }
+    }));
+  };
+
   const handleLabelChange = (key, text) => {
-    setLabels(prev => ({ ...prev, [key]: text }));
+    setLabels(prev => ({ 
+      ...prev, 
+      [key]: typeof prev[key] === 'object' ? { ...prev[key], text } : { text, top: 0, left: 0 } 
+    }));
+  };
+
+  const handleLabelDrag = (key, pos) => {
+    setLabels(prev => ({
+      ...prev,
+      [key]: { ...prev[key], ...pos }
+    }));
   };
 
   const handleSave = async () => {
@@ -229,286 +476,82 @@ export default function PrintTemplate() {
       confirmButtonColor: '#d33',
       confirmButtonText: 'Khôi phục',
       cancelButtonText: 'Hủy'
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        setLabels(DEFAULT_LABELS[activeTab]);
-        // Bấm nút Lưu để ghi đè vào DB
+        const defaultLabels = DEFAULT_LABELS[activeTab];
+        setLabels(defaultLabels);
+        
+        // Tự động lưu bản in mặc định vào DB để tránh lỗi trắng trang khi reload
+        try {
+          await fetch(`http://localhost:5000/api/templates/${activeTab}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(defaultLabels)
+          });
+          Swal.fire('Đã khôi phục', 'Bản in đã được đưa về trạng thái mặc định chuyên nghiệp.', 'success');
+        } catch (e) {
+          console.error("Lỗi lưu mẫu in mặc định:", e);
+        }
       }
     });
   };
 
   const mockData = MOCK_DATA_MAP[activeTab] || MOCK_DATA_MAP['Hóa đơn'];
 
-  // Template renderers based on activeTab
-  const renderHeader = (isPreview = false) => (
-    <div className="relative text-center mb-6 leading-relaxed flex flex-col gap-1 items-center">
-      {labels.lblTableName && !isPreview && <div className="absolute left-0 top-0 font-sans whitespace-nowrap text-blue-800/80"><EditableSpan value={labels.lblTableName} onChange={(v)=>handleLabelChange('lblTableName',v)} /></div>}
-      {labels.lblTableName && isPreview && <div className="absolute left-0 top-0 font-sans whitespace-nowrap text-black font-bold">{parseTemplate(labels.lblTableName, mockData)}</div>}
-      
-      <div className={`text-[13px] font-sans font-medium ${isPreview?'text-black':'text-blue-800/80'}`}>
-         {isPreview ? parseTemplate(labels.lblStoreName, mockData) : <EditableSpan value={labels.lblStoreName} onChange={(v)=>handleLabelChange('lblStoreName',v)} />}
-      </div>
-      <div className={`font-sans text-[11px] ${isPreview?'opacity-80 text-black':'opacity-80 text-blue-800/80'}`}>
-         {isPreview ? parseTemplate(labels.lblAddress, mockData) : <EditableSpan value={labels.lblAddress} onChange={(v)=>handleLabelChange('lblAddress',v)} />}
-      </div>
-      <div className={`font-sans text-[11px] ${isPreview?'opacity-80 text-black':'opacity-80 text-blue-800/80'}`}>
-         {isPreview ? parseTemplate(labels.lblPhone, mockData) : <EditableSpan value={labels.lblPhone} onChange={(v)=>handleLabelChange('lblPhone',v)} />}
-      </div>
-    </div>
-  );
+  const renderCanvas = (isPreview) => {
+    const gridStyle = (!isPreview && showGrid) ? {
+      backgroundImage: 'radial-gradient(#e2e8f0 1px, transparent 1px)',
+      backgroundSize: '20px 20px'
+    } : {};
 
-  const renderTitle = (isPreview = false) => (
-    <div className="text-center font-bold text-[18px] mb-4 font-sans text-black">
-      {isPreview ? parseTemplate(labels.title, mockData) : <EditableSpan value={labels.title} onChange={(v)=>handleLabelChange('title',v)} className="w-full text-center" />}
-    </div>
-  );
-
-  // Layouts
-  const renderInvoiceAndReturn = (isPreview) => (
-    <>
-      {renderHeader(isPreview)}
-      {renderTitle(isPreview)}
-      
-      <div className="text-center text-[13px] font-bold font-sans text-black mb-4 flex items-center justify-center gap-1">
-        {isPreview ? <span className="whitespace-nowrap">{parseTemplate(labels.lblInvoice, mockData)}</span> : <EditableSpan value={labels.lblInvoice} onChange={(v)=>handleLabelChange('lblInvoice',v)} className="whitespace-nowrap" />}
-        <span className={isPreview?"font-normal":"text-blue-800/80 font-normal"}>
-          {isPreview ? parseTemplate(labels.lblInvoiceVal, mockData) : <EditableSpan value={labels.lblInvoiceVal} onChange={(v)=>handleLabelChange('lblInvoiceVal',v)} />}
-        </span>
+    return (
+      <div 
+        className="relative w-[380px] min-h-[600px] bg-white shadow-lg mx-auto" 
+        style={{ ...gridStyle, border: isPreview ? 'none' : '1px solid #e2e8f0' }}
+        onClick={() => !isPreview && setSelectedId(null)}
+      >
+        {Object.entries(labels).map(([key, label]) => {
+          // Special handling for labels that represent the items table values
+          // Since it's a list, we show dummy rows in the designer/preview
+          if (key.endsWith('Val') && mockData.items && (key === 'lblItemVal' || key === 'lblQtyVal' || key === 'lblPriceVal' || key === 'lblTotalItemVal')) {
+            return mockData.items.map((item, idx) => {
+              const itemLabel = { ...label, top: label.top + (idx * 20), text: parseTemplate(label.text, item) };
+              return (
+                <DraggableItem
+                  key={`${key}-${idx}`}
+                  id={key}
+                  label={itemLabel}
+                  isPreview={isPreview}
+                  onDrag={handleLabelDrag}
+                  onChange={handleLabelChange}
+                  mockData={mockData}
+                  selectedId={selectedId}
+                  setSelectedId={setSelectedId}
+                />
+              );
+            });
+          }
+          
+          return (
+            <DraggableItem
+              key={key}
+              id={key}
+              label={label}
+              isPreview={isPreview}
+              onDrag={handleLabelDrag}
+              onChange={handleLabelChange}
+              mockData={mockData}
+              selectedId={selectedId}
+              setSelectedId={setSelectedId}
+            />
+          );
+        })}
       </div>
-      
-      <div className="grid grid-cols-[1fr_min-content_1fr] gap-x-2 gap-y-1 mb-5 text-[11px] font-sans">
-        <div className="flex flex-col gap-1">
-          <div className="grid grid-cols-[min-content_1fr] items-center whitespace-nowrap gap-2">
-            {isPreview ? <span className="text-right">{parseTemplate(labels.lblDate, mockData)}</span> : <EditableSpan value={labels.lblDate} onChange={(v)=>handleLabelChange('lblDate',v)} className="opacity-80 text-right" />}
-            <span className={isPreview?"text-black font-medium":"text-blue-800/80 w-full"}>
-              {isPreview ? parseTemplate(labels.lblDateVal, mockData) : <EditableSpan value={labels.lblDateVal} onChange={(v)=>handleLabelChange('lblDateVal',v)} className="inline-block" />}
-            </span>
-          </div>
-          <div className="grid grid-cols-[min-content_1fr] items-center whitespace-nowrap gap-2">
-            {isPreview ? <span className="text-right">{parseTemplate(labels.lblTime, mockData)}</span> : <EditableSpan value={labels.lblTime} onChange={(v)=>handleLabelChange('lblTime',v)} className="opacity-80 text-right" />}
-            <span className={isPreview?"text-black font-medium":"text-blue-800/80 w-full"}>
-              {isPreview ? parseTemplate(labels.lblTimeVal, mockData) : <EditableSpan value={labels.lblTimeVal} onChange={(v)=>handleLabelChange('lblTimeVal',v)} className="inline-block" />}
-            </span>
-          </div>
-          <div className="grid grid-cols-[min-content_1fr] items-center whitespace-nowrap gap-2">
-            {isPreview ? <span className="text-right">{parseTemplate(labels.lblCashier, mockData)}</span> : <EditableSpan value={labels.lblCashier} onChange={(v)=>handleLabelChange('lblCashier',v)} className="opacity-80 text-right" />}
-            <span className={isPreview?"text-black font-medium":"text-blue-800/80 w-full"}>
-              {isPreview ? parseTemplate(labels.lblCashierVal, mockData) : <EditableSpan value={labels.lblCashierVal} onChange={(v)=>handleLabelChange('lblCashierVal',v)} className="inline-block" />}
-            </span>
-          </div>
-        </div>
-        <div className="w-1"></div>
-        {labels.lblTimeIn && (
-        <div className="flex flex-col gap-1">
-          <div className="grid grid-cols-[min-content_1fr] items-center whitespace-nowrap gap-2">
-            {isPreview ? <span className="text-right">{parseTemplate(labels.lblTimeIn, mockData)}</span> : <EditableSpan value={labels.lblTimeIn} onChange={(v)=>handleLabelChange('lblTimeIn',v)} className="opacity-80 text-right" />}
-            <span className={isPreview?"text-black font-medium":"text-blue-800/80 w-full"}>
-              {isPreview ? parseTemplate(labels.lblTimeInVal, mockData) : <EditableSpan value={labels.lblTimeInVal} onChange={(v)=>handleLabelChange('lblTimeInVal',v)} className="inline-block" />}
-            </span>
-          </div>
-          <div className="grid grid-cols-[min-content_1fr] items-center whitespace-nowrap gap-2">
-             {isPreview ? <span className="text-right">{parseTemplate(labels.lblTimeOut, mockData)}</span> : <EditableSpan value={labels.lblTimeOut} onChange={(v)=>handleLabelChange('lblTimeOut',v)} className="opacity-80 text-right" />}
-             <span className={isPreview?"text-black font-medium":"text-blue-800/80 w-full"}>
-              {isPreview ? parseTemplate(labels.lblTimeOutVal, mockData) : <EditableSpan value={labels.lblTimeOutVal} onChange={(v)=>handleLabelChange('lblTimeOutVal',v)} className="inline-block" />}
-            </span>
-          </div>
-          <div className="grid grid-cols-[min-content_1fr] items-center whitespace-nowrap gap-2">
-             {isPreview ? <span className="text-right">{parseTemplate(labels.lblPlayTime, mockData)}</span> : <EditableSpan value={labels.lblPlayTime} onChange={(v)=>handleLabelChange('lblPlayTime',v)} className="opacity-80 text-right" />}
-             <span className={isPreview?"text-black font-medium":"text-blue-800/80 w-full"}>
-              {isPreview ? parseTemplate(labels.lblPlayTimeVal, mockData) : <EditableSpan value={labels.lblPlayTimeVal} onChange={(v)=>handleLabelChange('lblPlayTimeVal',v)} className="inline-block" />}
-            </span>
-          </div>
-        </div>)}
-      </div>
-      
-      {labels.lblItem && (
-      <div className="border-t border-b border-slate-200 py-2 mb-3">
-        <div className="grid grid-cols-[2fr_1fr_1.5fr_1.5fr] font-bold font-sans text-[11px] mb-2 text-center text-black">
-          <div className="text-left">{isPreview ? parseTemplate(labels.lblItem, mockData) : <EditableSpan value={labels.lblItem} onChange={(v)=>handleLabelChange('lblItem',v)} />}</div>
-          <div>{isPreview ? parseTemplate(labels.lblQty, mockData) : <EditableSpan value={labels.lblQty} onChange={(v)=>handleLabelChange('lblQty',v)} />}</div>
-          <div>{isPreview ? parseTemplate(labels.lblPrice, mockData) : <EditableSpan value={labels.lblPrice} onChange={(v)=>handleLabelChange('lblPrice',v)} />}</div>
-          <div className="text-right">{isPreview ? parseTemplate(labels.lblTotalItem, mockData) : <EditableSpan value={labels.lblTotalItem} onChange={(v)=>handleLabelChange('lblTotalItem',v)} />}</div>
-        </div>
-        
-        <div className={`text-[11px] font-sans text-center items-center ${isPreview?'text-black':'text-blue-800/80'}`}>
-          {isPreview ? mockData.items.map((item, idx) => (
-             <div key={idx} className="grid grid-cols-[2fr_1fr_1.5fr_1.5fr] mb-1">
-               <div className="text-left font-sans truncate pr-1">{parseTemplate(labels.lblItemVal, item)}</div>
-               <div className="truncate">{parseTemplate(labels.lblQtyVal, item)}</div>
-               <div className="truncate">{parseTemplate(labels.lblPriceVal, item)}</div>
-               <div className="text-right truncate">{parseTemplate(labels.lblTotalItemVal, item)}</div>
-             </div>
-          )) : (
-             <div className="grid grid-cols-[2fr_1fr_1.5fr_1.5fr] mb-1 text-center">
-               <div className="text-left"><EditableSpan value={labels.lblItemVal} onChange={(v)=>handleLabelChange('lblItemVal',v)} className="truncate block" /></div>
-               <div><EditableSpan value={labels.lblQtyVal} onChange={(v)=>handleLabelChange('lblQtyVal',v)} className="truncate block" /></div>
-               <div><EditableSpan value={labels.lblPriceVal} onChange={(v)=>handleLabelChange('lblPriceVal',v)} className="truncate block" /></div>
-               <div className="text-right"><EditableSpan value={labels.lblTotalItemVal} onChange={(v)=>handleLabelChange('lblTotalItemVal',v)} className="truncate block" /></div>
-             </div>
-          )}
-        </div>
-      </div>
-      )}
-
-      <div className="flex justify-between items-start pt-2">
-         {labels.qrText ? (
-           <div className={`w-20 h-20 bg-white border border-dashed rounded flex flex-col items-center justify-center p-2 text-center mt-2 shadow-sm ${isPreview?'border-slate-200':'border-slate-300 hover:bg-slate-50'}`}>
-              <svg className="w-5 h-5 mb-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-              <span className="text-[7px] text-slate-400 font-sans leading-tight">
-                 {isPreview ? parseTemplate(labels.qrText, mockData) : <EditableSpan value={labels.qrText} onChange={(v)=>handleLabelChange('qrText', v)} className="block w-full text-center" />}
-              </span>
-           </div>
-         ) : <div></div>}
-         
-         <div className="flex-1 ml-4 text-[11px] font-sans text-black flex flex-col items-end">
-            <div className="grid grid-cols-[1fr_min-content] gap-2 mb-1 justify-items-end text-right w-full items-center">
-              <span className="font-bold text-right whitespace-nowrap">{isPreview ? parseTemplate(labels.lblTotalRaw, mockData) : <EditableSpan value={labels.lblTotalRaw} onChange={(v)=>handleLabelChange('lblTotalRaw',v)} />}</span>
-              <span className={isPreview?"min-w-[60px] font-medium text-right":"text-blue-800/80"}>
-                {isPreview ? parseTemplate(labels.lblTotalRawVal, mockData) : <EditableSpan value={labels.lblTotalRawVal} onChange={(v)=>handleLabelChange('lblTotalRawVal',v)} className="whitespace-nowrap block" />}
-              </span>
-            </div>
-            {labels.lblTotalGoods && (
-              <div className="grid grid-cols-[1fr_min-content] gap-2 mb-1 justify-items-end text-right w-full items-center">
-                <span className="font-bold text-right whitespace-nowrap">{isPreview ? parseTemplate(labels.lblTotalGoods, mockData) : <EditableSpan value={labels.lblTotalGoods} onChange={(v)=>handleLabelChange('lblTotalGoods',v)} />}</span>
-                <span className={isPreview?"min-w-[60px] font-medium text-right":"text-blue-800/80"}>
-                  {isPreview ? parseTemplate(labels.lblTotalGoodsVal, mockData) : <EditableSpan value={labels.lblTotalGoodsVal} onChange={(v)=>handleLabelChange('lblTotalGoodsVal',v)} className="whitespace-nowrap block" />}
-                </span>
-              </div>
-            )}
-            {labels.lblDiscount && (
-              <div className="grid grid-cols-[1fr_min-content] gap-2 mb-1 justify-items-end text-right w-full items-center">
-                <span className="font-bold text-right whitespace-nowrap">{isPreview ? parseTemplate(labels.lblDiscount, mockData) : <EditableSpan value={labels.lblDiscount} onChange={(v)=>handleLabelChange('lblDiscount',v)} />}</span>
-                <span className={isPreview?"min-w-[60px] font-medium text-right":"text-blue-800/80"}>
-                  {isPreview ? parseTemplate(labels.lblDiscountVal, mockData) : <EditableSpan value={labels.lblDiscountVal} onChange={(v)=>handleLabelChange('lblDiscountVal',v)} className="whitespace-nowrap block" />}
-                </span>
-              </div>
-            )}
-            {labels.lblGrandTotal && (
-              <div className="grid grid-cols-[1fr_min-content] gap-2 mt-2 pt-2 border-t border-slate-800 font-bold text-[13px] justify-items-end text-right w-full items-center">
-                <span className="text-right whitespace-nowrap max-w-[100px]">{isPreview ? parseTemplate(labels.lblGrandTotal, mockData) : <EditableSpan value={labels.lblGrandTotal} onChange={(v)=>handleLabelChange('lblGrandTotal',v)} />}</span>
-                <span className={isPreview?"min-w-[60px] text-right":"text-blue-800/80"}>
-                  {isPreview ? parseTemplate(labels.lblGrandTotalVal, mockData) : <EditableSpan value={labels.lblGrandTotalVal} onChange={(v)=>handleLabelChange('lblGrandTotalVal',v)} className="whitespace-nowrap block" />}
-                </span>
-              </div>
-            )}
-         </div>
-      </div>
-      
-      <div className="text-center italic mt-10 text-[10px] text-black font-sans opacity-70">
-          {isPreview ? parseTemplate(labels.footerMsg, mockData) : <EditableSpan value={labels.footerMsg} onChange={(v)=>handleLabelChange('footerMsg',v)} className="w-full text-center" />}
-      </div>
-    </>
-  );
-
-  const renderSimpleReceipt = (isPreview) => (
-    <>
-      {renderHeader(isPreview)}
-      {renderTitle(isPreview)}
-      
-      <div className="text-center text-[13px] font-bold font-sans text-black mb-6 flex items-center justify-center gap-1">
-        {isPreview ? <span>{parseTemplate(labels.lblInvoice, mockData)}</span> : <EditableSpan value={labels.lblInvoice} onChange={(v)=>handleLabelChange('lblInvoice',v)} />}
-        <span className={isPreview?"font-normal":"text-blue-800/80 font-normal"}>
-          {isPreview ? parseTemplate(labels.lblInvoiceVal, mockData) : <EditableSpan value={labels.lblInvoiceVal} onChange={(v)=>handleLabelChange('lblInvoiceVal',v)} />}
-        </span>
-      </div>
-
-      <div className="flex flex-col gap-3 text-[12px] font-sans mb-10 w-full">
-         <div className="grid grid-cols-[100px_1fr] items-start gap-2">
-            <span className="font-bold opacity-80">{isPreview ? parseTemplate(labels.lblDate, mockData) : <EditableSpan value={labels.lblDate} onChange={(v)=>handleLabelChange('lblDate',v)} />}</span> 
-            <span className={isPreview?"text-black font-medium":"text-blue-800/80"}>
-              {isPreview ? parseTemplate(labels.lblDateVal, mockData) : <EditableSpan value={labels.lblDateVal} onChange={(v)=>handleLabelChange('lblDateVal',v)} />}
-            </span>
-         </div>
-         <div className="grid grid-cols-[100px_1fr] items-start gap-2">
-            <span className="font-bold opacity-80">{isPreview ? parseTemplate(labels.lblCashier, mockData) : <EditableSpan value={labels.lblCashier} onChange={(v)=>handleLabelChange('lblCashier',v)} />}</span> 
-            <span className={isPreview?"text-black font-medium":"text-blue-800/80"}>
-              {isPreview ? parseTemplate(labels.lblCashierVal, mockData) : <EditableSpan value={labels.lblCashierVal} onChange={(v)=>handleLabelChange('lblCashierVal',v)} />}
-            </span>
-         </div>
-         {labels.lblTarget && (
-         <div className="grid grid-cols-[100px_1fr] items-start gap-2">
-            <span className="font-bold opacity-80">{isPreview ? parseTemplate(labels.lblTarget, mockData) : <EditableSpan value={labels.lblTarget} onChange={(v)=>handleLabelChange('lblTarget',v)} />}</span> 
-            <span className={isPreview?"text-black font-medium":"text-blue-800/80"}>
-              {isPreview ? parseTemplate(labels.lblTargetVal, mockData) : <EditableSpan value={labels.lblTargetVal} onChange={(v)=>handleLabelChange('lblTargetVal',v)} />}
-            </span>
-         </div>)}
-         {labels.lblShift && (
-         <div className="grid grid-cols-[100px_1fr] items-start gap-2">
-            <span className="font-bold opacity-80">{isPreview ? parseTemplate(labels.lblShift, mockData) : <EditableSpan value={labels.lblShift} onChange={(v)=>handleLabelChange('lblShift',v)} />}</span> 
-            <span className={isPreview?"text-black font-medium":"text-blue-800/80"}>
-              {isPreview ? parseTemplate(labels.lblShiftVal, mockData) : <EditableSpan value={labels.lblShiftVal} onChange={(v)=>handleLabelChange('lblShiftVal',v)} />}
-            </span>
-         </div>)}
-         {labels.lblReason && (
-         <div className="grid grid-cols-[100px_1fr] items-start gap-2">
-            <span className="font-bold opacity-80">{isPreview ? parseTemplate(labels.lblReason, mockData) : <EditableSpan value={labels.lblReason} onChange={(v)=>handleLabelChange('lblReason',v)} />}</span> 
-            <span className={isPreview?"text-black font-medium":"text-blue-800/80"}>
-              {isPreview ? parseTemplate(labels.lblReasonVal, mockData) : <EditableSpan value={labels.lblReasonVal} onChange={(v)=>handleLabelChange('lblReasonVal',v)} />}
-            </span>
-         </div>)}
-         
-         {/* Phieu Chi / Thu */}
-         {labels.lblAmount && (
-         <>
-           <div className="grid grid-cols-[100px_1fr] items-start gap-2 mt-2">
-              <span className="font-bold text-[14px]">{isPreview ? parseTemplate(labels.lblAmount, mockData) : <EditableSpan value={labels.lblAmount} onChange={(v)=>handleLabelChange('lblAmount',v)} />}</span> 
-              <span className={isPreview?"text-black font-bold text-[14px]":"text-blue-800/80 font-bold text-[14px]"}>
-                {isPreview ? parseTemplate(labels.lblAmountVal, mockData) : <EditableSpan value={labels.lblAmountVal} onChange={(v)=>handleLabelChange('lblAmountVal',v)} />}
-              </span>
-           </div>
-           <div className="grid grid-cols-[100px_1fr] items-start gap-2 italic">
-              <span className="opacity-80">{isPreview ? parseTemplate(labels.lblAmountText, mockData) : <EditableSpan value={labels.lblAmountText} onChange={(v)=>handleLabelChange('lblAmountText',v)} />}</span> 
-              <span className={isPreview?"text-black":"text-blue-800/80"}>
-                {isPreview ? parseTemplate(labels.lblAmountTextVal, mockData) : <EditableSpan value={labels.lblAmountTextVal} onChange={(v)=>handleLabelChange('lblAmountTextVal',v)} />}
-              </span>
-           </div>
-         </>)}
-
-         {/* Ban Giao Ca */}
-         {labels.lblTotalRevenue && (
-           <div className="mt-4 pt-4 border-t border-slate-200 space-y-2">
-             <div className="flex justify-between items-center">
-                <span className="font-bold">{isPreview ? parseTemplate(labels.lblStartCash, mockData) : <EditableSpan value={labels.lblStartCash} onChange={(v)=>handleLabelChange('lblStartCash',v)} />}</span> 
-                <span className={isPreview?"text-black font-medium":"text-blue-800/80"}>{isPreview ? parseTemplate(labels.lblStartCashVal, mockData) : <EditableSpan value={labels.lblStartCashVal} onChange={(v)=>handleLabelChange('lblStartCashVal',v)} />}</span>
-             </div>
-             <div className="flex justify-between items-center">
-                <span className="font-bold">{isPreview ? parseTemplate(labels.lblTotalRevenue, mockData) : <EditableSpan value={labels.lblTotalRevenue} onChange={(v)=>handleLabelChange('lblTotalRevenue',v)} />}</span> 
-                <span className={isPreview?"text-black font-medium":"text-blue-800/80"}>{isPreview ? parseTemplate(labels.lblTotalRevenueVal, mockData) : <EditableSpan value={labels.lblTotalRevenueVal} onChange={(v)=>handleLabelChange('lblTotalRevenueVal',v)} />}</span>
-             </div>
-             <div className="flex justify-between items-center pb-2 border-b border-dashed border-slate-300">
-                <span className="font-bold">{isPreview ? parseTemplate(labels.lblTotalExpense, mockData) : <EditableSpan value={labels.lblTotalExpense} onChange={(v)=>handleLabelChange('lblTotalExpense',v)} />}</span> 
-                <span className={isPreview?"text-black font-medium":"text-blue-800/80"}>{isPreview ? parseTemplate(labels.lblTotalExpenseVal, mockData) : <EditableSpan value={labels.lblTotalExpenseVal} onChange={(v)=>handleLabelChange('lblTotalExpenseVal',v)} />}</span>
-             </div>
-             <div className="flex justify-between items-center pt-2">
-                <span className="font-bold text-[14px]">{isPreview ? parseTemplate(labels.lblRealCash, mockData) : <EditableSpan value={labels.lblRealCash} onChange={(v)=>handleLabelChange('lblRealCash',v)} />}</span> 
-                <span className={isPreview?"text-black font-bold text-[14px]":"text-blue-800/80 font-bold"}>{isPreview ? parseTemplate(labels.lblRealCashVal, mockData) : <EditableSpan value={labels.lblRealCashVal} onChange={(v)=>handleLabelChange('lblRealCashVal',v)} />}</span>
-             </div>
-             <div className="flex justify-between items-center">
-                <span className="font-bold italic opacity-80">{isPreview ? parseTemplate(labels.lblDiff, mockData) : <EditableSpan value={labels.lblDiff} onChange={(v)=>handleLabelChange('lblDiff',v)} />}</span> 
-                <span className={isPreview?"text-black italic":"text-blue-800/80 italic"}>{isPreview ? parseTemplate(labels.lblDiffVal, mockData) : <EditableSpan value={labels.lblDiffVal} onChange={(v)=>handleLabelChange('lblDiffVal',v)} />}</span>
-             </div>
-           </div>
-         )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 text-center mt-6 pt-6 font-sans text-[12px] font-bold pb-10">
-         <div>
-            {isPreview ? parseTemplate(labels.lblSign1, mockData) : <EditableSpan value={labels.lblSign1} onChange={(v)=>handleLabelChange('lblSign1',v)} />}
-            <div className="font-normal italic text-[10px] mt-1 opacity-70">(Ký, ghi rõ họ tên)</div>
-         </div>
-         <div>
-            {isPreview ? parseTemplate(labels.lblSign2, mockData) : <EditableSpan value={labels.lblSign2} onChange={(v)=>handleLabelChange('lblSign2',v)} />}
-            <div className="font-normal italic text-[10px] mt-1 opacity-70">(Ký, ghi rõ họ tên)</div>
-         </div>
-      </div>
-    </>
-  );
+    );
+  };
 
   const getTemplateLayout = (isPreview) => {
-    if (activeTab === 'Hóa đơn' || activeTab === 'Trả hàng' || activeTab === 'Nhập hàng') {
-       return renderInvoiceAndReturn(isPreview);
-    } 
-    return renderSimpleReceipt(isPreview);
+    return renderCanvas(isPreview);
   };
 
   return (
@@ -529,6 +572,51 @@ export default function PrintTemplate() {
               {tab}
             </button>
           ))}
+        </div>
+        
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4 font-sans">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowGrid(!showGrid)} 
+              className={`px-3 py-1 text-[11px] font-bold rounded border transition-colors ${showGrid ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+            >
+              {showGrid ? 'Ẩn lưới' : 'Hiện lưới'}
+            </button>
+          </div>
+
+          {selectedId && (
+            <div className="flex items-center gap-1 bg-white border border-blue-100 p-1 rounded shadow-sm animate-in fade-in slide-in-from-top-1">
+              <span className="text-[10px] font-bold text-blue-400 px-2 uppercase tracking-tight">Căn lề:</span>
+              <button onClick={() => alignElement('left')} className="p-1.5 hover:bg-blue-50 text-blue-600 rounded" title="Căn trái"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h16" /></svg></button>
+              <button onClick={() => alignElement('center')} className="p-1.5 hover:bg-blue-50 text-blue-600 rounded" title="Căn giữa"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M7 12h10M4 18h16" /></svg></button>
+              <button onClick={() => alignElement('right')} className="p-1.5 hover:bg-blue-50 text-blue-600 rounded" title="Căn phải"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M10 12h10M4 18h16" /></svg></button>
+              
+              <div className="w-px h-4 bg-slate-200 mx-1"></div>
+              
+              <button 
+                onClick={() => updateStyle('bold', !labels[selectedId].bold)} 
+                className={`p-1.5 rounded transition-colors ${labels[selectedId].bold ? 'bg-blue-600 text-white' : 'hover:bg-blue-50 text-blue-600'}`}
+                title="In đậm"
+              >
+                <span className="font-bold">B</span>
+              </button>
+              <button 
+                onClick={() => updateStyle('italic', !labels[selectedId].italic)} 
+                className={`p-1.5 rounded transition-colors ${labels[selectedId].italic ? 'bg-blue-600 text-white' : 'hover:bg-blue-50 text-blue-600'}`}
+                title="In nghiêng"
+              >
+                <span className="italic">I</span>
+              </button>
+              
+              <div className="w-px h-4 bg-slate-200 mx-1"></div>
+              
+              <div className="flex items-center gap-1 ml-1">
+                <button onClick={() => updateStyle('fontSize', (labels[selectedId].fontSize || 12) - 1)} className="p-1 hover:bg-blue-50 text-blue-600 rounded"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg></button>
+                <span className="text-[11px] font-bold w-4 text-center">{labels[selectedId].fontSize || 12}</span>
+                <button onClick={() => updateStyle('fontSize', (labels[selectedId].fontSize || 12) + 1)} className="p-1 hover:bg-blue-50 text-blue-600 rounded"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12M6 12h12" /></svg></button>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="flex flex-col xl:flex-row gap-8 min-h-[600px] h-auto pb-10">
