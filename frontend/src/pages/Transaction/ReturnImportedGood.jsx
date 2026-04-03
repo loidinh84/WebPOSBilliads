@@ -537,7 +537,7 @@ function ReturnImportedGood() {
                 </div>
               )}
               <button
-                onClick={() => navigate("/return-imports/create")}
+                onClick={() => navigate("/transactions/return-imports/create")}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium shadow-lg shadow-green-500/20 transition-all cursor-pointer flex gap-1.5 text-[14px] pl-2"
               >
                 <img

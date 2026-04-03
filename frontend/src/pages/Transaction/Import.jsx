@@ -79,7 +79,6 @@ function Import() {
     setExpandedRowId((prev) => (prev === id ? null : id));
   };
 
-
   const toggleStatusFilter = (status) => {
     setFilterStatuses((prev) =>
       prev.includes(status)
@@ -588,7 +587,7 @@ function Import() {
 
               {/* Nút Nhập file */}
               <button
-                onClick={() => navigate("/import/create")}
+                onClick={() => navigate("/transactions/import/create")}
                 className="flex items-center gap-1 bg-[#4CAF50] text-white px-3 py-1.5 rounded font-semibold hover:bg-green-600 transition-colors shadow-sm active:scale-95 cursor-pointer"
               >
                 <img

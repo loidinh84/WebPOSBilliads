@@ -367,7 +367,8 @@ function CreateImport() {
             onClick={() => navigate(-1)}
             className="flex items-center gap-1 text-gray-500 hover:text-blue-600 font-semibold transition-colors cursor-pointer"
           >
-            &lsaquo; Quay lại danh sách
+            <img src={Icons.ArrowBack} alt="Trở về" className="w-5 h-5" /> Quay
+            lại danh sách
           </button>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight ml-4 border-l-2 border-gray-300 pl-4">
             Tạo phiếu nhập hàng

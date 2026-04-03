@@ -145,8 +145,11 @@ function App() {
           element={<ReturnImportedGood />}
         />
         <Route path="/transactions/exports" element={<Export />} />
-        <Route path="/import/create" element={<CreateImport />} />
-        <Route path="/return-imports/create" element={<CreateReturnImport />} />
+        <Route path="/transactions/import/create" element={<CreateImport />} />
+        <Route
+          path="/transactions/return-imports/create"
+          element={<CreateReturnImport />}
+        />
 
         {/* Quản lý Nhân sự */}
         <Route path="/staff/list" element={<StaffList />} />

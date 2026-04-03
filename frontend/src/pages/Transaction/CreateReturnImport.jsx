@@ -174,7 +174,7 @@ function CreateReturnImport() {
     );
   });
 
-  // --- TÍNH TOÁN (Fix NaN) ---
+  // --- TÍNH TOÁN ---
   const totalQty = items.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
   const totalGoods = items.reduce((sum, i) => sum + (Number(i.total) || 0), 0);
   const safeDiscount = Number(discount) || 0;
@@ -292,7 +292,7 @@ function CreateReturnImport() {
 
   return (
     <div className="min-h-screen bg-[#f4f6f8] font-sans text-[13px] text-slate-700">
-      <DashboardHeader storeName="Billiards Lục Lọi" />
+      <DashboardHeader storeName="" />
       <DashboardNav activeTab="Giao dịch" />
 
       <main className="max-w-[1600px] mx-auto p-4 flex flex-col gap-4">
@@ -310,9 +310,9 @@ function CreateReturnImport() {
           </h1>
         </div>
 
-        {/* 2. KHỐI CHÍNH: Đây là nơi mình sắp xếp lại bố cục song song */}
+        {/* 2. KHỐI CHÍNH:  */}
         <div className="flex flex-row gap-4 items-start">
-          {/* --- CỘT TRÁI (SECTION):  --- */}
+          {/* --- CỘT TRÁI:  --- */}
           <section className="flex-1 bg-white rounded-md shadow-sm border border-slate-200 flex flex-col h-[calc(100vh-160px)] relative">
             <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center gap-2 relative z-20">
               <div className="relative flex-1">
@@ -488,7 +488,7 @@ function CreateReturnImport() {
             </div>
           </section>
 
-          {/* --- CỘT PHẢI (ASIDE): Giữ nguyên màu sắc thanh toán của bạn --- */}
+          {/* --- CỘT PHẢI: --- */}
           <aside className="w-[360px] bg-white rounded-md shadow-sm border border-slate-200 flex flex-col h-[calc(100vh-160px)]">
             <div className="p-3 border-b border-gray-200 flex justify-between items-center bg-gray-50">
               <span className="font-bold text-blue-600 uppercase">

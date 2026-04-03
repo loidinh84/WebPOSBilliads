@@ -1,10 +1,10 @@
 import React from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom"; // Thêm useLocation ở đây
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import * as Icons from "../assets/icons/index";
 
 function DashboardNav() {
   const navigate = useNavigate();
-  const location = useLocation(); // Hook để lấy URL hiện tại
+  const location = useLocation(); 
   const currentPath = location.pathname;
 
   // Lấy thông tin user từ localStorage để phân quyền
@@ -36,14 +36,13 @@ function DashboardNav() {
             />
           )}
 
-          {/* BÀN: Gạch chân khi ở trang /tables */}
           <NavItem
             label="Bàn"
             active={currentPath === "/tables"}
             to="/tables"
           />
 
-          {/* GIAO DỊCH: Gạch chân khi vào các trang bắt đầu bằng /transactions */}
+          {/* GIAO DỊCH: */}
           {(user.QUYENHAN === "Admin" ||
             user.QUYENHAN === "Quản lý" ||
             user.QUYENHAN === "Thu ngân") && (
@@ -60,7 +59,7 @@ function DashboardNav() {
             />
           )}
 
-          {/* NHÂN VIÊN: Gạch chân khi vào các trang bắt đầu bằng /staff */}
+          {/* NHÂN VIÊN:*/}
           {(user.QUYENHAN === "Admin" || user.QUYENHAN === "Quản lý") && (
             <NavItem
               label="Nhân viên"
@@ -76,7 +75,7 @@ function DashboardNav() {
             />
           )}
 
-          {/* BÁO CÁO: Gạch chân khi vào các trang bắt đầu bằng /reports */}
+          {/* BÁO CÁO: */}
           {(user.QUYENHAN === "Admin" || user.QUYENHAN === "Quản lý") && (
             <NavItem
               label="Báo cáo"
@@ -90,7 +89,6 @@ function DashboardNav() {
           )}
         </div>
 
-        {/* Cụm nút bấm bên phải giữ nguyên */}
         <div className="flex gap-3 py-2">
           {["Admin", "Quản lý", "Nhà bếp"].includes(user.QUYENHAN) && (
             <button
@@ -125,7 +123,7 @@ function DashboardNav() {
   );
 }
 
-// Component NavItem không thay đổi
+// Component NavItem
 function NavItem({ label, active = false, to = "#", dropdown }) {
   if (!dropdown) {
     return (
