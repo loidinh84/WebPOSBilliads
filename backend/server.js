@@ -23,5 +23,8 @@ app.use("/api/tables", tableRoutes);
 const billRoutes = require("./routes/billRoutes");
 app.use("/api/bills", billRoutes);
 
+const importRoutes = require("./routes/importRoutes");
+app.use("/api/imports", importRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server chạy tại cổng ${PORT}`));

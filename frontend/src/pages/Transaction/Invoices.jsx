@@ -370,7 +370,7 @@ function Invoices() {
       <DashboardHeader storeName="" />
       <DashboardNav activeTab="Giao dịch" />
 
-      <main className="max-w-[1600px] mx-auto p-4 flex gap-4">
+      <main className="max-w-[1440px] mx-auto p-4 flex gap-4">
         {/* --- SIDEBAR BỘ LỌC --- */}
         <aside className="w-[280px] space-y-3 shrink-0">
           <div className="bg-white p-4 rounded shadow-sm border border-gray-200">

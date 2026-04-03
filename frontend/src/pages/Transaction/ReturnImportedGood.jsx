@@ -90,7 +90,7 @@ function ReturnImportedGood() {
       <DashboardHeader storeName="Billiards Lục Lọi" />
       <DashboardNav activeTab="Giao dịch" />
 
-      <div className="flex p-4 gap-4">
+      <main className="max-w-[1440px] mx-auto p-4 flex gap-4">
         {/* ---------------- CỘT TRÁI: SIDEBAR LỌC ---------------- */}
         <aside className="w-[260px] flex-shrink-0 flex flex-col gap-4">
           <div className="bg-white p-4 rounded shadow-sm border border-gray-200">
@@ -414,7 +414,7 @@ function ReturnImportedGood() {
             </div>
           </div>
         </section>
-      </div>
+      </main>
     </div>
   );
 }
