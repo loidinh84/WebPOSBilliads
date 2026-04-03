@@ -7,10 +7,6 @@ import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 
 function Import() {
-<<<<<<< HEAD
-  // 1. Quản lý trạng thái dòng nào đang được mở rộng (Expand)
-  const [expandedRowId, setExpandedRowId] = useState('PN000001');
-=======
   const [expandedRowId, setExpandedRowId] = useState(null);
   const [activeTab, setActiveTab] = useState("Thông tin");
   const navigate = useNavigate();
@@ -77,130 +73,13 @@ function Import() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchId, searchSupplier, filterStatuses, timeFilter, customDate]);
->>>>>>> c706ff9919a8a793f298e30094a1df98b12f1a75
-
-  // 2. Trạng thái bộ lọc
-  const [searchId, setSearchId] = useState("");
-  const [searchSupplier, setSearchSupplier] = useState("");
-  const [searchItem, setSearchItem] = useState("");
-  const [filterStatuses, setFilterStatuses] = useState(["Đã nhập hàng"]);
 
   // Hàm xử lý đóng/mở dòng
   const toggleRow = (id) => {
     setExpandedRowId((prev) => (prev === id ? null : id));
   };
 
-<<<<<<< HEAD
-  // 2. Mock Data đã được cập nhật đầy đủ chi tiết cho 4 phiếu
-  const importInvoices = [
-    {
-      id: "PN000001",
-      time: "04/03/2026 12:00",
-      supplier: "Đại lý Hồng Phúc",
-      amountOwed: "600,000",
-      status: "Đã nhập hàng",
-      creator: "Tài - Kế Toán",
-      branch: "Chi nhánh trung tâm",
-      importer: "Tài - Kế Toán",
-      items: [
-        {
-          code: "SP0000018",
-          name: "Redbull",
-          qty: 24,
-          price: 15000,
-          discount: 0,
-          importPrice: 15000,
-          total: "360,000",
-        },
-        {
-          code: "SP0000017",
-          name: "Pepsi",
-          qty: 24,
-          price: 10000,
-          discount: 0,
-          importPrice: 10000,
-          total: "240,000",
-        },
-      ],
-      summary: {
-        totalQty: 48,
-        totalItems: 2,
-        totalGoods: "600,000",
-        invoiceDiscount: "0",
-        finalTotal: "600,000",
-        paid: "600,000",
-      },
-    },
-    {
-      id: "PN000002",
-      time: "04/03/2026 10:30",
-      supplier: "Cơ Sở Bida Thanh Minh",
-      amountOwed: "2,350,000",
-      status: "Đã nhập hàng",
-      creator: "Tài - Kế Toán",
-      branch: "Chi nhánh trung tâm",
-      importer: "Tài - Kế Toán",
-      items: [
-        { code: 'SP0000019', name: 'Cơ bida lỗ loại 1', qty: 5, price: 450000, discount: 0, importPrice: 450000, total: '2,250,000' },
-        { code: 'SP0000020', name: 'Đầu cơ bida', qty: 10, price: 10000, discount: 0, importPrice: 10000, total: '100,000' }
-      ],
-      summary: { totalQty: 15, totalItems: 2, totalGoods: '2,350,000', invoiceDiscount: '0', finalTotal: '2,350,000', paid: '2,350,000' }
-    },
-    { 
-      id: 'PN000003', 
-      time: '04/03/2026 21:00', 
-      supplier: 'Đại lý Bia Nước Ngọt Q1', 
-      amountOwed: '1,700,000', 
-      status: 'Đã nhập hàng',
-      creator: 'Tài - Kế Toán',
-      branch: 'Chi nhánh trung tâm',
-      importer: 'Tài - Kế Toán',
-      items: [
-        { code: 'SP0000021', name: 'Bia Tiger Bạc (Thùng)', qty: 3, price: 400000, discount: 0, importPrice: 400000, total: '1,200,000' },
-        { code: 'SP0000022', name: 'Bia Sài Gòn Special (Thùng)', qty: 2, price: 250000, discount: 0, importPrice: 250000, total: '500,000' }
-      ],
-      summary: { totalQty: 5, totalItems: 2, totalGoods: '1,700,000', invoiceDiscount: '0', finalTotal: '1,700,000', paid: '1,700,000' }
-    },
-    { 
-      id: 'PN000004', 
-      time: '04/03/2026 22:45', 
-      supplier: 'Phụ Kiện Bida Phát Đạt', 
-      amountOwed: '450,000', 
-      status: 'Đã nhập hàng',
-      creator: 'Tài - Kế Toán',
-      branch: 'Chi nhánh trung tâm',
-      importer: 'Tài - Kế Toán',
-      items: [
-        { code: 'SP0000023', name: 'Lơ bida xanh', qty: 20, price: 15000, discount: 0, importPrice: 15000, total: '300,000' },
-        { code: 'SP0000024', name: 'Bao tay bida (Hộp)', qty: 3, price: 50000, discount: 0, importPrice: 50000, total: '150,000' }
-      ],
-      summary: { totalQty: 23, totalItems: 2, totalGoods: '450,000', invoiceDiscount: '0', finalTotal: '450,000', paid: '450,000' }
-    },
-  ];
 
-  // LOGIC LỌC DỮ LIỆU
-  const filteredInvoices = importInvoices.filter((inv) => {
-    const matchesId = inv.id.toLowerCase().includes(searchId.toLowerCase());
-    const matchesSupplier = inv.supplier
-      .toLowerCase()
-      .includes(searchSupplier.toLowerCase());
-    const matchesStatus =
-      filterStatuses.length === 0 || filterStatuses.includes(inv.status);
-
-    // Tìm trong danh sách hàng hóa bên trong phiếu
-    const matchesItem =
-      searchItem === "" ||
-      inv.items.some(
-        (item) =>
-          item.name.toLowerCase().includes(searchItem.toLowerCase()) ||
-          item.code.toLowerCase().includes(searchItem.toLowerCase()),
-      );
-
-    return matchesId && matchesSupplier && matchesStatus && matchesItem;
-  });
-
-=======
->>>>>>> c706ff9919a8a793f298e30094a1df98b12f1a75
   const toggleStatusFilter = (status) => {
     setFilterStatuses((prev) =>
       prev.includes(status)
@@ -562,28 +441,6 @@ function Import() {
               Tìm kiếm
             </h3>
             <div className="space-y-3">
-<<<<<<< HEAD
-              <input 
-                type="text" 
-                placeholder="Theo mã phiếu nhập" 
-                className="w-full border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:border-blue-500" 
-                value={searchId}
-                onChange={(e) => setSearchId(e.target.value)}
-              />
-              <input 
-                type="text" 
-                placeholder="Theo mã, tên hàng" 
-                className="w-full border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:border-blue-500" 
-                value={searchItem}
-                onChange={(e) => setSearchItem(e.target.value)}
-              />
-              <input 
-                type="text" 
-                placeholder="Theo mã, tên NCC" 
-                className="w-full border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:border-blue-500" 
-                value={searchSupplier}
-                onChange={(e) => setSearchSupplier(e.target.value)}
-=======
               {/* Ô 1: Tìm theo Mã phiếu - Giữ nguyên searchId */}
               <input
                 type="text"
@@ -609,7 +466,6 @@ function Import() {
                 value={searchSupplier}
                 onChange={(e) => setSearchSupplier(e.target.value)}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:border-blue-500"
->>>>>>> c706ff9919a8a793f298e30094a1df98b12f1a75
               />
             </div>
           </div>
@@ -670,35 +526,6 @@ function Import() {
               Trạng thái
             </h3>
             <div className="space-y-2">
-<<<<<<< HEAD
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600" 
-                  checked={filterStatuses.includes("Phiếu tạm")}
-                  onChange={() => toggleStatusFilter("Phiếu tạm")}
-                />
-                <span>Phiếu tạm</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600" 
-                  checked={filterStatuses.includes("Đã nhập hàng")}
-                  onChange={() => toggleStatusFilter("Đã nhập hàng")}
-                />
-                <span>Đã nhập hàng</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600" 
-                  checked={filterStatuses.includes("Đã hủy")}
-                  onChange={() => toggleStatusFilter("Đã hủy")}
-                />
-                <span>Đã hủy</span>
-              </label>
-=======
               {["Phiếu tạm", "Đã nhập hàng", "Đã hủy"].map((st) => (
                 <label
                   key={st}
@@ -713,7 +540,6 @@ function Import() {
                   <span>{st}</span>
                 </label>
               ))}
->>>>>>> c706ff9919a8a793f298e30094a1df98b12f1a75
             </div>
           </div>
         </aside>
@@ -821,15 +647,10 @@ function Import() {
                 </thead>
 
                 <tbody>
-<<<<<<< HEAD
-                  {filteredInvoices.map((invoice) => {
-                    const isExpanded = expandedRowId === invoice.id;
-=======
                   {currentImports.map((inv) => {
                     const isExpanded = expandedRowId === inv.MAPHIEUNHAP;
                     const tienDaTra =
                       (inv.TONGTIEN || 0) - (inv.CANTRANCC || 0);
->>>>>>> c706ff9919a8a793f298e30094a1df98b12f1a75
                     return (
                       <React.Fragment key={inv.MAPHIEUNHAP}>
                         <tr
@@ -1218,11 +1039,7 @@ function Import() {
             </div>
           </div>
         </div>
-<<<<<<< HEAD
-      </div>
-=======
       </main>
->>>>>>> c706ff9919a8a793f298e30094a1df98b12f1a75
     </div>
   );
 }

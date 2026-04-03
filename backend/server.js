@@ -20,6 +20,9 @@ app.use("/api/categories", productRoutes);
 const tableRoutes = require("./routes/tableRoutes");
 app.use("/api/tables", tableRoutes);
 
+const templateRoutes = require("./routes/templateRoutes");
+app.use("/api/templates", templateRoutes);
+
 const billRoutes = require("./routes/billRoutes");
 app.use("/api/bills", billRoutes);
 
