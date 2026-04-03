@@ -5,8 +5,13 @@ import * as Icons from "../../assets/icons/index";
 
 function Import() {
   // 1. Quản lý trạng thái dòng nào đang được mở rộng (Expand)
-  // Đổi mặc định mở PN000001
   const [expandedRowId, setExpandedRowId] = useState('PN000001');
+
+  // 2. Trạng thái bộ lọc
+  const [searchId, setSearchId] = useState("");
+  const [searchSupplier, setSearchSupplier] = useState("");
+  const [searchItem, setSearchItem] = useState("");
+  const [filterStatuses, setFilterStatuses] = useState(["Đã nhập hàng"]);
 
   // Hàm xử lý đóng/mở dòng
   const toggleRow = (id) => {
@@ -98,7 +103,7 @@ function Import() {
       ],
       summary: { totalQty: 23, totalItems: 2, totalGoods: '450,000', invoiceDiscount: '0', finalTotal: '450,000', paid: '450,000' }
     },
-  ]);
+  ];
 
   // LOGIC LỌC DỮ LIỆU
   const filteredInvoices = importInvoices.filter((inv) => {
@@ -142,9 +147,27 @@ function Import() {
               Tìm kiếm
             </h3>
             <div className="space-y-3">
-              <input type="text" placeholder="Theo mã phiếu nhập" className="w-full border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:border-blue-500" />
-              <input type="text" placeholder="Theo mã, tên hàng" className="w-full border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:border-blue-500" />
-              <input type="text" placeholder="Theo mã, tên NCC" className="w-full border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:border-blue-500" />
+              <input 
+                type="text" 
+                placeholder="Theo mã phiếu nhập" 
+                className="w-full border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:border-blue-500" 
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+              />
+              <input 
+                type="text" 
+                placeholder="Theo mã, tên hàng" 
+                className="w-full border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:border-blue-500" 
+                value={searchItem}
+                onChange={(e) => setSearchItem(e.target.value)}
+              />
+              <input 
+                type="text" 
+                placeholder="Theo mã, tên NCC" 
+                className="w-full border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:border-blue-500" 
+                value={searchSupplier}
+                onChange={(e) => setSearchSupplier(e.target.value)}
+              />
             </div>
           </div>
 
@@ -177,15 +200,30 @@ function Import() {
             </div>
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-blue-600" />
+                <input 
+                  type="checkbox" 
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600" 
+                  checked={filterStatuses.includes("Phiếu tạm")}
+                  onChange={() => toggleStatusFilter("Phiếu tạm")}
+                />
                 <span>Phiếu tạm</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-blue-600" defaultChecked />
+                <input 
+                  type="checkbox" 
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600" 
+                  checked={filterStatuses.includes("Đã nhập hàng")}
+                  onChange={() => toggleStatusFilter("Đã nhập hàng")}
+                />
                 <span>Đã nhập hàng</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-blue-600" />
+                <input 
+                  type="checkbox" 
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600" 
+                  checked={filterStatuses.includes("Đã hủy")}
+                  onChange={() => toggleStatusFilter("Đã hủy")}
+                />
                 <span>Đã hủy</span>
               </label>
             </div>
@@ -212,7 +250,7 @@ function Import() {
                 </thead>
                 
                 <tbody>
-                  {importInvoices.map((invoice) => {
+                  {filteredInvoices.map((invoice) => {
                     const isExpanded = expandedRowId === invoice.id;
                     return (
                       <React.Fragment key={invoice.id}>
@@ -348,7 +386,7 @@ function Import() {
               </div>
             </div>
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );
