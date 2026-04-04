@@ -33,7 +33,7 @@ import StoreSetup from "./pages/SetupAdmin/StoreSetup";
 import Discount from "./pages/SetupAdmin/Discount";
 import CreateImport from "./pages/Transaction/CreateImport";
 import CreateReturnImport from "./pages/Transaction/CreateReturnImport";
-
+import CreateExport from "./pages/Transaction/CreateExport";
 // Component bảo vệ Route
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -148,8 +148,9 @@ function App() {
         <Route path="/transactions/import/create" element={<CreateImport />} />
         <Route
           path="/transactions/return-imports/create"
-          element={<CreateReturnImport />}
+          element={<CreateExport />}
         />
+        <Route path="/transactions/exports/create" element={<CreateExport />} />
 
         {/* Quản lý Nhân sự */}
         <Route path="/staff/list" element={<StaffList />} />
