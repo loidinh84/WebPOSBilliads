@@ -32,5 +32,8 @@ app.use("/api/imports", importRoutes);
 const returnImportRoutes = require("./routes/returnImportRoutes.js");
 app.use("/api/return-imports", returnImportRoutes);
 
+const discountRoutes = require("./routes/discountRoutes");
+app.use("/api/discounts", discountRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server chạy tại cổng ${PORT}`));
