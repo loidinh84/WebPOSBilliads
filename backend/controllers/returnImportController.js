@@ -105,7 +105,7 @@ const returnImportController = {
                 VALUES (@ma, @ncc, @nv, GETDATE(), @tong, @ct, @gg, @st)
             `);
 
-      // 2. Chèn vào bảng CHITIETTRAHANGNHAP (Khớp image_f9a161.png)
+      // 2. Chèn vào bảng CHITIETTRAHANGNHAP
       for (const item of items) {
         const MACHITIET = "CTTH" + Date.now() + Math.floor(Math.random() * 100);
 

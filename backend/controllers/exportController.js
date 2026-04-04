@@ -55,21 +55,11 @@ const ExportController = {
       MANVIEN,
     } = req.body;
 
-    if (!MAXUATHUY || !items || items.length === 0) {
+    if (!MAXUATHUY || items.length === 0) {
       return res.status(400).json({
         success: false,
         message: "Thiếu mã phiếu hoặc danh sách hàng hóa",
       });
-    }
-
-    // Chuyển trạng thái về số nếu frontend gửi string
-    let statusValue = 0;
-    if (typeof TRANGTHAI === "string") {
-      if (TRANGTHAI === "Hoàn thành") statusValue = 1;
-      else if (TRANGTHAI === "Đã hủy") statusValue = 2;
-      else statusValue = 0; // Phiếu tạm
-    } else {
-      statusValue = Number(TRANGTHAI) || 0;
     }
 
     const pool = await poolPromise;
@@ -78,55 +68,60 @@ const ExportController = {
     try {
       await transaction.begin();
 
-      // 1. Chèn bảng chính XUATHUY
+      // 1. Chèn vào bảng XUATHUY
       await transaction
         .request()
         .input("ma", sql.VarChar(20), MAXUATHUY)
         .input("ld", sql.NVarChar(500), LYDO || "")
         .input("tong", sql.Decimal(18, 2), TONGTIEN || 0)
-        .input("st", sql.TinyInt, statusValue) // ← Đổi thành TinyInt
-        .input("nv", sql.VarChar(20), MANVIEN || null).query(`
+        .input("st", sql.TinyInt, Number(TRANGTHAI))
+        .input("nv", sql.VarChar(20), MANVIEN).query(`
           INSERT INTO XUATHUY (MAXUATHUY, NGAYXUATHUY, LYDO, TONGTIEN, TRANGTHAI, MANVIEN)
           VALUES (@ma, GETDATE(), @ld, @tong, @st, @nv)
         `);
 
-      // 2. Chèn chi tiết + trừ kho
+      // 2. Chèn vào bảng CHITIETXUATHUY & Cập nhật kho
       for (const item of items) {
-        const maChiTiet = "CTXH" + Math.floor(Math.random() * 1000000);
+        // Tạo mã chi tiết duy nhất
+        const maChiTiet =
+          "CTXH" +
+          Date.now().toString().slice(-6) +
+          Math.floor(Math.random() * 10);
 
         await transaction
           .request()
           .input("mact", sql.VarChar(20), maChiTiet)
-          .input("maHang", sql.VarChar, item.MAHANGHOA)
-          .input("maXuat", sql.VarChar, MAXUATHUY)
+          .input("maHang", sql.VarChar(20), item.MAHANGHOA)
+          .input("maXuat", sql.VarChar(20), MAXUATHUY)
           .input("soLuong", sql.Int, item.SOLUONG)
-          .input("gia", sql.Decimal(18, 2), item.GIATRITHETHAI || 0)
-          .input("st", sql.TinyInt, statusValue) // ← Đổi thành TinyInt
-          .query(`
+          .input("gia", sql.Decimal(18, 2), item.GIATRITHIETHAI || 0)
+          .input("st", sql.TinyInt, Number(TRANGTHAI)).query(`
             INSERT INTO CHITIETXUATHUY 
-              (MACHITETXUATHUY, MAHANGHOA, MAXUATHUY, SOLUONG, GIATRITHETHAI, TRANGTHAI)
+              (MACHITIETXUATHUY, MAHANGHOA, MAXUATHUY, SOLUONG, GIATRITHIETHAI, TRANGTHAI)
             VALUES (@mact, @maHang, @maXuat, @soLuong, @gia, @st)
           `);
 
-        // Trừ tồn kho chỉ khi trạng thái là "Hoàn thành" (1)
-        if (statusValue === 1) {
+        // 3. CHỈ TRỪ KHO KHI TRANGTHAI = 1 (Hoàn thành)
+        if (Number(TRANGTHAI) === 1) {
           await transaction
             .request()
-            .input("maHang", sql.VarChar, item.MAHANGHOA)
-            .input("slXuat", sql.Int, item.SOLUONG).query(`
+            .input("maH", sql.VarChar(20), item.MAHANGHOA)
+            .input("sl", sql.Int, item.SOLUONG).query(`
               UPDATE HANGHOA 
-              SET SOLUONGTONKHO = SOLUONGTONKHO - @slXuat 
-              WHERE MAHANGHOA = @maHang
+              SET SOLUONGTONKHO = SOLUONGTONKHO - @sl 
+              WHERE MAHANGHOA = @maH
             `);
         }
       }
 
       await transaction.commit();
-      res.json({ success: true, message: "Lưu phiếu xuất hủy thành công!" });
+      res.json({ success: true, message: "Lưu phiếu thành công!" });
     } catch (err) {
-      console.error("Lỗi SQL:", err.message);
       if (transaction) await transaction.rollback();
-      res.status(500).json({ success: false, message: err.message });
+      console.error("Lỗi SQL CreateExport:", err.message);
+      res
+        .status(500)
+        .json({ success: false, message: "Lỗi hệ thống: " + err.message });
     }
   },
 
@@ -218,6 +213,72 @@ const ExportController = {
       res.json({ nextCode });
     } catch (err) {
       res.status(500).json({ message: err.message });
+    }
+  },
+
+  getProducts: async (req, res) => {
+    try {
+      const { query } = req.query;
+      const pool = await poolPromise;
+
+      // DÒNG NÀY SẼ HIỆN Ở TERMINAL NẾU BẠN GỌI ĐÚNG API
+      console.log("-----------------------------------------");
+      console.log("===> BACKEND NHẬN TỪ KHÓA:", query);
+      console.log("-----------------------------------------");
+
+      if (!query) return res.json([]);
+
+      const result = await pool
+        .request()
+        .input("search", sql.NVarChar, `%${query.trim()}%`).query(`
+            SELECT TOP 10 
+                LTRIM(RTRIM(MAHANGHOA)) AS MAHANGHOA, 
+                LTRIM(RTRIM(TENHANGHOA)) AS TENHANGHOA, 
+                SOLUONGTONKHO, 
+                DONGIABAN AS GIANHAP 
+            FROM HANGHOA 
+            WHERE 
+                MAHANGHOA LIKE @search 
+                OR TENHANGHOA LIKE @search
+                OR TENHANGHOA COLLATE Vietnamese_CI_AI LIKE @search
+        `);
+
+      console.log("===> ĐÃ TÌM THẤY:", result.recordset.length, "SẢN PHẨM");
+      res.json(result.recordset);
+    } catch (err) {
+      console.error("LỖI SQL:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  },
+
+  getDetailsBulk: async (req, res) => {
+    try {
+      const { codes } = req.body;
+      if (!codes || !Array.isArray(codes) || codes.length === 0) {
+        return res.json([]);
+      }
+
+      const pool = await poolPromise;
+      const formattedCodes = codes.map((c) => `'${c}'`).join(",");
+
+      const query = `
+        SELECT MAHANGHOA, TENHANGHOA, DONGIABAN 
+        FROM HANGHOA 
+        WHERE MAHANGHOA IN (${formattedCodes})
+      `;
+
+      const result = await pool.request().query(query);
+
+      const finalData = result.recordset.map((item) => ({
+        MAHANGHOA: item.MAHANGHOA,
+        TENHANGHOA: item.TENHANGHOA,
+        GIANHAP: item.DONGIABAN || 0,
+      }));
+
+      res.json(finalData);
+    } catch (err) {
+      console.error("Lỗi getDetailsBulk:", err.message);
+      res.status(500).json({ message: "Lỗi SQL: " + err.message });
     }
   },
 };
