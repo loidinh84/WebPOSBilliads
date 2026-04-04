@@ -1,257 +1,501 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
+import * as Icons from "../../assets/icons/index";
 
 function UserManagement() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [activeTab, setActiveTab] = useState("info");
+  const [showPassword, setShowPassword] = useState(false);
+  const [limitTime, setLimitTime] = useState(true);
 
-  // Dữ liệu mẫu (thêm trường role để lọc vai trò)
+  // Dữ liệu mẫu
   const [users, setUsers] = useState([
     {
-      username: "nhanvien01",
-      fullname: "Tài - Kế Toán",
+      username: "thanhloi",
+      fullname: "Thành Lợi",
       status: "Đang hoạt động",
-      role: "staff",
+      role: "Admin",
+      email: "loi@gmail.com",
+      phone: "0901234567",
     },
     {
-      username: "nhanvien02",
-      fullname: "Lợi - Thu ngân",
+      username: "bep_truong",
+      fullname: "Nguyễn Văn Bếp",
       status: "Đang hoạt động",
-      role: "staff",
-    },
-    {
-      username: "nhanvien03",
-      fullname: "Levis - Kinh Doanh",
-      status: "Đang hoạt động",
-      role: "staff",
-    },
-    {
-      username: "nhanvien04",
-      fullname: "Khang - Thủ Kho",
-      status: "Đang hoạt động",
-      role: "staff",
-    },
-    {
-      username: "admin01",
-      fullname: "Quản Trị Viên",
-      status: "Đang hoạt động",
-      role: "admin",
+      role: "Nhà bếp",
+      email: "",
+      phone: "090888777",
     },
   ]);
 
-  // States dành cho bộ lọc
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterRole, setFilterRole] = useState("");
-  const [filterStatus, setFilterStatus] = useState("Đang hoạt động");
+  const [filterStatus, setFilterStatus] = useState("Tất cả");
+  const [filterRole, setFilterRole] = useState("Chọn vai trò");
 
-  // LOGIC LỌC DỮ LIỆU
   const filteredUsers = users.filter((user) => {
-    // 1. Lọc theo từ khóa tìm kiếm (tên đăng nhập hoặc tên đầy đủ)
     const matchesSearch =
       user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.fullname.toLowerCase().includes(searchQuery.toLowerCase());
-
-    // 2. Lọc theo vai trò
-    const matchesRole = filterRole === "" || user.role === filterRole;
-
-    // 3. Lọc theo trạng thái
     const matchesStatus =
       filterStatus === "Tất cả" || user.status === filterStatus;
-
-    return matchesSearch && matchesRole && matchesStatus;
+    const matchesRole =
+      filterRole === "Chọn vai trò" || user.role === filterRole;
+    return matchesSearch && matchesStatus && matchesRole;
   });
 
   return (
-    <div className="min-h-screen bg-[#F0F2F5] font-sans text-black text-[13px] relative">
-      <DashboardHeader storeName="Billiards Lục Lọi" />
-      <DashboardNav activeTab="Nhân viên" />
+    <div className="min-h-screen bg-[#e6e8ea] font-sans text-[13px] text-[#333]">
+      <DashboardHeader storeName="" />
+      <DashboardNav />
 
-      <main className="max-w-[1600px] mx-auto p-4 flex gap-6">
-        {/* --- SIDEBAR BỘ LỌC --- */}
-        <aside className="w-[280px] space-y-4 shrink-0">
-          {/* Tìm kiếm */}
-          <div className="bg-white p-4 rounded shadow-sm border border-gray-200">
-            <h3 className="font-bold mb-3 text-gray-700 uppercase">Tìm kiếm</h3>
+      <main className="max-w-[1600px] mx-auto p-4 flex gap-4">
+        {/* SIDEBAR FILTER */}
+        <aside className="w-[300px] flex-shrink-0 space-y-3">
+          <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200">
+            <h3 className="font-bold mb-2 text-gray-700 text-[16px]">
+              Tìm kiếm
+            </h3>
             <input
               type="text"
-              placeholder="Theo mã, tên chương trình"
-              className="w-full border rounded-md px-3 py-1.5 outline-none focus:border-blue-400"
+              placeholder="Theo tên ĐN, người dùng"
+              className="w-full border border-gray-300 rounded-sm px-3 py-1.5 focus:outline-none focus:border-[#00a651] text-[15px] font-medium"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          {/* Vai trò */}
-          <div className="bg-white p-4 rounded shadow-sm border border-gray-200">
-            <h3 className="font-bold mb-3 text-gray-700 uppercase">Vai trò</h3>
+          {/* BỔ SUNG LẠI BỘ LỌC VAI TRÒ */}
+          <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200">
+            <h3 className="font-bold mb-2 ext-gray-700 text-[16px] font-bold">
+              Vai trò
+            </h3>
             <select
-              className="w-full border rounded-md px-3 py-1.5 outline-none focus:border-blue-400 bg-white cursor-pointer transition-colors hover:border-gray-400"
+              className="w-full border border-gray-300 rounded-sm px-2 py-1.5 focus:outline-none focus:border-[#00a651] text-[15px] font-normal appearance-none"
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
             >
-              <option value="">Chọn vai trò (Tất cả)</option>
-              <option value="admin">Quản trị viên</option>
-              <option value="staff">Nhân viên</option>
+              <option value="Chọn vai trò">Chọn vai trò...</option>
+              <option value="Admin">Admin</option>
+              <option value="Quản lý">Quản lý</option>
+              <option value="Nhà bếp">Nhà bếp</option>
+              <option value="Thu ngân">Thu ngân</option>
             </select>
           </div>
 
-          {/* Trạng thái */}
-          <div className="bg-white p-4 rounded shadow-sm border border-gray-200">
-            <h3 className="font-bold mb-3 text-gray-700 uppercase text-black">
+          <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200">
+            <h3 className="font-bold mb-2 text-gray-700 text-[16px]">
               Trạng thái
             </h3>
-            <div className="space-y-2">
-              {["Tất cả", "Đang hoạt động", "Ngừng hoạt động"].map((label) => (
+            <div className="space-y-2 text-[16px]">
+              {["Tất cả", "Đang hoạt động", "Ngừng hoạt động"].map((status) => (
                 <label
-                  key={label}
-                  className="flex items-center gap-2 cursor-pointer select-none group"
+                  key={status}
+                  className="flex items-center gap-2 cursor-pointer"
                 >
                   <input
                     type="radio"
                     name="status"
-                    checked={filterStatus === label}
-                    onChange={() => setFilterStatus(label)}
-                    className="w-4 h-4 accent-blue-600 cursor-pointer"
+                    checked={filterStatus === status}
+                    onChange={() => setFilterStatus(status)}
+                    className="w-5 h-5 accent-[#383da9]"
                   />
-                  <span
-                    className={`group-hover:text-blue-600 transition-colors ${filterStatus === label ? "text-blue-600 font-bold" : ""}`}
-                  >
-                    {label}
-                  </span>
+                  <span>{status}</span>
                 </label>
               ))}
             </div>
           </div>
         </aside>
 
-        {/* --- NỘI DUNG CHÍNH --- */}
-        <section className="flex-1">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">
-              Người dùng ({filteredUsers.length})
-            </h2>
+        {/* MAIN CONTENT */}
+        <section className="flex-1 overflow-hidden">
+          <div className="flex justify-between items-center mb-3">
+            <h1 className="text-3xl font-bold text-[#333]">Người dùng</h1>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 px-4 py-1.5 rounded shadow-sm transition-all flex items-center gap-2 font-bold cursor-pointer active:scale-95"
+              className="bg-[#00a651] hover:bg-[#008d45] text-white px-4 rounded-sm flex items-center gap-2 font-medium transition-all active:scale-95 text-[16px] py-2.5 cursor-pointer"
             >
-              <span className="text-lg">+</span> Thêm mới người dùng
+              <img
+                src={Icons.Add}
+                alt="Thêm người dùng"
+                className="w-6 h-6 brightness-0 invert"
+              />{" "}
+              Thêm người dùng
             </button>
           </div>
 
-          <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden min-h-[400px]">
+          <div className="bg-white rounded-sm shadow-sm border border-gray-200">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-[#dbeafe] border-b border-gray-200 font-bold text-gray-700 uppercase text-[11px]">
-                  <th className="p-3 text-left w-1/4">Tên đăng nhập</th>
-                  <th className="p-3 text-left w-2/4">Tên người dùng</th>
-                  <th className="p-3 text-right w-1/4">Trạng thái</th>
+                <tr className="bg-[#f9f9f9] border-b border-gray-200 text-gray-700 font-bold text-[16px]">
+                  <th className="p-3 text-left border-r border-gray-100">
+                    Tên đăng nhập
+                  </th>
+                  <th className="p-3 text-left border-r border-gray-100">
+                    Tên người dùng
+                  </th>
+                  <th className="p-3 text-left ">Trạng thái</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((user, idx) => (
+                {filteredUsers.map((user) => (
+                  <React.Fragment key={user.username}>
                     <tr
-                      key={idx}
-                      className="border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer group"
+                      onClick={() => {
+                        if (selectedUser === user.username) {
+                          setSelectedUser(null);
+                        } else {
+                          setSelectedUser(user.username);
+                          setActiveTab("info");
+                        }
+                      }}
+                      className={`border-b border-gray-100 hover:bg-[#f1f1f1] cursor-pointer ${selectedUser === user.username ? "bg-[#e8f5e9]" : ""}`}
                     >
-                      <td className="p-3 text-blue-700 font-bold">
+                      <td className="p-3 text-gray-700 text-[17px] font-medium">
                         {user.username}
                       </td>
-                      <td className="p-3 font-medium text-black">
+                      <td className="p-3 text-gray-700 text-[17px] font-medium">
                         {user.fullname}
                       </td>
-                      <td
-                        className={`p-3 text-right font-medium ${user.status === "Đang hoạt động" ? "text-green-600" : "text-red-500"}`}
-                      >
+                      <td className="p-3 text-gray-700 text-[17px] font-medium">
                         {user.status}
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan="3"
-                      className="p-10 text-center text-gray-500 italic"
-                    >
-                      Không tìm thấy người dùng phù hợp.
-                    </td>
-                  </tr>
-                )}
+
+                    {/* CHI TIẾT NGƯỜI DÙNG */}
+                    {selectedUser === user.username && (
+                      <tr className="bg-white">
+                        <td colSpan="3" className="p-4 bg-[#fcfcfc]">
+                          <div className="border border-gray-200 rounded-sm bg-white shadow-inner -mx-4 -my-4">
+                            {/* TAB NAVIGATION */}
+                            <div className="flex border-b border-gray-200 bg-[#f9f9f9]">
+                              <button
+                                onClick={() => setActiveTab("info")}
+                                className={`px-8 text-[15px] py-2 font-bold transition-all ${activeTab === "info" ? "border-b-2 border-[#0021a6] text-[#0021a6]" : "text-gray-500"}`}
+                              >
+                                Thông tin
+                              </button>
+                              <button
+                                onClick={() => setActiveTab("access")}
+                                className={`px-6 py-2 text-[15px] font-bold transition-all ${activeTab === "access" ? "border-b-2 border-[#0021a6] text-[#0021a6]" : "text-gray-500"}`}
+                              >
+                                Thời gian truy cập
+                              </button>
+                            </div>
+
+                            {/* TAB CONTENT 1: THÔNG TIN */}
+                            {activeTab === "info" && (
+                              <div className="p-6 animate-fadeIn bg-white">
+                                <div className="grid grid-cols-2 gap-x-12 gap-y-3 w-3/4">
+                                  <div>
+                                    <span className="text-gray-500 text-[14px] w-32 inline-block">
+                                      Tên đăng nhập:
+                                    </span>{" "}
+                                    <b className="text-[16px]">
+                                      {user.username}
+                                    </b>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 text-[14px] w-32 inline-block">
+                                      Vai trò:
+                                    </span>{" "}
+                                    <b className="text-[16px]">{user.role}</b>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 text-[14px] w-32 inline-block">
+                                      Tên người dùng:
+                                    </span>{" "}
+                                    <b className="text-[16px]">
+                                      {user.fullname}
+                                    </b>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 text-[14px] w-32 inline-block">
+                                      Trạng thái:
+                                    </span>{" "}
+                                    <b className="text-[16px]">{user.status}</b>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 text-[14px] w-32 inline-block">
+                                      Số điện thoại:
+                                    </span>{" "}
+                                    <b className="text-[16px]">
+                                      {user.phone || "---"}
+                                    </b>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 text-[14px] w-32 inline-block">
+                                      Email:
+                                    </span>{" "}
+                                    <b className="text-[16px]">
+                                      {user.email || "---"}
+                                    </b>
+                                  </div>
+                                </div>
+                                <div className="flex justify-end gap-3 pt-5 border-t border-gray-100 ">
+                                  <button className="bg-amber-600 text-white px-5 py-2 rounded-sm font-bold hover:bg-amber-500 flex items-center gap-2 transition-all min-w-[120px] justify-center text-[16px]">
+                                    <img
+                                      src={Icons.Pen}
+                                      className="w-4 h-4 brightness-0 invert"
+                                      alt=""
+                                    />
+                                    Chỉnh sửa
+                                  </button>
+
+                                  <button className="bg-red-600  text-white px-5 py-2 rounded-sm font-bold hover:bg-red-700 flex items-center gap-2 transition-all min-w-[90px] justify-center text-[16px]">
+                                    <img
+                                      src={Icons.Block}
+                                      className="w-4 h-4 brightness-0 invert"
+                                      alt=""
+                                    />
+                                    Ngừng hoạt động
+                                  </button>
+
+                                  <button className="px-4 py-1.5 flex gap-1.5 items-center rounded font-semibold text-white bg-red-600 text-[16px]">
+                                    <img
+                                      src={Icons.Delete}
+                                      alt=""
+                                      className="w-4 h-4 filter brightness-0 invert"
+                                    />
+                                    Xóa
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* TAB CONTENT 2: THỜI GIAN TRUY CẬP */}
+                            {activeTab === "access" && (
+                              <div className="p-6 animate-fadeIn">
+                                <div className="flex items-center gap-2 mb-4">
+                                  <input
+                                    type="checkbox"
+                                    checked
+                                    className="accent-[#00a651] w-4 h-4"
+                                  />
+                                  <span className="font-bold text-gray-700">
+                                    Giới hạn thời gian truy cập theo các ngày
+                                    trong tuần
+                                  </span>
+                                </div>
+                                <table className="w-full border border-gray-200">
+                                  <thead className="bg-gray-50 text-gray-600">
+                                    <tr>
+                                      <th className="p-2 border border-gray-200 font-semibold">
+                                        Ngày trong tuần
+                                      </th>
+                                      <th className="p-2 border border-gray-200 font-semibold">
+                                        Từ
+                                      </th>
+                                      <th className="p-2 border border-gray-200 font-semibold">
+                                        Đến
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {[
+                                      "Thứ 2",
+                                      "Thứ 3",
+                                      "Thứ 4",
+                                      "Thứ 5",
+                                      "Thứ 6",
+                                      "Thứ 7",
+                                      "Chủ nhật",
+                                    ].map((day) => (
+                                      <tr key={day}>
+                                        <td className="p-2 border border-gray-200 text-center font-medium">
+                                          {day}
+                                        </td>
+                                        <td className="p-2 border border-gray-200">
+                                          <input
+                                            type="time"
+                                            defaultValue="08:00"
+                                            className="w-full outline-none focus:text-[#00a651]"
+                                          />
+                                        </td>
+                                        <td className="p-2 border border-gray-200">
+                                          <input
+                                            type="time"
+                                            defaultValue="22:00"
+                                            className="w-full outline-none focus:text-[#00a651]"
+                                          />
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                                <div className="mt-4 flex justify-end">
+                                  <button className="bg-[#00a651] text-white px-6 py-1.5 rounded-sm font-bold shadow-sm">
+                                    Lưu cài đặt giờ
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
               </tbody>
             </table>
           </div>
         </section>
       </main>
 
-      {/* --- MODAL THÊM MỚI NGƯỜI DÙNG (Giữ nguyên giao diện của bạn) --- */}
+      {/* MODAL THÊM MỚI (CHIA 2 CỘT) */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white w-full max-w-md rounded-lg shadow-xl overflow-hidden">
-            <div className="bg-[#4154F1] text-white p-4 flex justify-between items-center">
-              <h3 className="text-lg font-bold">Thêm người dùng mới</h3>
+        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-sm shadow-xl w-full max-w-[750px] border border-gray-300">
+            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center bg-white">
+              <h3 className="text-2xl font-bold text-gray-700">
+                Thêm mới người dùng
+              </h3>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-2xl leading-none cursor-pointer hover:opacity-80"
+                className="text-gray-400 hover:text-red-500 text-xl cursor-pointer"
               >
-                &times;
+                <img
+                  src={Icons.Close}
+                  alt="Đóng"
+                  className="w-6 h-6 brightness-110 invert"
+                />
               </button>
             </div>
+            <form className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                {/* CỘT 1 */}
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-gray-800 font-semibold text-[16px]">
+                      Tên người dùng <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="border border-gray-300 rounded-sm px-2 py-1.5 outline-none focus:border-[#00a651] text-[16px]"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-gray-800 font-semibold text-[16px]">
+                      Tên đăng nhập <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="border border-gray-300 rounded-sm px-2 py-1.5 outline-none focus:border-[#00a651] text-[16px]"
+                    />
+                  </div>
+                  <div className="relative flex flex-col gap-1">
+                    <label className="text-gray-800 font-semibold text-[16px]">
+                      Mật khẩu <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className="border border-gray-300 rounded-sm px-2 py-1.5 pr-8 outline-none focus:border-[#00a651] text-[16px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-[32px] text-gray-500 text-lg"
+                    >
+                      <img
+                        src={showPassword ? Icons.HiddenEye : Icons.Eye}
+                        alt=""
+                        className="w-5 h-5 brightness-100 mt-0.5 "
+                      />
+                    </button>
+                  </div>
+                  <div className="relative flex flex-col gap-1">
+                    <label className="text-gray-800 font-semibold text-[16px]">
+                      Xác nhận mật khẩu <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      className="border text-[16px] border-gray-300 rounded-sm px-2 py-1.5 outline-none focus:border-[#00a651] appearance-none "
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-[32px] text-gray-500 text-lg"
+                    >
+                      <img
+                        src={showPassword ? Icons.HiddenEye : Icons.Eye}
+                        alt="Xác nhận mật khẩu"
+                        className="w-5 h-5 brightness-100 mt-0.5 "
+                      />
+                    </button>
+                  </div>
+                </div>
 
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block font-bold mb-1 text-gray-700 text-black">
-                  Tên đăng nhập <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="w-full border rounded p-2 outline-none focus:border-blue-500 text-black"
-                  placeholder="vd: nhanvien05"
-                />
+                {/* CỘT 2 */}
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-gray-800 font-semibold text-[16px]">
+                      Vai trò <span className="text-red-500">*</span>
+                    </label>
+                    <select className="border border-gray-300 rounded-sm px-2 py-1.5 outline-none text-[16px] focus:border-[#00a651] appearance-none">
+                      <option value="">Chọn vai trò</option>
+                      <option>Admin</option>
+                      <option>Quản lý</option>
+                      <option>Nhà bếp</option>
+                      <option>Thu ngân</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-gray-800 font-semibold text-[16px]">
+                      Số điện thoại <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="border border-gray-300 text-[16px] rounded-sm px-2 py-1.5 outline-none focus:border-[#00a651]"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-gray-800 font-semibold text-[16px]">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      className="border border-gray-300 rounded-sm text-[16px] px-2 py-1.5 outline-none focus:border-[#00a651]"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-gray-800 font-semibold text-[16px]">
+                      Địa chỉ
+                    </label>
+                    <input
+                      type="text"
+                      className="border border-gray-300 rounded-sm text-[16px] px-2 py-1.5 outline-none focus:border-[#00a651]"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block font-bold mb-1 text-gray-700 text-black">
-                  Tên người dùng <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="w-full border rounded p-2 outline-none focus:border-blue-500 text-black"
-                  placeholder="Nhập họ và tên"
-                />
-              </div>
-              <div>
-                <label className="block font-bold mb-1 text-gray-700 text-black">
-                  Mật khẩu <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  autoComplete="on"
-                  className="w-full border rounded p-2 outline-none focus:border-blue-500 text-black"
-                />
-              </div>
-              <div>
-                <label className="block font-bold mb-1 text-gray-700 text-black">
-                  Vai trò
-                </label>
-                <select className="w-full border rounded p-2 outline-none cursor-pointer text-black">
-                  <option>Nhân viên</option>
-                  <option>Quản trị viên</option>
-                  <option>Kế toán</option>
-                </select>
-              </div>
-            </div>
 
-            <div className="bg-gray-50 p-4 flex justify-end gap-2 border-t">
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded cursor-pointer transition-colors"
-              >
-                Hủy
-              </button>
-              <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-bold cursor-pointer transition-all active:scale-95">
-                Lưu
-              </button>
-            </div>
+              <div className="mt-8 flex justify-end gap-2">
+                <button
+                  type="submit"
+                  className="bg-[#11c869] text-white px-4 py-2 rounded-sm font-bold flex items-center gap-2 transition-all hover:bg-[#059249] shadow-sm text-[16px]"
+                >
+                  <img
+                    src={Icons.Export}
+                    alt="Lưu"
+                    className="h-6 w-6 brightness-0 invert"
+                  />{" "}
+                  Lưu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="bg-[#6c757d] text-white px-4 py-2 rounded-sm font-bold flex items-center gap-2 transition-all hover:bg-gray-600 text-[16px]"
+                >
+                  <img
+                    src={Icons.Block}
+                    alt="Đóng"
+                    className="w-6 h-6 brightness-0 invert"
+                  />{" "}
+                  Đóng
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

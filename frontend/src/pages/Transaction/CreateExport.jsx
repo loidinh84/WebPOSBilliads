@@ -19,19 +19,6 @@ function CreateExport() {
   const searchRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // --- 2. CÁC HÀM XỬ LÝ ---
-  useEffect(() => {
-    fetchNextCode();
-
-    const handleClickOutside = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setSearchResults([]);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const fetchNextCode = async () => {
     try {
       const res = await fetch(
@@ -52,6 +39,19 @@ function CreateExport() {
       console.error(err);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchNextCode();
+
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchResults([]);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Hàm tìm kiếm hàng hóa
   const handleSearch = async (query) => {
