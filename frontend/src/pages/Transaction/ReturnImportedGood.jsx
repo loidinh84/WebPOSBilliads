@@ -291,8 +291,8 @@ function ReturnImportedGood() {
         item.MAHANGHOA,
         item.TENHANGHOA,
         item.SOLUONG,
-        item.GIANHAPCU, // Giá nhập chúng ta vừa fix ở Backend
-        item.DONGIATRA, // Giá trả thực tế
+        item.GIANHAPCU, 
+        item.DONGIATRA, 
         item.THANHTIEN,
       ]);
     });
@@ -373,7 +373,7 @@ function ReturnImportedGood() {
 
   return (
     <div className="min-h-screen bg-[#f4f6f8] font-sans text-[13px] text-slate-700">
-      <DashboardHeader storeName="Billiards Lục Lọi" />
+      <DashboardHeader storeName="" />
       <DashboardNav activeTab="Giao dịch" />
 
       <main className="max-w-[1600px] mx-auto p-6 flex gap-6">
@@ -408,7 +408,7 @@ function ReturnImportedGood() {
           </div>
 
           <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-            <h3 className="font-bold mb-4 uppercase text-[11px] text-slate-500 tracking-wider">
+            <h3 className="font-bold mb-4 text-[13px] text-slate-500 tracking-wider">
               Thời gian
             </h3>
             <div className="space-y-3">
@@ -468,9 +468,7 @@ function ReturnImportedGood() {
           </div>
 
           <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-            <h3 className="font-bold mb-4 text-gray-700 text-[15px]">
-              Trạng thái
-            </h3>
+            <h3 className="font-bold text-gray-700 text-[13px]">Trạng thái</h3>
             <div className="space-y-2.5">
               {["Phiếu tạm", "Đã trả hàng", "Đã hủy"].map((st) => (
                 <label
@@ -838,9 +836,14 @@ function ReturnImportedGood() {
                                             inv.TRANGTHAI,
                                           )
                                         }
-                                        className={`px-4 py-1.5 rounded font-bold text-white ${inv.TRANGTHAI === "Đã hủy" ? "bg-gray-400" : "bg-red-600 hover:bg-red-700"}`}
+                                        className={`px-4 py-1.5 flex gap-1.5 items-center rounded font-bold text-white ${inv.TRANGTHAI === "Đã hủy" ? "bg-gray-400" : "bg-red-600 hover:bg-red-700"}`}
                                         disabled={inv.TRANGTHAI === "Đã hủy"}
                                       >
+                                        <img
+                                          src={Icons.Delete}
+                                          alt=""
+                                          className="w-4 h-4 filter brightness-0 invert"
+                                        />
                                         Hủy phiếu
                                       </button>
                                     </div>
