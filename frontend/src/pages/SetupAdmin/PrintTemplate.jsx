@@ -3,7 +3,7 @@ import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import Swal from "sweetalert2";
 
-const TABS = ['Hóa đơn', 'Trả hàng', 'Nhập hàng', 'Phiếu thu', 'Phiếu chi', 'Phiếu bàn giao ca'];
+const TABS = ['Hóa đơn', 'Trả hàng', 'Nhập hàng', 'Xuất kho', 'Hủy kho', 'Nhập kho'];
 
 const DEFAULT_LABELS = {
   'Hóa đơn': {
@@ -105,77 +105,78 @@ const DEFAULT_LABELS = {
     lblDebtVal: { text: "{CANTRANCC}", top: 290, left: 290, fontSize: 11, width: 80, align: 'right' },
     footerMsg: { text: "Phiếu lưu nội bộ", top: 330, left: 0, width: 380, align: 'center', fontSize: 10, italic: true }
   },
-  'Phiếu thu': {
-    title: { text: "PHIẾU THU TIỀN", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
+  'Xuất kho': {
+    title: { text: "PHIẾU XUẤT KHO", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
     lblStoreName: { text: "{TENCUAHANG}", top: 20, left: 0, width: 380, align: 'center', fontSize: 13, bold: true },
     lblAddress: { text: "{DIACHI}", top: 38, left: 0, width: 380, align: 'center', fontSize: 11 },
     lblPhone: { text: "{SDT}", top: 54, left: 0, width: 380, align: 'center', fontSize: 11 },
-    lblInvoice: { text: "Mã phiếu:", top: 115, left: 10, fontSize: 12, bold: true },
-    lblInvoiceVal: { text: "{MAPHIEUTHU}", top: 115, left: 80, fontSize: 12 },
-    lblDate: { text: "Ngày:", top: 140, left: 10, fontSize: 11 },
-    lblDateVal: { text: "{THOIGIAN}", top: 140, left: 60, fontSize: 11 },
+    lblInvoice: { text: "Mã phiếu:", top: 115, left: 130, fontSize: 12, bold: true },
+    lblInvoiceVal: { text: "{MAPHIEUXUAT}", top: 115, left: 190, fontSize: 12 },
+    lblDate: { text: "Ngày xuất:", top: 140, left: 10, fontSize: 11 },
+    lblDateVal: { text: "{THOIGIAN}", top: 140, left: 80, fontSize: 11, bold: true },
     lblCashier: { text: "Người lập:", top: 155, left: 10, fontSize: 11 },
-    lblCashierVal: { text: "{TENNGUOIDUNG}", top: 155, left: 75, fontSize: 11 },
-    lblTarget: { text: "Người nộp:", top: 170, left: 10, fontSize: 11 },
-    lblTargetVal: { text: "{DOITUONG}", top: 170, left: 80, fontSize: 11, bold: true },
-    lblReason: { text: "Lý do:", top: 185, left: 10, fontSize: 11 },
-    lblReasonVal: { text: "{LYDO}", top: 185, left: 55, fontSize: 11 },
-    lblAmount: { text: "Số tiền:", top: 220, left: 10, fontSize: 12, bold: true },
-    lblAmountVal: { text: "{SOTIEN}", top: 220, left: 65, fontSize: 16, bold: true },
-    lblAmountText: { text: "Bằng chữ:", top: 245, left: 10, fontSize: 11, italic: true },
-    lblAmountTextVal: { text: "{SOTIENCHU}", top: 245, left: 75, fontSize: 11, italic: true },
-    lblSign1: { text: "Người nộp", top: 290, left: 40, fontSize: 12, bold: true },
-    lblSign2: { text: "Người lập phiếu", top: 290, left: 240, fontSize: 12, bold: true }
+    lblCashierVal: { text: "{TENNHANVIEN}", top: 155, left: 75, fontSize: 11, bold: true },
+    lblReason: { text: "Lý do:", top: 170, left: 10, fontSize: 11 },
+    lblReasonVal: { text: "{LYDO}", top: 170, left: 55, fontSize: 11, bold: true },
+    lblItem: { text: "Tên hàng", top: 200, left: 10, fontSize: 11, bold: true },
+    lblQty: { text: "SL", top: 200, left: 170, fontSize: 11, bold: true },
+    lblPrice: { text: "Đơn giá", top: 200, left: 230, fontSize: 11, bold: true },
+    lblTotalItem: { text: "Thành tiền", top: 200, left: 295, fontSize: 11, bold: true },
+    lblItemVal: { text: "{TENHANGHOA}", top: 220, left: 10, fontSize: 11 },
+    lblQtyVal: { text: "{SOLUONGXUAT}", top: 220, left: 170, fontSize: 11 },
+    lblPriceVal: { text: "{DONGIA}", top: 220, left: 230, fontSize: 11 },
+    lblTotalItemVal: { text: "{THANHTIEN}", top: 220, left: 300, fontSize: 11 },
+    lblTotalRaw: { text: "Tổng trị giá:", top: 260, left: 180, fontSize: 11, bold: true },
+    lblTotalRawVal: { text: "{TONGTIEN}", top: 260, left: 290, fontSize: 11, width: 80, align: 'right' },
+    footerMsg: { text: "Phiếu xuất kho nội bộ", top: 310, left: 0, width: 380, align: 'center', fontSize: 10, italic: true }
   },
-  'Phiếu chi': {
-    title: { text: "PHIẾU CHI TIỀN", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
+  'Hủy kho': {
+    title: { text: "PHIẾU HỦY KHO", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
     lblStoreName: { text: "{TENCUAHANG}", top: 20, left: 0, width: 380, align: 'center', fontSize: 13, bold: true },
     lblAddress: { text: "{DIACHI}", top: 38, left: 0, width: 380, align: 'center', fontSize: 11 },
     lblPhone: { text: "{SDT}", top: 54, left: 0, width: 380, align: 'center', fontSize: 11 },
-    lblInvoice: { text: "Mã phiếu:", top: 115, left: 10, fontSize: 12, bold: true },
-    lblInvoiceVal: { text: "{MAPHIEUCHI}", top: 115, left: 80, fontSize: 12 },
-    lblDate: { text: "Ngày:", top: 140, left: 10, fontSize: 11 },
-    lblDateVal: { text: "{THOIGIAN}", top: 140, left: 60, fontSize: 11 },
+    lblInvoice: { text: "Mã phiếu:", top: 115, left: 130, fontSize: 12, bold: true },
+    lblInvoiceVal: { text: "{MAPHIEUHUY}", top: 115, left: 190, fontSize: 12 },
+    lblDate: { text: "Ngày hủy:", top: 140, left: 10, fontSize: 11 },
+    lblDateVal: { text: "{THOIGIAN}", top: 140, left: 80, fontSize: 11, bold: true },
     lblCashier: { text: "Người lập:", top: 155, left: 10, fontSize: 11 },
-    lblCashierVal: { text: "{TENNGUOIDUNG}", top: 155, left: 75, fontSize: 11 },
-    lblTarget: { text: "Người nhận:", top: 170, left: 10, fontSize: 11 },
-    lblTargetVal: { text: "{DOITUONG}", top: 170, left: 85, fontSize: 11, bold: true },
-    lblReason: { text: "Lý do:", top: 185, left: 10, fontSize: 11 },
-    lblReasonVal: { text: "{LYDO}", top: 185, left: 55, fontSize: 11 },
-    lblAmount: { text: "Số tiền:", top: 220, left: 10, fontSize: 12, bold: true },
-    lblAmountVal: { text: "{SOTIEN}", top: 220, left: 65, fontSize: 16, bold: true },
-    lblAmountText: { text: "Bằng chữ:", top: 245, left: 10, fontSize: 11, italic: true },
-    lblAmountTextVal: { text: "{SOTIENCHU}", top: 245, left: 75, fontSize: 11, italic: true },
-    lblSign1: { text: "Người nhận", top: 290, left: 40, fontSize: 12, bold: true },
-    lblSign2: { text: "Người lập phiếu", top: 290, left: 240, fontSize: 12, bold: true }
+    lblCashierVal: { text: "{TENNHANVIEN}", top: 155, left: 75, fontSize: 11, bold: true },
+    lblReason: { text: "Lý do hủy:", top: 170, left: 10, fontSize: 11 },
+    lblReasonVal: { text: "{LYDO}", top: 170, left: 75, fontSize: 11, bold: true },
+    lblItem: { text: "Tên hàng", top: 200, left: 10, fontSize: 11, bold: true },
+    lblQty: { text: "SL", top: 200, left: 170, fontSize: 11, bold: true },
+    lblPrice: { text: "Đơn giá", top: 200, left: 230, fontSize: 11, bold: true },
+    lblTotalItem: { text: "Giảm giá trị", top: 200, left: 295, fontSize: 11, bold: true },
+    lblItemVal: { text: "{TENHANGHOA}", top: 220, left: 10, fontSize: 11 },
+    lblQtyVal: { text: "{SOLUONGHUY}", top: 220, left: 170, fontSize: 11 },
+    lblPriceVal: { text: "{DONGIA}", top: 220, left: 230, fontSize: 11 },
+    lblTotalItemVal: { text: "{THANHTIEN}", top: 220, left: 300, fontSize: 11 },
+    lblTotalRaw: { text: "Tổng thiệt hại:", top: 260, left: 180, fontSize: 11, bold: true },
+    lblTotalRawVal: { text: "{TONGTIEN}", top: 260, left: 290, fontSize: 11, width: 80, align: 'right' },
+    footerMsg: { text: "Biên bản hủy kho", top: 310, left: 0, width: 380, align: 'center', fontSize: 10, italic: true }
   },
-  'Phiếu bàn giao ca': {
-    title: { text: "PHIẾU BÀN GIAO CA", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
+  'Nhập kho': {
+    title: { text: "PHIẾU NHẬP KHO", top: 80, left: 0, width: 380, align: 'center', fontSize: 18, bold: true },
     lblStoreName: { text: "{TENCUAHANG}", top: 20, left: 0, width: 380, align: 'center', fontSize: 13, bold: true },
     lblAddress: { text: "{DIACHI}", top: 38, left: 0, width: 380, align: 'center', fontSize: 11 },
     lblPhone: { text: "{SDT}", top: 54, left: 0, width: 380, align: 'center', fontSize: 11 },
-    lblInvoice: { text: "Mã phiếu:", top: 115, left: 10, fontSize: 12, bold: true },
-    lblInvoiceVal: { text: "{MAPHIEU}", top: 115, left: 80, fontSize: 12 },
-    lblDate: { text: "Thời gian:", top: 140, left: 10, fontSize: 11 },
-    lblDateVal: { text: "{THOIGIAN}", top: 140, left: 80, fontSize: 11 },
-    lblShift: { text: "Ca làm việc:", top: 155, left: 10, fontSize: 11 },
-    lblShiftVal: { text: "{CALAM}", top: 155, left: 90, fontSize: 11, bold: true },
-    lblHandover: { text: "Người giao:", top: 170, left: 10, fontSize: 11 },
-    lblHandoverVal: { text: "{NGUOIGIAO}", top: 170, left: 85, fontSize: 11 },
-    lblReceiver: { text: "Người nhận:", top: 185, left: 10, fontSize: 11 },
-    lblReceiverVal: { text: "{NGUOINHAN}", top: 185, left: 90, fontSize: 11 },
-    lblStartCash: { text: "Tiền đầu ca:", top: 215, left: 10, fontSize: 11, bold: true },
-    lblStartCashVal: { text: "{TIENDAUCA}", top: 215, left: 280, fontSize: 11, width: 90, align: 'right' },
-    lblTotalRevenue: { text: "Tổng thu:", top: 230, left: 10, fontSize: 11, bold: true },
-    lblTotalRevenueVal: { text: "{TONGTHU}", top: 230, left: 280, fontSize: 11, width: 90, align: 'right' },
-    lblTotalExpense: { text: "Tổng chi:", top: 245, left: 10, fontSize: 11, bold: true },
-    lblTotalExpenseVal: { text: "{TONGCHI}", top: 245, left: 280, fontSize: 11, width: 90, align: 'right' },
-    lblRealCash: { text: "Tiền mặt thực tế:", top: 275, left: 10, fontSize: 13, bold: true },
-    lblRealCashVal: { text: "{TIENTHUCTE}", top: 275, left: 260, fontSize: 16, width: 110, align: 'right', bold: true },
-    lblDiff: { text: "Chênh lệch:", top: 300, left: 10, fontSize: 11, italic: true },
-    lblDiffVal: { text: "{CHENHLECH}", top: 300, left: 280, fontSize: 11, width: 90, align: 'right', italic: true },
-    lblSign1: { text: "Người giao", top: 350, left: 40, fontSize: 12, bold: true },
-    lblSign2: { text: "Người nhận", top: 350, left: 240, fontSize: 12, bold: true }
+    lblInvoice: { text: "Mã phiếu:", top: 115, left: 130, fontSize: 12, bold: true },
+    lblInvoiceVal: { text: "{MAPHIEUNHAP}", top: 115, left: 190, fontSize: 12 },
+    lblDate: { text: "Ngày nhập:", top: 140, left: 10, fontSize: 11 },
+    lblDateVal: { text: "{THOIGIAN}", top: 140, left: 80, fontSize: 11, bold: true },
+    lblCashier: { text: "Người lập:", top: 155, left: 10, fontSize: 11 },
+    lblCashierVal: { text: "{TENNHANVIEN}", top: 155, left: 75, fontSize: 11, bold: true },
+    lblItem: { text: "Tên hàng", top: 200, left: 10, fontSize: 11, bold: true },
+    lblQty: { text: "SL", top: 200, left: 170, fontSize: 11, bold: true },
+    lblPrice: { text: "Đơn giá", top: 200, left: 230, fontSize: 11, bold: true },
+    lblTotalItem: { text: "Thành tiền", top: 200, left: 295, fontSize: 11, bold: true },
+    lblItemVal: { text: "{TENHANGHOA}", top: 220, left: 10, fontSize: 11 },
+    lblQtyVal: { text: "{SOLUONGNHAP}", top: 220, left: 170, fontSize: 11 },
+    lblPriceVal: { text: "{DONGIA}", top: 220, left: 230, fontSize: 11 },
+    lblTotalItemVal: { text: "{THANHTIEN}", top: 220, left: 300, fontSize: 11 },
+    lblTotalRaw: { text: "Tổng trị giá:", top: 260, left: 180, fontSize: 11, bold: true },
+    lblTotalRawVal: { text: "{TONGTIEN}", top: 260, left: 290, fontSize: 11, width: 80, align: 'right' },
+    footerMsg: { text: "Phiếu nhập kho nội bộ", top: 310, left: 0, width: 380, align: 'center', fontSize: 10, italic: true }
   }
 };
 
@@ -207,20 +208,29 @@ const MOCK_DATA_MAP = {
     ],
     TONGTIEN: "1,120,000đ", DATRA: "1,120,000đ", CANTRANCC: "0đ"
   },
-  'Phiếu thu': {
+  'Xuất kho': {
     TENCUAHANG: "Billiards Lục Lọi", DIACHI: "123 Đường Số 1, TP.HCM", SDT: "0901234567",
-    MAPHIEUTHU: "PT00124", THOIGIAN: "05/03/2026 21:00", TENNGUOIDUNG: "Thành Lợi", DOITUONG: "Nguyễn Văn A",
-    LYDO: "Thu nợ hóa đơn tháng trước", SOTIEN: "500,000đ", SOTIENCHU: "Năm trăm nghìn đồng chẵn."
+    MAPHIEUXUAT: "PX00123", THOIGIAN: "05/03/2026 14:00", TENNHANVIEN: "Thành Lợi", LYDO: "Xuất dùng nội bộ",
+    items: [
+      { TENHANGHOA: "Bóng Billiards", SOLUONGXUAT: 2, DONGIA: "100,000", THANHTIEN: "200,000" }
+    ],
+    TONGTIEN: "200,000đ"
   },
-  'Phiếu chi': {
+  'Hủy kho': {
     TENCUAHANG: "Billiards Lục Lọi", DIACHI: "123 Đường Số 1, TP.HCM", SDT: "0901234567",
-    MAPHIEUCHI: "PC00125", THOIGIAN: "05/03/2026 10:30", TENNGUOIDUNG: "Thành Lợi", DOITUONG: "Cô Lan tạp vụ",
-    LYDO: "Thanh toán tiền lương tuần", SOTIEN: "300,000đ", SOTIENCHU: "Ba trăm nghìn đồng chẵn."
+    MAPHIEUHUY: "PH00124", THOIGIAN: "05/03/2026 15:30", TENNHANVIEN: "Thành Lợi", LYDO: "Hàng hết hạn",
+    items: [
+      { TENHANGHOA: "Mì tôm", SOLUONGHUY: 5, DONGIA: "10,000", THANHTIEN: "50,000" }
+    ],
+    TONGTIEN: "50,000đ"
   },
-  'Phiếu bàn giao ca': {
+  'Nhập kho': {
     TENCUAHANG: "Billiards Lục Lọi", DIACHI: "123 Đường Số 1, TP.HCM", SDT: "0901234567",
-    MAPHIEU: "BGC001", THOIGIAN: "05/03/2026 22:00", CALAM: "Ca tối (18:00 - 22:00)", NGUOIGIAO: "Thành Lợi", NGUOINHAN: "Thanh Khang",
-    TIENDAUCA: "1,000,000đ", TONGTHU: "4,500,000đ", TONGCHI: "200,000đ", TIENTHUCTE: "5,300,000đ", CHENHLECH: "0đ"
+    MAPHIEUNHAP: "NK00125", THOIGIAN: "05/03/2026 16:45", TENNHANVIEN: "Thành Lợi",
+    items: [
+      { TENHANGHOA: "Cơ Billiards", SOLUONGNHAP: 10, DONGIA: "500,000", THANHTIEN: "5,000,000" }
+    ],
+    TONGTIEN: "5,000,000đ"
   }
 };
 
@@ -344,6 +354,7 @@ export default function PrintTemplate() {
   const [showGrid, setShowGrid] = useState(true);
 
   useEffect(() => {
+    setSelectedId(null); // Reset selection when switching tabs
     const fetchTemplate = async () => {
       const defaultForTab = DEFAULT_LABELS[activeTab];
       try {
@@ -500,7 +511,7 @@ export default function PrintTemplate() {
 
   const renderCanvas = (isPreview) => {
     const gridStyle = (!isPreview && showGrid) ? {
-      backgroundImage: 'radial-gradient(#e2e8f0 1px, transparent 1px)',
+      backgroundImage: 'linear-gradient(to right, #cbd5e1 1px, transparent 1px), linear-gradient(to bottom, #cbd5e1 1px, transparent 1px)',
       backgroundSize: '20px 20px'
     } : {};
 
@@ -584,7 +595,7 @@ export default function PrintTemplate() {
             </button>
           </div>
 
-          {selectedId && (
+          {selectedId && labels[selectedId] && (
             <div className="flex items-center gap-1 bg-white border border-blue-100 p-1 rounded shadow-sm animate-in fade-in slide-in-from-top-1">
               <span className="text-[10px] font-bold text-blue-400 px-2 uppercase tracking-tight">Căn lề:</span>
               <button onClick={() => alignElement('left')} className="p-1.5 hover:bg-blue-50 text-blue-600 rounded" title="Căn trái"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h16" /></svg></button>
