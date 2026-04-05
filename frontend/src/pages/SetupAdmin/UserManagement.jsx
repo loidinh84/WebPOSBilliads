@@ -2,37 +2,62 @@ import React, { useEffect, useState } from "react";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import * as Icons from "../../assets/icons/index";
+import Swal from "sweetalert2";
 
 function UserManagement() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState("info");
   const [showPassword, setShowPassword] = useState(false);
-  const [limitTime, setLimitTime] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Dữ liệu mẫu
-  const [users, setUsers] = useState([
-    {
-      username: "thanhloi",
-      fullname: "Thành Lợi",
-      status: "Đang hoạt động",
-      role: "Admin",
-      email: "loi@gmail.com",
-      phone: "0901234567",
-    },
-    {
-      username: "bep_truong",
-      fullname: "Nguyễn Văn Bếp",
-      status: "Đang hoạt động",
-      role: "Nhà bếp",
-      email: "",
-      phone: "090888777",
-    },
-  ]);
+  const [users, setUsers] = useState([]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("Tất cả");
   const [filterRole, setFilterRole] = useState("Chọn vai trò");
+  const [formData, setFormData] = useState({
+    username: "",
+    fullname: "",
+    password: "",
+    confirmPassword: "",
+    role: "",
+    phone: "",
+    email: "",
+    address: "",
+  });
+  const initialFormState = {
+    username: "",
+    fullname: "",
+    password: "",
+    confirmPassword: "",
+    role: "",
+    phone: "",
+    email: "",
+    address: "",
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/users/all", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      const data = await res.json();
+      const formattedData = data.map((u) => ({
+        ...u,
+        status: Number(u.status) === 0 ? "Ngừng hoạt động" : "Đang hoạt động",
+      }));
+      setUsers(formattedData);
+    } catch (err) {
+      console.error("Lỗi fetch users:", err);
+    }
+  };
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -44,6 +69,227 @@ function UserManagement() {
       filterRole === "Chọn vai trò" || user.role === filterRole;
     return matchesSearch && matchesStatus && matchesRole;
   });
+
+  const handleAddNewClick = () => {
+    setFormData(initialFormState);
+    setIsEditMode(false);
+    setIsAddModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsAddModalOpen(false);
+    setFormData(initialFormState);
+    setIsEditMode(false);
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // 1. kiểm tra URL và method
+    const url = isEditMode
+      ? "http://localhost:5000/api/users/update"
+      : "http://localhost:5000/api/users/create";
+
+    const method = isEditMode ? "PUT" : "POST";
+
+    // 2. Kiểm tra các trường bắt buộc
+    const requiredFields = {
+      fullname: "Tên người dùng",
+      username: "Tên đăng nhập",
+      role: "Vai trò",
+      phone: "Số điện thoại",
+      email: "Email",
+    };
+
+    for (const [key, label] of Object.entries(requiredFields)) {
+      if (!formData[key] || formData[key].trim() === "") {
+        return Swal.fire(
+          "Thông báo",
+          `Vui lòng không bỏ trống: ${label}`,
+          "warning",
+        );
+      }
+    }
+
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (!usernameRegex.test(formData.username)) {
+      return Swal.fire(
+        "Lỗi",
+        "Tên đăng nhập viết liền không dấu, không chứa khoảng trắng hay ký tự đặc biệt!",
+        "error",
+      );
+    }
+
+    if (!isEditMode) {
+      if (!formData.password || formData.password.trim() === "") {
+        return Swal.fire(
+          "Thông báo",
+          "Vui lòng nhập mật khẩu cho người dùng mới",
+          "warning",
+        );
+      }
+    }
+
+    // 3. Kiểm tra mật khẩu
+    if (!isEditMode) {
+      if (!formData.password || formData.password.length < 6) {
+        return Swal.fire(
+          "Lỗi",
+          "Mật khẩu mới phải có ít nhất 6 ký tự!",
+          "error",
+        );
+      }
+      if (formData.password !== formData.confirmPassword) {
+        return Swal.fire("Lỗi", "Mật khẩu xác nhận không khớp!", "error");
+      }
+    } else {
+      if (formData.password && formData.password.length > 0) {
+        if (formData.password.length < 6) {
+          return Swal.fire(
+            "Lỗi",
+            "Mật khẩu mới phải có ít nhất 6 ký tự!",
+            "error",
+          );
+        }
+        if (formData.password !== formData.confirmPassword) {
+          return Swal.fire("Lỗi", "Mật khẩu xác nhận không khớp!", "error");
+        }
+      }
+    }
+
+    // 4. Kiểm tra định dạng số điện thoại
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      return Swal.fire("Lỗi", "Số điện thoại không hợp lệ!", "error");
+    }
+
+    // 5. Kiểm tra định dạng Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      return Swal.fire(
+        "Lỗi",
+        "Định dạng Email không hợp lệ (ví dụ: abc@gmail.com)!",
+        "error",
+      );
+    }
+
+    // 6. Nếu tất cả ổn, mới gửi API
+    try {
+      const res = await fetch(url, {
+        method: method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        await Swal.fire(
+          "Thành công",
+          isEditMode ? "Cập nhật thành công!" : "Đã thêm người dùng mới!",
+          "success",
+        );
+        setIsAddModalOpen(false);
+        fetchUsers();
+      } else {
+        Swal.fire("Lỗi", data.message, "error");
+      }
+    } catch (err) {
+      Swal.fire("Lỗi", "Không thể kết nối Server", err);
+    }
+  };
+
+  const handleEditClick = (user) => {
+    setFormData({
+      username: user.username,
+      fullname: user.fullname,
+      password: "",
+      confirmPassword: "",
+      role: user.role,
+      phone: user.phone || "",
+      email: user.email || "",
+      address: user.address || "",
+      status: user.status,
+    });
+    setIsEditMode(true);
+    setIsAddModalOpen(true);
+  };
+
+  const handleToggleStatus = async (user) => {
+    const confirmText =
+      user.status === "Đang hoạt động" ? "ngừng hoạt động" : "kích hoạt lại";
+
+    const result = await Swal.fire({
+      title: "Xác nhận?",
+      text: `Bạn có chắc muốn ${confirmText} tài khoản này?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#00a651",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Đồng ý",
+      cancelButtonText: "Bỏ qua",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await fetch("http://localhost:5000/api/users/status", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            username: user.username,
+            currentStatus: user.status,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire("Thành công", data.message, "success");
+          fetchUsers();
+        }
+      } catch (err) {
+        Swal.fire("Lỗi", "Không thể xử lý yêu cầu", err);
+      }
+    }
+  };
+
+  const handleDeleteUser = async (username) => {
+    const result = await Swal.fire({
+      title: "Xóa vĩnh viễn?",
+      text: `Hệ thống sẽ xóa hoàn toàn người dùng ${username} nhưng vẫn giữ giao dịch lịch sử nếu có. Bạn có chắc chắn muốn xóa?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ee4d2d",
+      confirmButtonText: "Xóa ngay",
+      cancelButtonText: "Bỏ qua",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await fetch(`http://localhost:5000/api/users/${username}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire("Đã xóa!", data.message, "success");
+          setSelectedUser(null);
+          fetchUsers();
+        } else {
+          Swal.fire("Không thể xóa", data.message, "warning");
+        }
+      } catch (err) {
+        Swal.fire("Lỗi", "Lỗi server", err);
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#e6e8ea] font-sans text-[13px] text-[#333]">
@@ -113,7 +359,7 @@ function UserManagement() {
           <div className="flex justify-between items-center mb-3">
             <h1 className="text-3xl font-bold text-[#333]">Người dùng</h1>
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={handleAddNewClick}
               className="bg-[#00a651] hover:bg-[#008d45] text-white px-4 rounded-sm flex items-center gap-2 font-medium transition-all active:scale-95 text-[16px] py-2.5 cursor-pointer"
             >
               <img
@@ -234,7 +480,16 @@ function UserManagement() {
                                   </div>
                                 </div>
                                 <div className="flex justify-end gap-3 pt-5 border-t border-gray-100 ">
-                                  <button className="bg-amber-600 text-white px-5 py-2 rounded-sm font-bold hover:bg-amber-500 flex items-center gap-2 transition-all min-w-[120px] justify-center text-[16px]">
+                                  <button
+                                    onClick={() =>
+                                      handleEditClick(
+                                        users.find(
+                                          (u) => u.username === selectedUser,
+                                        ),
+                                      )
+                                    }
+                                    className="bg-amber-600 text-white px-5 py-2 rounded-sm font-bold hover:bg-amber-500 flex items-center gap-2 transition-all min-w-[120px] justify-center text-[16px]"
+                                  >
                                     <img
                                       src={Icons.Pen}
                                       className="w-4 h-4 brightness-0 invert"
@@ -243,16 +498,26 @@ function UserManagement() {
                                     Chỉnh sửa
                                   </button>
 
-                                  <button className="bg-red-600  text-white px-5 py-2 rounded-sm font-bold hover:bg-red-700 flex items-center gap-2 transition-all min-w-[90px] justify-center text-[16px]">
+                                  <button
+                                    onClick={() => handleToggleStatus(user)}
+                                    className={`${user.status === "Đang hoạt động" ? "bg-red-600" : "bg-green-600"}  text-white px-5 py-2 rounded-sm font-bold hover:bg-red-700 flex items-center gap-2 transition-all min-w-[90px] justify-center text-[16px]`}
+                                  >
                                     <img
                                       src={Icons.Block}
                                       className="w-4 h-4 brightness-0 invert"
                                       alt=""
                                     />
-                                    Ngừng hoạt động
+                                    {user.status === "Đang hoạt động"
+                                      ? "Ngừng hoạt động"
+                                      : "Kích hoạt lại"}
                                   </button>
 
-                                  <button className="px-4 py-1.5 flex gap-1.5 items-center rounded font-semibold text-white bg-red-600 text-[16px]">
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteUser(user.username)
+                                    }
+                                    className="px-4 py-1.5 flex gap-1.5 items-center rounded font-semibold text-white bg-red-600 text-[16px]"
+                                  >
                                     <img
                                       src={Icons.Delete}
                                       alt=""
@@ -349,10 +614,10 @@ function UserManagement() {
           <div className="bg-white rounded-sm shadow-xl w-full max-w-[750px] border border-gray-300">
             <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center bg-white">
               <h3 className="text-2xl font-bold text-gray-700">
-                Thêm mới người dùng
+                {isEditMode ? "Cập nhật người dùng" : "Thêm mới người dùng"}
               </h3>
               <button
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={handleCloseModal}
                 className="text-gray-400 hover:text-red-500 text-xl cursor-pointer"
               >
                 <img
@@ -362,7 +627,7 @@ function UserManagement() {
                 />
               </button>
             </div>
-            <form className="p-6">
+            <form className="p-6 " onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                 {/* CỘT 1 */}
                 <div className="space-y-4">
@@ -372,6 +637,9 @@ function UserManagement() {
                     </label>
                     <input
                       type="text"
+                      name="fullname"
+                      value={formData.fullname}
+                      onChange={handleChange}
                       className="border border-gray-300 rounded-sm px-2 py-1.5 outline-none focus:border-[#00a651] text-[16px]"
                     />
                   </div>
@@ -381,8 +649,18 @@ function UserManagement() {
                     </label>
                     <input
                       type="text"
-                      className="border border-gray-300 rounded-sm px-2 py-1.5 outline-none focus:border-[#00a651] text-[16px]"
+                      name="username"
+                      value={formData.username}
+                      disabled={isEditMode}
+                      readOnly={isEditMode}
+                      onChange={handleChange}
+                      className={`border border-gray-300 rounded-sm px-2 py-1.5 outline-none focus:border-[#00a651] text-[16px] ${isEditMode ? "bg-gray-100 cursor-not-allowed" : "bg-white"}`}
                     />
+                    {isEditMode && (
+                      <p className="text-gray-400 text-[11px] mt-1">
+                        * Tên đăng nhập không thể thay đổi
+                      </p>
+                    )}
                   </div>
                   <div className="relative flex flex-col gap-1">
                     <label className="text-gray-800 font-semibold text-[16px]">
@@ -390,6 +668,9 @@ function UserManagement() {
                     </label>
                     <input
                       type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
                       className="border border-gray-300 rounded-sm px-2 py-1.5 pr-8 outline-none focus:border-[#00a651] text-[16px]"
                     />
                     <button
@@ -409,7 +690,10 @@ function UserManagement() {
                       Xác nhận mật khẩu <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
                       className="border text-[16px] border-gray-300 rounded-sm px-2 py-1.5 outline-none focus:border-[#00a651] appearance-none "
                     />
                     <button
@@ -432,7 +716,12 @@ function UserManagement() {
                     <label className="text-gray-800 font-semibold text-[16px]">
                       Vai trò <span className="text-red-500">*</span>
                     </label>
-                    <select className="border border-gray-300 rounded-sm px-2 py-1.5 outline-none text-[16px] focus:border-[#00a651] appearance-none">
+                    <select
+                      name="role"
+                      value={formData.role}
+                      onChange={handleChange}
+                      className="border border-gray-300 rounded-sm px-2 py-1.5 outline-none text-[16px] focus:border-[#00a651] appearance-none"
+                    >
                       <option value="">Chọn vai trò</option>
                       <option>Admin</option>
                       <option>Quản lý</option>
@@ -446,6 +735,9 @@ function UserManagement() {
                     </label>
                     <input
                       type="text"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
                       className="border border-gray-300 text-[16px] rounded-sm px-2 py-1.5 outline-none focus:border-[#00a651]"
                     />
                   </div>
@@ -455,6 +747,9 @@ function UserManagement() {
                     </label>
                     <input
                       type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
                       className="border border-gray-300 rounded-sm text-[16px] px-2 py-1.5 outline-none focus:border-[#00a651]"
                     />
                   </div>
@@ -464,6 +759,9 @@ function UserManagement() {
                     </label>
                     <input
                       type="text"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
                       className="border border-gray-300 rounded-sm text-[16px] px-2 py-1.5 outline-none focus:border-[#00a651]"
                     />
                   </div>
@@ -484,7 +782,7 @@ function UserManagement() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={handleCloseModal}
                   className="bg-[#6c757d] text-white px-4 py-2 rounded-sm font-bold flex items-center gap-2 transition-all hover:bg-gray-600 text-[16px]"
                 >
                   <img
