@@ -8,5 +8,11 @@ router.post("/create", verifyToken, AdminUserController.createUser);
 router.put("/update", verifyToken, AdminUserController.updateUser);
 router.patch("/status", verifyToken, AdminUserController.toggleStatus);
 router.delete("/:username", verifyToken, AdminUserController.deleteUser);
+router.get(
+  "/access-time/:username",
+  verifyToken,
+  AdminUserController.getAccessTime,
+);
+router.post("/access-time", verifyToken, AdminUserController.saveAccessTime);
 
 module.exports = router;

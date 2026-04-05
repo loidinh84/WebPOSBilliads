@@ -23,9 +23,10 @@ const login = async (req, res) => {
 
   try {
     const pool = await poolPromise;
-    const result = await pool.request().input("username", sql.VarChar, username)
-      .query(`
-                SELECT t.TENDANGNHAP, t.MATKHAU, t.QUYENHAN, n.MANVIEN, n.TENNGUOIDUNG
+    const result = await pool
+      .request()
+      .input("username", sql.NVarChar, username).query(`
+                SELECT t.TENDANGNHAP, t.MATKHAU, t.QUYENHAN, t.GIOIHAN_TRUYCAP, n.MANVIEN, n.TENNGUOIDUNG
                 FROM TAIKHOAN t
                 LEFT JOIN NHANVIEN n ON t.TENDANGNHAP = n.TENDANGNHAP
                 WHERE t.TENDANGNHAP = @username AND t.TRANGTHAI = 1
@@ -46,6 +47,54 @@ const login = async (req, res) => {
         .json({ success: false, message: "Mật khẩu không chính xác!" });
     }
 
+    if (user.GIOIHAN_TRUYCAP === 1) {
+      const days = [
+        "Chủ nhật",
+        "Thứ 2",
+        "Thứ 3",
+        "Thứ 4",
+        "Thứ 5",
+        "Thứ 6",
+        "Thứ 7",
+      ];
+      const today = days[new Date().getDay()];
+
+      const now = new Date();
+      const currentHour = now.getHours().toString().padStart(2, "0");
+      const currentMinute = now.getMinutes().toString().padStart(2, "0");
+      const currentTime = `${currentHour}:${currentMinute}`;
+
+      const scheduleCheck = await pool
+        .request()
+        .input("u", sql.NVarChar, username)
+        .input("day", sql.NVarChar, today)
+        .query(
+          "SELECT GIO_BATDAU, GIO_KETTHUC FROM THOIGIAN_TRUYCAP WHERE TENDANGNHAP = @u AND THU = @day",
+        );
+
+      // Trường hợp 1: Không có lịch làm việc hôm nay
+      if (scheduleCheck.recordset.length === 0) {
+        return res.status(403).json({
+          success: false,
+          message: `Truy cập bị từ chối! Hôm nay (${today}) không nằm trong lịch làm việc của bạn.`,
+        });
+      }
+
+      // Trường hợp 2: Có lịch nhưng sai giờ
+      const formatTime = (timeStr) => {
+        return timeStr.length === 4 ? "0" + timeStr : timeStr;
+      };
+
+      const start = formatTime(scheduleCheck.recordset[0].GIO_BATDAU);
+      const end = formatTime(scheduleCheck.recordset[0].GIO_KETTHUC);
+
+      if (currentTime < start || currentTime > end) {
+        return res.status(403).json({
+          success: false,
+          message: `Ngoài giờ làm việc! Bạn chỉ được phép đăng nhập từ ${start} đến ${end} hôm nay.`,
+        });
+      }
+    }
     const payload = {
       TENDANGNHAP: user.TENDANGNHAP,
       QUYENHAN: user.QUYENHAN,

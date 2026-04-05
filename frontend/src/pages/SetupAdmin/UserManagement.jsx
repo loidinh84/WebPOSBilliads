@@ -10,6 +10,7 @@ function UserManagement() {
   const [activeTab, setActiveTab] = useState("info");
   const [showPassword, setShowPassword] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   // Dữ liệu mẫu
   const [users, setUsers] = useState([]);
@@ -37,6 +38,9 @@ function UserManagement() {
     email: "",
     address: "",
   };
+
+  const [isLimitActive, setIsLimitActive] = useState(false);
+  const [schedule, setSchedule] = useState([]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -69,6 +73,142 @@ function UserManagement() {
       filterRole === "Chọn vai trò" || user.role === filterRole;
     return matchesSearch && matchesStatus && matchesRole;
   });
+
+  const fetchAccessTime = async (username) => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/users/access-time/${username}`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        },
+      );
+      const data = await res.json();
+
+      if (data.success) {
+        setIsLimitActive(data.isLimitActive);
+
+        // Mẫu 7 ngày mặc định
+        const defaultSchedule = [
+          { day: "Thứ 2", start: "", end: "", isActive: false },
+          { day: "Thứ 3", start: "", end: "", isActive: false },
+          { day: "Thứ 4", start: "", end: "", isActive: false },
+          { day: "Thứ 5", start: "", end: "", isActive: false },
+          { day: "Thứ 6", start: "", end: "", isActive: false },
+          { day: "Thứ 7", start: "", end: "", isActive: false },
+          { day: "Chủ nhật", start: "", end: "", isActive: false },
+        ];
+
+        if (!data.schedule || data.schedule.length === 0) {
+          setSchedule(defaultSchedule);
+        } else {
+          const mergedSchedule = defaultSchedule.map((defItem) => {
+            const dbMatch = data.schedule.find((s) => s.THU === defItem.day);
+            if (dbMatch) {
+              return {
+                day: defItem.day,
+                start: dbMatch.GIO_BATDAU,
+                end: dbMatch.GIO_KETTHUC,
+                isActive: true,
+              };
+            }
+            return { ...defItem, isActive: false };
+          });
+          setSchedule(mergedSchedule);
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi fetch access time:", err);
+    }
+  };
+
+  // Cập nhật khi người dùng chỉnh sửa giờ trên giao diện
+  const handleScheduleChange = (index, field, value) => {
+    const newSchedule = [...schedule];
+    newSchedule[index][field] = value;
+    setSchedule(newSchedule);
+  };
+
+  const handleTimeTyping = (index, field, value) => {
+    let val = value.replace(/[^0-9]/g, "");
+
+    if (val.length === 1 && parseInt(val[0]) >= 3) {
+      val = "0" + val;
+    }
+    if (val.length === 2 && parseInt(val) > 23) {
+      val = "0" + val;
+    }
+    if (val.length >= 3 && parseInt(val[2]) > 5) {
+      val = val.substring(0, 2);
+    }
+
+    val = val.substring(0, 4);
+    let formattedTime = val;
+    if (val.length >= 3) {
+      formattedTime = `${val.substring(0, 2)}:${val.substring(2)}`;
+    }
+
+    handleScheduleChange(index, field, formattedTime);
+  };
+
+  // Lưu cài đặt xuống Database
+  const handleSaveAccessTime = async () => {
+    try {
+      const activeSchedule = schedule.filter((item) => item.isActive);
+
+      if (isLimitActive) {
+        // Lỗi 1: Bật giới hạn nhưng không tick chọn ngày nào
+        if (activeSchedule.length === 0) {
+          return Swal.fire(
+            "Thông báo",
+            "Vui lòng chọn ít nhất 1 ngày hoặc tắt giới hạn truy cập.",
+            "warning",
+          );
+        }
+
+        const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+
+        // Lỗi 2: Có tick ngày nhưng lại để trống ô Từ/Đến
+        for (let item of activeSchedule) {
+          if (!item.start || !item.end) {
+            return Swal.fire(
+              "Thông báo",
+              `Vui lòng nhập đầy đủ giờ Từ/Đến cho ${item.day}.`,
+              "warning",
+            );
+          }
+          if (!timeRegex.test(item.start) || !timeRegex.test(item.end)) {
+            return Swal.fire(
+              "Sai định dạng",
+              `Giờ của ${item.day} không hợp lệ! Vui lòng nhập có dấu ':' ở giữa (Ví dụ: 08:30, 22:00).`,
+              "error",
+            );
+          }
+        }
+      }
+
+      const res = await fetch("http://localhost:5000/api/users/access-time", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          username: selectedUser,
+          isLimitActive: isLimitActive,
+          schedule: activeSchedule,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        Swal.fire("Thành công", data.message, "success");
+      } else {
+        Swal.fire("Lỗi", data.message, "error");
+      }
+    } catch (err) {
+      Swal.fire("Lỗi", "Không thể lưu cài đặt", err);
+    }
+  };
 
   const handleAddNewClick = () => {
     setFormData(initialFormState);
@@ -291,6 +431,15 @@ function UserManagement() {
     }
   };
 
+  const timeOptions = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      const hour = h.toString().padStart(2, "0");
+      const min = m.toString().padStart(2, "0");
+      timeOptions.push(`${hour}:${min}`);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#e6e8ea] font-sans text-[13px] text-[#333]">
       <DashboardHeader storeName="" />
@@ -394,6 +543,7 @@ function UserManagement() {
                         } else {
                           setSelectedUser(user.username);
                           setActiveTab("info");
+                          fetchAccessTime(user.username);
                         }
                       }}
                       className={`border-b border-gray-100 hover:bg-[#f1f1f1] cursor-pointer ${selectedUser === user.username ? "bg-[#e8f5e9]" : ""}`}
@@ -535,62 +685,217 @@ function UserManagement() {
                                 <div className="flex items-center gap-2 mb-4">
                                   <input
                                     type="checkbox"
-                                    checked
-                                    className="accent-[#00a651] w-4 h-4"
+                                    checked={isLimitActive}
+                                    onChange={(e) =>
+                                      setIsLimitActive(e.target.checked)
+                                    }
+                                    className="accent-[#00a651] w-4 h-4 cursor-pointer"
+                                    id="limitToggle"
                                   />
-                                  <span className="font-bold text-gray-700">
+                                  <label
+                                    htmlFor="limitToggle"
+                                    className="font-bold text-gray-700 cursor-pointer select-none"
+                                  >
                                     Giới hạn thời gian truy cập theo các ngày
                                     trong tuần
-                                  </span>
+                                  </label>
                                 </div>
-                                <table className="w-full border border-gray-200">
-                                  <thead className="bg-gray-50 text-gray-600">
-                                    <tr>
-                                      <th className="p-2 border border-gray-200 font-semibold">
-                                        Ngày trong tuần
-                                      </th>
-                                      <th className="p-2 border border-gray-200 font-semibold">
-                                        Từ
-                                      </th>
-                                      <th className="p-2 border border-gray-200 font-semibold">
-                                        Đến
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {[
-                                      "Thứ 2",
-                                      "Thứ 3",
-                                      "Thứ 4",
-                                      "Thứ 5",
-                                      "Thứ 6",
-                                      "Thứ 7",
-                                      "Chủ nhật",
-                                    ].map((day) => (
-                                      <tr key={day}>
-                                        <td className="p-2 border border-gray-200 text-center font-medium">
-                                          {day}
-                                        </td>
-                                        <td className="p-2 border border-gray-200">
-                                          <input
-                                            type="time"
-                                            defaultValue="08:00"
-                                            className="w-full outline-none focus:text-[#00a651]"
-                                          />
-                                        </td>
-                                        <td className="p-2 border border-gray-200">
-                                          <input
-                                            type="time"
-                                            defaultValue="22:00"
-                                            className="w-full outline-none focus:text-[#00a651]"
-                                          />
-                                        </td>
+                                <div
+                                  className={`transition-opacity ${!isLimitActive ? "opacity-50 pointer-events-none" : "opacity-100"}`}
+                                >
+                                  <table className="w-full border border-gray-200">
+                                    <thead className="bg-gray-50 text-gray-600">
+                                      <tr>
+                                        <th className="p-2 border border-gray-200 font-semibold w-[30%]">
+                                          Ngày trong tuần
+                                        </th>
+                                        <th className="p-2 border border-gray-200 font-semibold w-[35%]">
+                                          Từ
+                                        </th>
+                                        <th className="p-2 border border-gray-200 font-semibold w-[35%]">
+                                          Đến
+                                        </th>
                                       </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                                <div className="mt-4 flex justify-end">
-                                  <button className="bg-[#00a651] text-white px-6 py-1.5 rounded-sm font-bold shadow-sm">
+                                    </thead>
+                                    <tbody>
+                                      {schedule.map((item, index) => (
+                                        <tr key={item.day}>
+                                          {/* CỘT 1: TÊN NGÀY + CHECKBOX */}
+                                          <td className="p-2 border border-gray-200 font-medium">
+                                            <label className="flex items-center gap-2 cursor-pointer justify-center select-none">
+                                              <input
+                                                type="checkbox"
+                                                checked={item.isActive}
+                                                onChange={(e) =>
+                                                  handleScheduleChange(
+                                                    index,
+                                                    "isActive",
+                                                    e.target.checked,
+                                                  )
+                                                }
+                                                className="accent-[#00a651] w-4 h-4 cursor-pointer"
+                                              />
+                                              <span className="w-16 text-left">
+                                                {item.day}
+                                              </span>
+                                            </label>
+                                          </td>
+
+                                          {/* CỘT 2: GIỜ BẮT ĐẦU */}
+                                          <td className="p-2 border border-gray-200">
+                                            <div className="relative w-32 mx-auto">
+                                              <input
+                                                type="text"
+                                                value={item.start}
+                                                onChange={(e) =>
+                                                  handleTimeTyping(
+                                                    index,
+                                                    "start",
+                                                    e.target.value,
+                                                  )
+                                                }
+                                                disabled={!item.isActive}
+                                                className={`w-full border border-gray-300 rounded-sm pl-3 pr-8 py-1.5 outline-none text-center transition-all [&::-webkit-calendar-picker-indicator]:hidden ${
+                                                  item.isActive
+                                                    ? "bg-white focus:border-[#00a651] text-gray-700"
+                                                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                                }`}
+                                              />
+                                              <div
+                                                className={`absolute right-2 top-1/2 -translate-y-1/2 ${item.isActive ? "cursor-pointer text-gray-500 hover:text-[#00a651]" : "text-gray-300 pointer-events-none"}`}
+                                                onClick={() =>
+                                                  setOpenDropdown(
+                                                    openDropdown ===
+                                                      `${index}-start`
+                                                      ? null
+                                                      : `${index}-start`,
+                                                  )
+                                                }
+                                              >
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  fill="none"
+                                                  viewBox="0 0 24 24"
+                                                  strokeWidth={1.5}
+                                                  stroke="currentColor"
+                                                  className="w-4 h-4"
+                                                >
+                                                  <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                                                  />
+                                                </svg>
+                                              </div>
+
+                                              {/* Danh sách xổ xuống tự làm */}
+                                              {openDropdown ===
+                                                `${index}-start` && (
+                                                <ul className="absolute z-50 w-full bg-white border border-gray-300 max-h-48 overflow-y-auto shadow-lg rounded-sm mt-1 left-0">
+                                                  {timeOptions.map((time) => (
+                                                    <li
+                                                      key={time}
+                                                      className="px-3 py-1.5 hover:bg-[#00a651] hover:text-white cursor-pointer text-center text-[14px]"
+                                                      onClick={() => {
+                                                        handleScheduleChange(
+                                                          index,
+                                                          "start",
+                                                          time,
+                                                        );
+                                                        setOpenDropdown(null);
+                                                      }}
+                                                    >
+                                                      {time}
+                                                    </li>
+                                                  ))}
+                                                </ul>
+                                              )}
+                                            </div>
+                                          </td>
+
+                                          {/* CỘT 3: GIỜ KẾT THÚC */}
+                                          <td className="p-2 border border-gray-200">
+                                            <div className="relative w-32 mx-auto">
+                                              <input
+                                                type="text"
+                                                value={item.end}
+                                                onChange={(e) =>
+                                                  handleTimeTyping(
+                                                    index,
+                                                    "end",
+                                                    e.target.value,
+                                                  )
+                                                }
+                                                disabled={!item.isActive}
+                                                className={`w-full border border-gray-300 rounded-sm pl-3 pr-8 py-1.5 outline-none text-center transition-all [&::-webkit-calendar-picker-indicator]:hidden ${
+                                                  item.isActive
+                                                    ? "bg-white focus:border-[#00a651] text-gray-700"
+                                                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                                }`}
+                                              />
+
+                                              {/* Icon Đồng hồ */}
+                                              <div
+                                                className={`absolute right-2 top-1/2 -translate-y-1/2 ${item.isActive ? "cursor-pointer text-gray-500 hover:text-[#00a651]" : "text-gray-300 pointer-events-none"}`}
+                                                onClick={() =>
+                                                  setOpenDropdown(
+                                                    openDropdown ===
+                                                      `${index}-end`
+                                                      ? null
+                                                      : `${index}-end`,
+                                                  )
+                                                }
+                                              >
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  fill="none"
+                                                  viewBox="0 0 24 24"
+                                                  strokeWidth={1.5}
+                                                  stroke="currentColor"
+                                                  className="w-4 h-4"
+                                                >
+                                                  <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                                                  />
+                                                </svg>
+                                              </div>
+
+                                              {/* Danh sách xổ xuống tự làm */}
+                                              {openDropdown ===
+                                                `${index}-end` && (
+                                                <ul className="absolute z-50 w-full bg-white border border-gray-300 max-h-48 overflow-y-auto shadow-lg rounded-sm mt-1 left-0">
+                                                  {timeOptions.map((time) => (
+                                                    <li
+                                                      key={time}
+                                                      className="px-3 py-1.5 hover:bg-[#00a651] hover:text-white cursor-pointer text-center text-[14px]"
+                                                      onClick={() => {
+                                                        handleScheduleChange(
+                                                          index,
+                                                          "end",
+                                                          time,
+                                                        );
+                                                        setOpenDropdown(null);
+                                                      }}
+                                                    >
+                                                      {time}
+                                                    </li>
+                                                  ))}
+                                                </ul>
+                                              )}
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                                <div className="mt-5 flex justify-end">
+                                  <button
+                                    onClick={handleSaveAccessTime}
+                                    className="bg-[#00a651] text-white px-8 py-2 rounded-sm font-bold shadow-sm hover:bg-[#008d45] transition-all cursor-pointer text-[15px]"
+                                  >
                                     Lưu cài đặt giờ
                                   </button>
                                 </div>

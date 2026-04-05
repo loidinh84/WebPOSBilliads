@@ -196,6 +196,81 @@ const NhanVienController = {
         .json({ success: false, message: "Lỗi hệ thống: " + err.message });
     }
   },
+
+  // 6. Lấy cài đặt thời gian truy cập của 1 user
+  getAccessTime: async (req, res) => {
+    const { username } = req.params;
+    try {
+      const pool = await poolPromise;
+
+      // Lấy trạng thái công tắc bật/tắt
+      const accountStatus = await pool
+        .request()
+        .input("u", sql.NVarChar, username)
+        .query("SELECT GIOIHAN_TRUYCAP FROM TAIKHOAN WHERE TENDANGNHAP = @u");
+
+      // Lấy danh sách 7 ngày
+      const accessTimes = await pool
+        .request()
+        .input("u", sql.NVarChar, username)
+        .query(
+          "SELECT THU, GIO_BATDAU, GIO_KETTHUC FROM THOIGIAN_TRUYCAP WHERE TENDANGNHAP = @u",
+        );
+
+      res.json({
+        success: true,
+        isLimitActive: accountStatus.recordset[0]?.GIOIHAN_TRUYCAP === 1,
+        schedule: accessTimes.recordset,
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 7. Lưu cài đặt thời gian truy cập
+  saveAccessTime: async (req, res) => {
+    const { username, isLimitActive, schedule } = req.body;
+    const pool = await poolPromise;
+    const transaction = new sql.Transaction(pool);
+
+    try {
+      await transaction.begin();
+
+      // Cập nhật công tắc ở bảng TAIKHOAN
+      await transaction
+        .request()
+        .input("limit", sql.Int, isLimitActive ? 1 : 0)
+        .input("u", sql.NVarChar, username)
+        .query(
+          "UPDATE TAIKHOAN SET GIOIHAN_TRUYCAP = @limit WHERE TENDANGNHAP = @u",
+        );
+
+      // Xóa lịch cũ đi để nạp lịch mới
+      await transaction
+        .request()
+        .input("u", sql.NVarChar, username)
+        .query("DELETE FROM THOIGIAN_TRUYCAP WHERE TENDANGNHAP = @u");
+
+      // Chèn 7 ngày mới vào
+      for (const item of schedule) {
+        await transaction
+          .request()
+          .input("u", sql.NVarChar, username)
+          .input("thu", sql.NVarChar, item.day)
+          .input("bd", sql.VarChar, item.start)
+          .input("kt", sql.VarChar, item.end).query(`
+            INSERT INTO THOIGIAN_TRUYCAP (TENDANGNHAP, THU, GIO_BATDAU, GIO_KETTHUC)
+            VALUES (@u, @thu, @bd, @kt)
+          `);
+      }
+
+      await transaction.commit();
+      res.json({ success: true, message: "Lưu cài đặt giờ thành công!" });
+    } catch (err) {
+      if (transaction) await transaction.rollback();
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
 };
 
 module.exports = NhanVienController;
