@@ -32,6 +32,9 @@ app.use("/api/imports", importRoutes);
 const returnImportRoutes = require("./routes/returnImportRoutes.js");
 app.use("/api/return-imports", returnImportRoutes);
 
+const discountRoutes = require("./routes/discountRoutes");
+app.use("/api/discounts", discountRoutes);
+
 const exportRoutes = require("./routes/exportRoutes.js");
 app.use("/api/transactions/exports", exportRoutes);
 
