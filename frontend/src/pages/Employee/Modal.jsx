@@ -213,6 +213,10 @@ const AddEmployeeForm = ({ onAdd, onClose }) => {
   const [form, setForm] = useState({
     name: "",
     phone: "",
+    email: "",
+    address: "",
+    gender: "",
+    dob: "",
     idCard: "",
     checkInId: "",
     role: "",
@@ -246,17 +250,11 @@ const AddEmployeeForm = ({ onAdd, onClose }) => {
 
   const fields = [
     { label: "Họ và tên", name: "name", placeholder: "Nhập họ và tên" },
-    {
-      label: "Số điện thoại",
-      name: "phone",
-      placeholder: "Nhập số điện thoại",
-    },
+    { label: "Số điện thoại", name: "phone", placeholder: "Nhập số điện thoại" },
+    { label: "Email", name: "email", placeholder: "Nhập email" },
+    { label: "Địa chỉ", name: "address", placeholder: "Nhập địa chỉ" },
     { label: "Số CMND/CCCD", name: "idCard", placeholder: "Nhập số định danh" },
-    {
-      label: "Mã chấm công",
-      name: "checkInId",
-      placeholder: "Nhập mã chấm công",
-    },
+    { label: "Mã chấm công", name: "checkInId", placeholder: "Nhập mã chấm công" },
   ];
 
   return (
@@ -316,10 +314,25 @@ const AddEmployeeForm = ({ onAdd, onClose }) => {
             >
               <option value="">-- Chọn chức vụ --</option>
               <option>Quản lý</option>
+              <option>Thu ngân</option>
               <option>Nhân viên bàn</option>
               <option>Bảo vệ</option>
-              <option>Thu ngân</option>
             </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[13px] font-bold text-gray-700 mb-1.5">Giới tính</label>
+              <select name="gender" value={form.gender} onChange={handleChange} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#5D5FEF] focus:ring-2 transition-all">
+                <option value="">Chọn</option>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] font-bold text-gray-700 mb-1.5">Ngày sinh</label>
+              <input type="date" name="dob" value={form.dob} onChange={handleChange} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#5D5FEF] focus:ring-2 transition-all" />
+            </div>
           </div>
         </div>
       </div>
@@ -348,11 +361,15 @@ const AddEmployeeForm = ({ onAdd, onClose }) => {
  */
 const EditEmployeeForm = ({ data, onSave, onClose, onBack }) => {
   const [form, setForm] = useState({
-    name: data?.name || "",
-    phone: data?.phone || "",
-    idCard: data?.idCard || "",
-    checkInId: data?.checkInId || "",
-    role: data?.role || "",
+    name: data?.name || data?.TENNGUOIDUNG || "",
+    phone: data?.phone || data?.SDT || "",
+    email: data?.email || data?.EMAIL || "",
+    address: data?.address || data?.DIACHI || "",
+    gender: data?.gender || data?.GIOITINH || "",
+    dob: data?.dob ? new Date(data.dob).toISOString().split('T')[0] : "",
+    idCard: data?.idCard || data?.CCCD || "",
+    checkInId: data?.checkInId || data?.MACCH || "",
+    role: data?.role || data?.CHUCVU || "",
   });
   const [errors, setErrors] = useState({});
 
@@ -377,17 +394,11 @@ const EditEmployeeForm = ({ data, onSave, onClose, onBack }) => {
 
   const fields = [
     { label: "Họ và tên", name: "name", placeholder: "Nhập họ và tên" },
-    {
-      label: "Số điện thoại",
-      name: "phone",
-      placeholder: "Nhập số điện thoại",
-    },
+    { label: "Số điện thoại", name: "phone", placeholder: "Nhập số điện thoại" },
+    { label: "Email", name: "email", placeholder: "Nhập email" },
+    { label: "Địa chỉ", name: "address", placeholder: "Nhập địa chỉ" },
     { label: "Số CMND/CCCD", name: "idCard", placeholder: "Nhập số định danh" },
-    {
-      label: "Mã chấm công",
-      name: "checkInId",
-      placeholder: "Nhập mã chấm công",
-    },
+    { label: "Mã chấm công", name: "checkInId", placeholder: "Nhập mã chấm công" },
   ];
 
   return (
@@ -413,7 +424,7 @@ const EditEmployeeForm = ({ data, onSave, onClose, onBack }) => {
               Định dạng JPG, PNG. Tối đa 2MB.
             </p>
             <p className="text-[12px] font-bold text-[#5D5FEF] mt-1">
-              {data?.staffId}
+              {data?.staffId || data?.MANVIEN}
             </p>
           </div>
         </div>
@@ -456,10 +467,25 @@ const EditEmployeeForm = ({ data, onSave, onClose, onBack }) => {
             >
               <option value="">-- Chọn chức vụ --</option>
               <option>Quản lý</option>
+              <option>Thu ngân</option>
               <option>Nhân viên bàn</option>
               <option>Bảo vệ</option>
-              <option>Thu ngân</option>
             </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[13px] font-bold text-gray-700 mb-1.5">Giới tính</label>
+              <select name="gender" value={form.gender} onChange={handleChange} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#5D5FEF] focus:ring-2 transition-all">
+                <option value="">Chọn</option>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] font-bold text-gray-700 mb-1.5">Ngày sinh</label>
+              <input type="date" name="dob" value={form.dob} onChange={handleChange} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#5D5FEF] focus:ring-2 transition-all" />
+            </div>
           </div>
         </div>
       </div>
