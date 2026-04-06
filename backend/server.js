@@ -13,6 +13,9 @@ app.use("/api/auth", authRoutes);
 const userRoutes = require("./routes/userRoutes");
 app.use("/api/user", userRoutes);
 
+const employeeRoutes = require("./routes/employeeRoutes");
+app.use("/api/employees", employeeRoutes);
+
 const productRoutes = require("./routes/productRoutes");
 app.use("/api/products", productRoutes);
 app.use("/api/categories", productRoutes);
