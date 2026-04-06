@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardHeader from "../components/DashboardHeader";
 import * as Icons from "../assets/icons/index";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function Account() {
   const [user, setUser] = useState({ TENDANGNHAP: "" });
@@ -66,12 +68,18 @@ function Account() {
 
   // 4. API: Lưu thông tin cá nhân
   const handleUpdateProfile = async () => {
+    const toastId = toast.loading("Đang lưu thay đổi...");
     try {
+      const token = localStorage.getItem("token");
+
       const response = await fetch(
         `http://localhost:5000/api/user/update/${user.TENDANGNHAP}`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify(user),
         },
       );
@@ -79,14 +87,29 @@ function Account() {
       const data = await response.json();
 
       if (data.success) {
-        alert("Cập nhật thông tin thành công!");
+        toast.update(toastId, {
+          render: "Cập nhật thông tin thành công!",
+          type: "success",
+          isLoading: false,
+          autoClose: 2000,
+        });
         setTempUser(user);
         setIsEditing(false);
       } else {
-        alert("Lỗi từ server: " + data.message);
+        toast.update(toastId, {
+          render: "Lỗi từ server: " + data.message,
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
       }
     } catch (err) {
-      alert("Không thể kết nối đến server để lưu dữ liệu!");
+      toast.update(toastId, {
+        render: "Không thể kết nối đến server để lưu dữ liệu!",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
       console.error(err);
     }
   };
@@ -98,9 +121,11 @@ function Account() {
 
     // Kiểm tra khớp mật khẩu mới
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("Mật khẩu xác nhận không khớp!");
+      toast.warning("Mật khẩu xác nhận không khớp!");
       return;
     }
+
+    const toastId = toast.loading("Đang xử lý đổi mật khẩu...");
 
     try {
       const response = await fetch(
@@ -121,18 +146,37 @@ function Account() {
       const data = await response.json();
 
       if (data.success) {
-        alert("Đổi mật khẩu thành công!");
-        setShowPasswordModal(false); // Đóng modal
+        toast.update(toastId, {
+          render: "Đổi mật khẩu thành công!",
+          type: "success",
+          isLoading: false,
+          autoClose: 2000,
+        });
+        setShowPasswordModal(false);
         setPasswordData({
           oldPassword: "",
           newPassword: "",
           confirmPassword: "",
         });
       } else {
-        alert(data.message);
+        toast.update(toastId, {
+          render: data.message,
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
       }
     } catch (err) {
-      alert("Lỗi server, vui lòng thử lại sau!", err);
+      toast.update(
+        toastId,
+        {
+          render: "Lỗi server, vui lòng thử lại sau!",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        },
+        err,
+      );
     }
   };
 
@@ -140,6 +184,10 @@ function Account() {
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.warning("Ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB.");
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result;
@@ -154,6 +202,7 @@ function Account() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] font-inter">
+      <ToastContainer position="top-right" />
       <DashboardHeader />
       <main className="max-w-7xl mx-auto py-10 px-6">
         <div className="flex flex-col lg:flex-row gap-10">
