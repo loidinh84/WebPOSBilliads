@@ -41,5 +41,8 @@ app.use("/api/discounts", discountRoutes);
 const exportRoutes = require("./routes/exportRoutes.js");
 app.use("/api/transactions/exports", exportRoutes);
 
+const adminUserRoutes = require("./routes/AdminUserRoutes.js");
+app.use("/api/users", adminUserRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server chạy tại cổng ${PORT}`));

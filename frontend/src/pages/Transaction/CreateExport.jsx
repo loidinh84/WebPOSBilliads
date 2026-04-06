@@ -4,6 +4,7 @@ import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import Swal from "sweetalert2";
 import * as Icons from "../../assets/icons/index";
+import * as XLSX from "xlsx";
 
 function CreateExport() {
   const navigate = useNavigate();
@@ -14,22 +15,9 @@ function CreateExport() {
   const [searchResults, setSearchResults] = useState([]);
   const [note, setNote] = useState("");
   const [nextCode, setNextCode] = useState("Mã phiếu tự động");
+
   const searchRef = useRef(null);
-
-  // Biến này bị thiếu dẫn đến lỗi của bạn
-  const currentUser = localStorage.getItem("userName") || "Admin";
-
-  // --- 2. CÁC HÀM XỬ LÝ ---
-  useEffect(() => {
-    fetchNextCode();
-    const handleClickOutside = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setSearchResults([]);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const fileInputRef = useRef(null);
 
   const fetchNextCode = async () => {
     try {
@@ -43,7 +31,7 @@ function CreateExport() {
         const data = await res.json();
         setNextCode(
           data.lastCode
-            ? `XH${String(parseInt(data.lastCode.replace("XH", "")) + 1).padStart(6, "0")}`
+            ? `XH${String(parseInt(data.lastCode.replace("XH", "")) + 1).padStart(5, "0")}`
             : "XH000001",
         );
       }
@@ -52,28 +40,44 @@ function CreateExport() {
     }
   };
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchNextCode();
+
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchResults([]);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Hàm tìm kiếm hàng hóa
   const handleSearch = async (query) => {
     setSearchQuery(query);
     if (query.trim().length < 1) {
       setSearchResults([]);
       return;
     }
+
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/products/search?query=${query}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        },
-      );
+      const url = `http://localhost:5000/api/transactions/exports/search-products?query=${query}`;
+
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+
       if (res.ok) {
         const data = await res.json();
         setSearchResults(data);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Lỗi kết nối:", err);
     }
   };
 
+  // Hàm thêm hàng hóa
   const handleAddItem = (product) => {
     const existing = items.find((i) => i.MAHANGHOA === product.MAHANGHOA);
     if (existing) {
@@ -87,13 +91,33 @@ function CreateExport() {
     } else {
       setItems([
         ...items,
-        { ...product, SOLUONG: 1, GIATRITHIETHAI: product.GIANHAP || 0 },
+        {
+          MAHANGHOA: product.MAHANGHOA,
+          TENHANGHOA: product.TENHANGHOA,
+          SOLUONG: 1,
+          GIATRITHIETHAI: Number(product.GIANHAP) || 0,
+        },
       ]);
     }
     setSearchQuery("");
     setSearchResults([]);
   };
 
+  // Hàm cập nhật số lượng
+  const updateQuantity = (id, value) => {
+    const newQty = parseInt(value);
+    if (isNaN(newQty) || newQty < 1) return;
+    setItems(
+      items.map((i) => (i.MAHANGHOA === id ? { ...i, SOLUONG: newQty } : i)),
+    );
+  };
+
+  // Hàm xóa món hàng khỏi danh sách
+  const removeItem = (id) => {
+    setItems(items.filter((i) => i.MAHANGHOA !== id));
+  };
+
+  // Tính tổng tiền
   const totalAmount = items.reduce(
     (sum, i) => sum + i.SOLUONG * i.GIATRITHIETHAI,
     0,
@@ -101,44 +125,144 @@ function CreateExport() {
 
   const handleSubmit = async (isComplete) => {
     if (items.length === 0)
-      return Swal.fire("Lỗi", "Vui lòng chọn ít nhất 1 mặt hàng", "error");
-    const payload = {
-      MAXUATHUY: nextCode,
-      LYDO: note,
-      TONGTIEN: totalAmount,
-      TRANGTHAI: isComplete ? 1 : 0,
-      items: items,
-      MANVIEN: localStorage.getItem("MANVIEN") || "NV001",
-    };
-    try {
-      const res = await fetch(
-        "http://localhost:5000/api/transactions/exports/create",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify(payload),
-        },
+      return Swal.fire(
+        "Thông báo",
+        "Vui lòng chọn ít nhất 1 mặt hàng để xuất hủy",
+        "warning",
       );
-      if (res.ok) {
-        Swal.fire(
-          "Thành công",
-          isComplete ? "Đã hoàn thành phiếu" : "Đã lưu tạm",
-          "success",
+
+    const result = await Swal.fire({
+      title: isComplete ? "Xác nhận hoàn thành?" : "Lưu phiếu tạm?",
+      text: isComplete
+        ? "Hàng hóa sẽ bị trừ khỏi kho ngay lập tức."
+        : "Phiếu sẽ được lưu để xử lý sau.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Đồng ý",
+      cancelButtonText: "Hủy",
+    });
+
+    if (result.isConfirmed) {
+      const payload = {
+        MAXUATHUY: nextCode,
+        LYDO: note,
+        TONGTIEN: totalAmount,
+        TRANGTHAI: isComplete ? 1 : 0,
+        items: items,
+        MANVIEN: localStorage.getItem("MANVIEN") || "NV001",
+      };
+
+      try {
+        const res = await fetch(
+          "http://localhost:5000/api/transactions/exports/create",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify(payload),
+          },
         );
-        navigate("/transactions/exports");
+
+        if (res.ok) {
+          Swal.fire(
+            "Thành công",
+            isComplete
+              ? "Đã xuất hủy hàng hóa và trừ kho."
+              : "Đã lưu phiếu tạm.",
+            "success",
+          );
+          navigate("/transactions/exports");
+        } else {
+          const errorData = await res.json();
+          Swal.fire("Lỗi", errorData.message || "Không thể lưu phiếu", "error");
+        }
+      } catch (err) {
+        Swal.fire("Lỗi", "Mất kết nối với máy chủ", err);
       }
-    } catch (err) {
-      Swal.fire("Lỗi", "Lỗi server", "error");
     }
   };
 
-  // --- 3. GIAO DIỆN (RETURN) ---
+  const handleImportExcel = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: "binary" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws);
+
+        if (data.length === 0)
+          return Swal.fire("Lỗi", "File Excel không có dữ liệu!", "error");
+
+        const excelItems = data
+          .map((row) => ({
+            MAHANGHOA: row.MAHANGHOA || row["Mã hàng"] || row["Mã sản phẩm"],
+            TENHANGHOA:
+              row.TENHANGHOA || row["Tên hàng"] || row["Tên sản phẩm"],
+            SOLUONG: parseInt(row.SOLUONG || row["Số lượng"]) || 1,
+            GIATRITHIETHAI:
+              parseFloat(
+                row.GIATRITHIETHAI || row["Giá trị hủy"] || row["Đơn giá"],
+              ) || 0,
+          }))
+          .filter((item) => item.MAHANGHOA);
+        const res = await fetch(
+          "http://localhost:5000/api/transactions/exports/get-details-bulk",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({ codes: excelItems.map((d) => d.MAHANGHOA) }),
+          },
+        );
+
+        if (res.ok) {
+          const dbProducts = await res.json();
+
+          const finalItems = excelItems.map((item) => {
+            const dbInfo = dbProducts.find(
+              (p) => p.MAHANGHOA === item.MAHANGHOA,
+            );
+            return {
+              ...item,
+              TENHANGHOA:
+                item.TENHANGHOA ||
+                (dbInfo ? dbInfo.TENHANGHOA : "Không xác định"),
+              GIATRITHIETHAI:
+                item.GIATRITHIETHAI > 0
+                  ? item.GIATRITHIETHAI
+                  : dbInfo
+                    ? dbInfo.GIANHAP
+                    : 0,
+            };
+          });
+
+          setItems([...items, ...finalItems]);
+          Swal.fire(
+            "Thành công",
+            `Đã nhập ${finalItems.length} mặt hàng từ Excel`,
+            "success",
+          );
+        }
+
+        e.target.value = null;
+      } catch (err) {
+        Swal.fire("Lỗi", "Không thể đọc file Excel!", err);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   return (
     <div className="min-h-screen bg-[#f0f2f5] font-sans text-sm text-black">
-      <DashboardHeader storeName="Billiards Lục Lọi" />
+      <DashboardHeader storeName="" />
       <DashboardNav activeTab="Giao dịch" />
 
       <main className="max-w-[1600px] mx-auto p-4 flex flex-col gap-4">
@@ -227,19 +351,38 @@ function CreateExport() {
                   {items.length === 0 ? (
                     <tr>
                       <td colSpan="7" className="p-20 bg-white">
-                        <div className="flex flex-col items-center justify-center text-center opacity-40">
-                          <img
-                            src={Icons.Box}
-                            alt=""
-                            className="w-20 h-20 mb-4"
-                          />
-                          <h2 className="font-bold text-xl mb-2 text-gray-800">
-                            Chưa có hàng hóa nào
+                        <div className="flex flex-col items-center justify-center text-center">
+                          <h2 className="font-bold text-xl  text-gray-800">
+                            Thêm sản phẩm từ file excel
                           </h2>
-                          <p className="text-gray-500 text-sm">
-                            Vui lòng sử dụng thanh tìm kiếm để thêm hàng vào
-                            phiếu
+                          <p className="text-gray-500 mb-6 text-sm">
+                            Xử lý dữ liệu (Tải về File mẫu:{" "}
+                            <a
+                              href="#"
+                              className="text-blue-500 hover:underline"
+                            >
+                              Excel 2003
+                            </a>
+                            )
                           </p>
+                          <button
+                            onClick={() => fileInputRef.current.click()}
+                            className="flex items-center gap-2 bg-[#09c765] hover:bg-green-600 text-white font-bold py-2.5 px-6 rounded transition-colors shadow-sm text-xl cursor-pointer active:scale-95"
+                          >
+                            <img
+                              src={Icons.FileExport}
+                              alt="Nhập file"
+                              className="w-7 h-7 brightness-0 invert"
+                            />
+                            Chọn file dữ liệu
+                          </button>
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={(e) => handleImportExcel(e)}
+                            accept=".xlsx, .xls"
+                            className="hidden"
+                          />
                         </div>
                       </td>
                     </tr>
@@ -283,9 +426,9 @@ function CreateExport() {
                             className="text-gray-400 hover:text-red-600 p-1 cursor-pointer transition-colors"
                           >
                             <img
-                              src={Icons.Trash}
+                              src={Icons.Delete}
                               alt="Xóa"
-                              className="w-5 h-5"
+                              className="w-5 h-5 brightness-75"
                             />
                           </button>
                         </td>
@@ -302,12 +445,9 @@ function CreateExport() {
             {/* Header Sidebar */}
             <div className="p-3 border-b border-gray-200 flex justify-between items-center bg-gray-50">
               <div className="flex items-center gap-1 text-gray-700">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-[10px] font-bold text-blue-600 italic">
-                  A
-                </div>
-                <span className="font-medium">Admin</span>
+                <span className="font-bold">Admin</span>
               </div>
-              <div className="text-gray-500 font-mono text-[11px]">
+              <div className="text-gray-500 text-[13px]">
                 {new Date().toLocaleDateString("vi-VN")}{" "}
                 {new Date().toLocaleTimeString("vi-VN", {
                   hour: "2-digit",
@@ -320,30 +460,28 @@ function CreateExport() {
             <div className="p-4 flex-1 overflow-y-auto space-y-5">
               <div className="space-y-4 pt-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Mã phiếu xuất hủy</span>
-                  <span className="font-bold text-gray-800 font-mono">
-                    {nextCode}
+                  <span className="text-gray-600 font-medium">
+                    Mã phiếu xuất hủy
                   </span>
+                  <span className="font-medium text-gray-700 ">{nextCode}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Trạng thái</span>
-                  <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded font-bold text-[11px]">
-                    PHIẾU TẠM
-                  </span>
+                  <span className="text-gray-600 font-medium">Trạng thái</span>
+                  <span className="font-medium text-gray-700">Phiếu tạm</span>
                 </div>
 
                 <div className="pt-4 border-t border-dashed border-gray-200">
-                  <div className="flex justify-between items-end">
+                  <div className="flex justify-between  items-center">
                     <span className="text-gray-600 font-medium">
                       Tổng giá trị hủy
                     </span>
                     <div className="text-right">
-                      <div className="text-2xl font-black text-blue-600">
+                      <div className="text-[17px] font-bold text-gray-700">
                         {totalAmount.toLocaleString()}{" "}
                         <small className="text-xs">đ</small>
                       </div>
-                      <div className="text-[10px] text-gray-400">
+                      <div className="text-[12px] text-gray-500">
                         Số lượng mặt hàng: {items.length}
                       </div>
                     </div>
@@ -352,18 +490,10 @@ function CreateExport() {
 
                 {/* Khu vực Ghi chú */}
                 <div className="pt-2">
-                  <label className="text-gray-500 mb-2 flex items-center gap-1">
-                    <img
-                      src={Icons.Edit}
-                      className="w-3 h-3 opacity-40"
-                      alt=""
-                    />
-                    Ghi chú
-                  </label>
                   <textarea
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    placeholder="Lý do xuất hủy (Hàng hỏng, hết hạn, vỡ...)"
+                    placeholder="Ghi chú..."
                     className="w-full border border-gray-300 rounded p-2 outline-none focus:border-blue-500 resize-none h-24 text-gray-700 bg-gray-50/50"
                   ></textarea>
                 </div>
@@ -379,20 +509,20 @@ function CreateExport() {
                 <img
                   src={Icons.SaveFile}
                   alt=""
-                  className="w-4 h-4 brightness-0 invert"
+                  className="w-5 h-5 brightness-0 invert"
                 />
-                LƯU TẠM
+                Lưu tạm
               </button>
               <button
                 onClick={() => handleSubmit(true)}
-                className="flex-1 bg-[#00a651] hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-all shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+                className="flex-1 bg-[#00a651] hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-all shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-2 text-[13px]"
               >
                 <img
                   src={Icons.Tick}
                   alt=""
-                  className="w-5 h-5 brightness-0 invert"
+                  className="w-7 h-7 brightness-0 invert"
                 />
-                HOÀN THÀNH
+                Hoàn thành
               </button>
             </div>
           </aside>
