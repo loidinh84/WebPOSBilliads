@@ -287,7 +287,7 @@ export default function Discount() {
                   </div>
                   <div className="w-2/3">
                     <label className="block text-sm font-bold text-slate-700 mb-1">
-                      Tên chương trình <span className="text-red-500">*</span>
+                      Tên khuyến mãi <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"

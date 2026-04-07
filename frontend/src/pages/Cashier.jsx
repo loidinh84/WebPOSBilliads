@@ -127,12 +127,12 @@ function Cashier() {
 
         const [setRes, discRes, prodRes, catRes, tablesRes, activeRes] =
           await Promise.all([
-            axios.get("http://localhost:5000/api/store-settings", config),
-            axios.get("http://localhost:5000/api/discounts", config),
-            axios.get("http://localhost:5000/api/products", config),
-            axios.get("http://localhost:5000/api/products/categories", config),
-            axios.get("http://localhost:5000/api/tables", config),
-            axios.get("http://localhost:5000/api/bills/active", config),
+            axios.get("http://localhost:5000/api/store-settings", config).catch(() => ({ data: { success: false, data: {} } })),
+            axios.get("http://localhost:5000/api/discounts", config).catch(() => ({ data: { success: false, data: [] } })),
+            axios.get("http://localhost:5000/api/products", config).catch(() => ({ data: [] })),
+            axios.get("http://localhost:5000/api/products/categories", config).catch(() => ({ data: { data: [] } })),
+            axios.get("http://localhost:5000/api/tables", config).catch(() => ({ data: { data: [] } })),
+            axios.get("http://localhost:5000/api/bills/active", config).catch(() => ({ data: { success: false, data: [] } })),
           ]);
 
         // --- 1. XỬ LÝ CÀI ĐẶT CỬA HÀNG ---

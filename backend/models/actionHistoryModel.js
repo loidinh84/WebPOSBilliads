@@ -1,7 +1,7 @@
 const { sql, poolPromise } = require('../config/db'); 
 
 const ActionHistoryModel = {
-    // Hàm 1: Lấy danh sách lịch sử thao tác (hiển thị lên Frontend)
+    // Hàm 1: Lấy danh sách lịch sử thao tác
     getAllActionHistory: async () => {
         try {
             const pool = await poolPromise;
@@ -27,20 +27,17 @@ const ActionHistoryModel = {
         }
     },
 
-    // Hàm 2: Ghi log thao tác mới (để gọi ở các Controller khác)
+    // Hàm 2: Ghi log thao tác mới
     insertActionLog: async (maNhanVien, hanhDong, maDoiTuong, chiTiet) => {
         try {
             const pool = await poolPromise;
             
-            // Tự động tính ID mới nhất (MAX + 1) để tránh lỗi NULL Khóa chính
+            // SIÊU GỌN: Không cần nhắc đến MATHAOTAC nữa, SQL tự lo!
             const query = `
-                INSERT INTO LichSuThaoTac (MATHAOTAC, MANVIEN, THOIGIAN, HANHDONG, MADOITUONG, CHITIETTHAYDOI)
-                SELECT 
-                    ISNULL(MAX(MATHAOTAC), 0) + 1, 
-                    @MANVIEN, GETDATE(), @HANHDONG, @MADOITUONG, @CHITIET
-                FROM LichSuThaoTac
+                INSERT INTO LichSuThaoTac (MANVIEN, THOIGIAN, HANHDONG, MADOITUONG, CHITIETTHAYDOI)
+                VALUES (@MANVIEN, GETDATE(), @HANHDONG, @MADOITUONG, @CHITIET);
             `;
-
+            
             await pool.request()
                 .input('MANVIEN', sql.VarChar, maNhanVien)
                 .input('HANHDONG', sql.NVarChar, hanhDong)
@@ -50,7 +47,7 @@ const ActionHistoryModel = {
             return true;
         } catch (error) {
             console.error("Lỗi ghi log thao tác:", error);
-            return false; // Không crash app nếu ghi log thất bại
+            return false; 
         }
     }
 };
