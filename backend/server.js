@@ -59,6 +59,19 @@ app.use("/api/users", adminUserRoutes);
 const actionHistoryRoutes = require('./routes/actionHistoryRoutes');
 app.use('/api/action-history', actionHistoryRoutes);
 
+// BỔ SUNG: Các route bị thiếu sau push/merge
+const attendanceRoutes = require("./routes/attendanceRoutes");
+app.use("/api/attendance", attendanceRoutes);
+
+const salaryRoutes = require("./routes/salaryRoutes");
+app.use("/api/salary", salaryRoutes);
+
+const inventoryRoutes = require("./routes/inventoryRoutes");
+app.use("/api/inventory", inventoryRoutes);
+
+const kitchenRoutes = require("./routes/kitchenRoutes");
+app.use("/api/kitchen", kitchenRoutes);
+
 // --- LISTEN ---
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server chạy tại cổng ${PORT}`));

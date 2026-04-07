@@ -32,13 +32,22 @@ const ActionHistoryModel = {
         try {
             const pool = await poolPromise;
             
-            // SIÊU GỌN: Không cần nhắc đến MATHAOTAC nữa, SQL tự lo!
+            // Tự động tạo mã thao tác (LOG001, LOG002...)
+            const maxIdResult = await pool.request().query("SELECT TOP 1 MATHAOTAC FROM LichSuThaoTac ORDER BY MATHAOTAC DESC");
+            let newId = "LOG001";
+            if (maxIdResult.recordset.length > 0) {
+                const lastId = maxIdResult.recordset[0].MATHAOTAC;
+                const lastNum = parseInt(lastId.replace(/\D/g, ""), 10);
+                newId = "LOG" + String(lastNum + 1).padStart(3, "0");
+            }
+
             const query = `
-                INSERT INTO LichSuThaoTac (MANVIEN, THOIGIAN, HANHDONG, MADOITUONG, CHITIETTHAYDOI)
-                VALUES (@MANVIEN, GETDATE(), @HANHDONG, @MADOITUONG, @CHITIET);
+                INSERT INTO LichSuThaoTac (MATHAOTAC, MANVIEN, THOIGIAN, HANHDONG, MADOITUONG, CHITIETTHAYDOI)
+                VALUES (@ID, @MANVIEN, GETDATE(), @HANHDONG, @MADOITUONG, @CHITIET);
             `;
             
             await pool.request()
+                .input('ID', sql.VarChar, newId)
                 .input('MANVIEN', sql.VarChar, maNhanVien)
                 .input('HANHDONG', sql.NVarChar, hanhDong)
                 .input('MADOITUONG', sql.VarChar, maDoiTuong)

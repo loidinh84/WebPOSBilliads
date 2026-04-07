@@ -9,16 +9,16 @@ const Attendance = {
         .input("start", sql.Date, startDate)
         .input("end", sql.Date, endDate)
         .query(`
-          WITH DateRange AS (
-            SELECT DISTINCT NGAY, MANVIEN FROM LICHLAMVIEC WHERE NGAY BETWEEN @start AND @end
-            UNION
-            SELECT DISTINCT NGAY, MANVIEN FROM CHAMCONG WHERE NGAY BETWEEN @start AND @end
+          WITH Dates AS (
+            SELECT CAST(@start AS DATE) AS NGAY
+            UNION ALL
+            SELECT DATEADD(day, 1, NGAY) FROM Dates WHERE NGAY < CAST(@end AS DATE)
           )
           SELECT 
             nv.MANVIEN, 
             nv.TENNGUOIDUNG,
             nv.CHUCVU,
-            dr.NGAY,
+            d.NGAY,
             lc.GIOBATDAU AS DU_KIEN_VAO,
             lc.GIOKETTHUC AS DU_KIEN_RA,
             cc.MACHAMCONG,
@@ -27,12 +27,12 @@ const Attendance = {
             cc.TONGGIO,
             cc.GHICHU,
             cc.TRANGTHAI
-          FROM DateRange dr
-          JOIN NHANVIEN nv ON dr.MANVIEN = nv.MANVIEN
-          LEFT JOIN LICHLAMVIEC lc ON dr.MANVIEN = lc.MANVIEN AND dr.NGAY = lc.NGAY
-          LEFT JOIN CHAMCONG cc ON dr.MANVIEN = cc.MANVIEN AND dr.NGAY = cc.NGAY
+          FROM Dates d
+          CROSS JOIN NHANVIEN nv
+          LEFT JOIN LICHLAMVIEC lc ON nv.MANVIEN = lc.MANVIEN AND d.NGAY = lc.NGAY
+          LEFT JOIN CHAMCONG cc ON nv.MANVIEN = cc.MANVIEN AND d.NGAY = cc.NGAY
           WHERE (nv.DAXOA = 0 OR nv.DAXOA IS NULL)
-          ORDER BY nv.MANVIEN, dr.NGAY
+          ORDER BY nv.MANVIEN, d.NGAY
         `);
       return result.recordset;
     } catch (error) {
