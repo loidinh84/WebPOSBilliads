@@ -41,12 +41,26 @@ function Login() {
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.setItem("token", data.token);
 
-        const savedStoreName = localStorage.getItem("storeName");
+        const settingsRes = await fetch(
+          "http://localhost:5000/api/store-settings",
+          {
+            headers: { Authorization: `Bearer ${data.token}` },
+          },
+        );
+        const settingsData = await settingsRes.json();
 
-        if (data.user.QUYENHAN === "Admin" && !savedStoreName) {
-          setIsSetupOpen(true);
-        } else {
+        if (settingsData.data && settingsData.data.TENCUAHANG) {
+          localStorage.setItem("storeName", settingsData.data.TENCUAHANG);
           navigate("/dashboard");
+        } else {
+          if (data.user.QUYENHAN === "Admin") {
+            setIsSetupOpen(true);
+          } else {
+            setErrorMessage(
+              "Hệ thống chưa được thiết lập. Vui lòng liên hệ Quản lý!",
+            );
+            localStorage.clear();
+          }
         }
       } else {
         setErrorMessage(data.message || "Đăng nhập thất bại!");

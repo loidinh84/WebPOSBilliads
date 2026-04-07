@@ -35,7 +35,7 @@ const billController = {
       const pool = await poolPromise;
       const result = await pool.request().input("MABAN", sql.VarChar, maban)
         .query(`
-          SELECT MAHOADON, NGAY, GIOBATDAU, GIOKETTHUC, TONGTHANHTOAN 
+          SELECT MAHOADON, NGAY, GIOBATDAU, GIOKETTHUC, TONGTHANHTOAN, TENKHACHHANG 
           FROM HOADON 
           WHERE MABAN = @MABAN AND TRANGTHAI = N'Đã thanh toán'
           ORDER BY NGAY DESC, GIOKETTHUC DESC
@@ -54,7 +54,7 @@ const billController = {
         SELECT 
           H.MAHOADON, H.NGAY, H.TONGTIENGIO, H.TONGTIENHANG, 
           H.TONGTHANHTOAN, H.TRANGTHAI, H.MAKHUYENMAI,
-          D.TENKHACHHANG, -- Lấy từ bảng DATBAN
+          ISNULL(H.TENKHACHHANG, D.TENKHACHHANG) AS TENKHACHHANG,
           N.TENNGUOIDUNG AS TENNHANVIEN,
           H.GIOBATDAU, H.GIOKETTHUC,
           B.TENBAN
@@ -113,12 +113,12 @@ const billController = {
         `);
 
       // === GHI LOG ===
-      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || "NV001";
       await ActionHistoryModel.insertActionLog(
-          maNhanVien,
-          'HỦY HÓA ĐƠN',
-          id,
-          `Hủy hóa đơn chưa thanh toán`
+        maNhanVien,
+        "HỦY HÓA ĐƠN",
+        id,
+        `Hủy hóa đơn chưa thanh toán`,
       );
 
       res.json({ success: true, message: "Đã hủy hóa đơn thành công!" });
@@ -164,12 +164,12 @@ const billController = {
       }
 
       // === GHI LOG ===
-      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || "NV001";
       await ActionHistoryModel.insertActionLog(
-          maNhanVien,
-          'CHUYỂN BÀN',
-          id,
-          `Chuyển khách từ bàn ${maBanCu} sang bàn mới: ${MABAN_MOI}`
+        maNhanVien,
+        "CHUYỂN BÀN",
+        id,
+        `Chuyển khách từ bàn ${maBanCu} sang bàn mới: ${MABAN_MOI}`,
       );
 
       res.json({ success: true });
@@ -236,8 +236,8 @@ const billController = {
         newId = "HD" + String(lastNum + 1).padStart(3, "0");
       }
 
-      // Xử lý lấy mã nhân viên thực tế đang đăng nhập nếu có, ưu tiên token
-      const maNhanVienThucTe = req.user?.MANVIEN || req.body?.MANVIEN || manvien;
+      const maNhanVienThucTe =
+        req.user?.MANVIEN || req.body?.MANVIEN || manvien;
 
       await pool
         .request()
@@ -259,10 +259,10 @@ const billController = {
 
       // === GHI LOG ===
       await ActionHistoryModel.insertActionLog(
-          maNhanVienThucTe,
-          'MỞ BÀN',
-          newId,
-          `Khởi tạo hóa đơn mới cho bàn: ${MABAN}`
+        maNhanVienThucTe,
+        "MỞ BÀN",
+        newId,
+        `Khởi tạo hóa đơn mới cho bàn: ${MABAN}`,
       );
 
       res.json({ success: true, MAHOADON: newId });
@@ -298,16 +298,12 @@ const billController = {
         const itemId = String(item.MAHANGHOA || item.id);
 
         if (!validIds.has(itemId)) {
-          console.warn(
-            `Bỏ qua lưu món ${item.TENHANGHOA || itemId} vào CTHD vì mã không tồn tại.`,
-          );
           continue;
         }
 
-        const cthd =
-          "CTHD" + id.replace("HD", "") + "_" + String(i + 1).padStart(2, "0");
         const price = item.price ?? item.DONGIA ?? 0;
         const qty = item.qty ?? item.SOLUONG ?? 1;
+        const cthd = `CTHD${id.replace("HD", "")}_${String(i + 1).padStart(2, "0")}`;
 
         await pool
           .request()
@@ -323,12 +319,12 @@ const billController = {
       }
 
       // === GHI LOG ===
-      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || "NV001";
       await ActionHistoryModel.insertActionLog(
-          maNhanVien,
-          'CẬP NHẬT MÓN',
-          id,
-          `Thêm/Sửa danh sách món (Tổng: ${items.length} mặt hàng)`
+        maNhanVien,
+        "CẬP NHẬT MÓN",
+        id,
+        `Thêm/Sửa danh sách món (Tổng: ${items.length} mặt hàng)`,
       );
 
       res.json({ success: true });
@@ -409,12 +405,12 @@ const billController = {
       await transaction.commit();
 
       // === GHI LOG SAU KHI TRANSACTION THÀNH CÔNG ===
-      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || "NV001";
       await ActionHistoryModel.insertActionLog(
-          maNhanVien,
-          'THANH TOÁN HÓA ĐƠN',
-          id,
-          `Hoàn tất thanh toán. Tổng tiền: ${TONGTHANHTOAN?.toLocaleString()}đ (${PHUONGTHUCTHANHTOAN})`
+        maNhanVien,
+        "THANH TOÁN HÓA ĐƠN",
+        id,
+        `Hoàn tất thanh toán. Tổng tiền: ${TONGTHANHTOAN?.toLocaleString()}đ (${PHUONGTHUCTHANHTOAN})`,
       );
 
       res.json({ success: true, message: "Thanh toán thành công!" });
@@ -441,12 +437,12 @@ const billController = {
         );
 
       // === GHI LOG ===
-      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || "NV001";
       await ActionHistoryModel.insertActionLog(
-          maNhanVien,
-          'CẬP NHẬT GIỜ CHƠI',
-          id,
-          `Bắt đầu tính giờ chơi lúc ${GIOBATDAU}`
+        maNhanVien,
+        "CẬP NHẬT GIỜ CHƠI",
+        id,
+        `Bắt đầu tính giờ chơi lúc ${GIOBATDAU}`,
       );
 
       res.json({ success: true, message: "Đã kích hoạt giờ chơi!" });

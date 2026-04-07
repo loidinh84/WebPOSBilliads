@@ -10,6 +10,9 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
+const storeSettingsRoutes = require("./routes/storeSettingsRoutes.js");
+app.use("/api/store-settings", storeSettingsRoutes);
+
 const userRoutes = require("./routes/userRoutes");
 app.use("/api/user", userRoutes);
 
@@ -44,12 +47,11 @@ app.use("/api/transactions/exports", exportRoutes);
 const adminUserRoutes = require("./routes/AdminUserRoutes.js");
 app.use("/api/users", adminUserRoutes);
 
-const storeSettingsRoutes = require("./routes/storeSettingsRoutes.js");
-app.use("/api/store-settings", storeSettingsRoutes);
+const actionHistoryRoutes = require("./routes/actionHistoryRoutes");
+app.use("/api/action-history", actionHistoryRoutes);
 
-const actionHistoryRoutes = require('./routes/actionHistoryRoutes');
-app.use('/api/action-history', actionHistoryRoutes);
+const kitchenRoutes = require("./routes/kitchenRoutes");
+app.use("/api/kitchen", kitchenRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server chạy tại cổng ${PORT}`));
-
