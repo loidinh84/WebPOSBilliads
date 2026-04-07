@@ -35,7 +35,7 @@ const billController = {
       const pool = await poolPromise;
       const result = await pool.request().input("MABAN", sql.VarChar, maban)
         .query(`
-          SELECT MAHOADON, NGAY, GIOBATDAU, GIOKETTHUC, TONGTHANHTOAN 
+          SELECT MAHOADON, NGAY, GIOBATDAU, GIOKETTHUC, TONGTHANHTOAN, TENKHACHHANG 
           FROM HOADON 
           WHERE MABAN = @MABAN AND TRANGTHAI = N'Đã thanh toán'
           ORDER BY NGAY DESC, GIOKETTHUC DESC
@@ -54,7 +54,7 @@ const billController = {
         SELECT 
           H.MAHOADON, H.NGAY, H.TONGTIENGIO, H.TONGTIENHANG, 
           H.TONGTHANHTOAN, H.TRANGTHAI, H.MAKHUYENMAI,
-          D.TENKHACHHANG, -- Lấy từ bảng DATBAN
+          ISNULL(H.TENKHACHHANG, D.TENKHACHHANG) AS TENKHACHHANG,
           N.TENNGUOIDUNG AS TENNHANVIEN,
           H.GIOBATDAU, H.GIOKETTHUC,
           B.TENBAN
@@ -237,8 +237,7 @@ const billController = {
       }
 
       // Xử lý lấy mã nhân viên thực tế đang đăng nhập nếu có, ưu tiên token
-      const maNhanVienThucTe =
-        req.user?.MANVIEN || req.body?.MANVIEN || manvien;
+      const maNhanVienThucTe = req.user?.MANVIEN || req.body?.MANVIEN || manvien;
 
       await pool
         .request()
@@ -299,16 +298,12 @@ const billController = {
         const itemId = String(item.MAHANGHOA || item.id);
 
         if (!validIds.has(itemId)) {
-          console.warn(
-            `Bỏ qua lưu món ${item.TENHANGHOA || itemId} vào CTHD vì mã không tồn tại.`,
-          );
           continue;
         }
 
-        const cthd =
-          "CTHD" + id.replace("HD", "") + "_" + String(i + 1).padStart(2, "0");
         const price = item.price ?? item.DONGIA ?? 0;
         const qty = item.qty ?? item.SOLUONG ?? 1;
+        const cthd = `CTHD${id.replace("HD", "")}_${String(i + 1).padStart(2, "0")}`;
 
         await pool
           .request()

@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import Logo from "../assets/images/Logo.png";
 import * as Icons from "../assets/icons/index";
 import Swal from "sweetalert2";
 import PrintBillModal from "../components/PrintBillModal";
@@ -35,7 +33,6 @@ const TimeSpinner = ({ label, value, max, onUp, onDown, onChange }) => (
 );
 
 function Cashier() {
-  const navigate = useNavigate();
   const [leftTab, setLeftTab] = useState("tables");
   const [tableFilter, setTableFilter] = useState("all");
   const [openMenuOnSelect, setOpenMenuOnSelect] = useState(false);
@@ -43,10 +40,6 @@ function Cashier() {
   const [printBillData, setPrintBillData] = useState(null);
   const [editingStartTime, setEditingStartTime] = useState(false);
   const [tempStartTime, setTempStartTime] = useState("");
-
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const isManagerOrAdmin =
-    currentUser.QUYENHAN === "Admin" || currentUser.QUYENHAN === "Quản lý";
 
   // --- LOGIC THỜI GIAN REAL-TIME ---
   const [startTimeByTable, setStartTimeByTable] = useState({});
@@ -127,12 +120,24 @@ function Cashier() {
 
         const [setRes, discRes, prodRes, catRes, tablesRes, activeRes] =
           await Promise.all([
-            axios.get("http://localhost:5000/api/store-settings", config).catch(() => ({ data: { success: false, data: {} } })),
-            axios.get("http://localhost:5000/api/discounts", config).catch(() => ({ data: { success: false, data: [] } })),
-            axios.get("http://localhost:5000/api/products", config).catch(() => ({ data: [] })),
-            axios.get("http://localhost:5000/api/products/categories", config).catch(() => ({ data: { data: [] } })),
-            axios.get("http://localhost:5000/api/tables", config).catch(() => ({ data: { data: [] } })),
-            axios.get("http://localhost:5000/api/bills/active", config).catch(() => ({ data: { success: false, data: [] } })),
+            axios
+              .get("http://localhost:5000/api/store-settings", config)
+              .catch(() => ({ data: { success: false, data: {} } })),
+            axios
+              .get("http://localhost:5000/api/discounts", config)
+              .catch(() => ({ data: { success: false, data: [] } })),
+            axios
+              .get("http://localhost:5000/api/products", config)
+              .catch(() => ({ data: [] })),
+            axios
+              .get("http://localhost:5000/api/products/categories", config)
+              .catch(() => ({ data: { data: [] } })),
+            axios
+              .get("http://localhost:5000/api/tables", config)
+              .catch(() => ({ data: { data: [] } })),
+            axios
+              .get("http://localhost:5000/api/bills/active", config)
+              .catch(() => ({ data: { success: false, data: [] } })),
           ]);
 
         // --- 1. XỬ LÝ CÀI ĐẶT CỬA HÀNG ---
@@ -269,7 +274,6 @@ function Cashier() {
       const now = new Date();
       const timeStr = now.toLocaleTimeString("en-GB", { hour12: false });
 
-      // 1. Gọi API mở hóa đơn (Kèm luôn Giờ bắt đầu)
       const res = await axios.post("http://localhost:5000/api/bills/open", {
         MABAN: currentTable.maban,
         GIOBATDAU: timeStr,
@@ -279,7 +283,6 @@ function Cashier() {
       if (res.data.success) {
         const newBillId = res.data.MAHOADON;
 
-        // 2. Cập nhật state trên React
         setBillIdByTable((prev) => ({ ...prev, [activeTabId]: newBillId }));
         setStartTimeByTable((prev) => ({ ...prev, [activeTabId]: timeStr }));
         setTables((prev) =>
@@ -288,20 +291,16 @@ function Cashier() {
           ),
         );
 
-        // 3. Tự động nạp món Dịch vụ (Tiền giờ) vào hóa đơn dựa trên MAHANGHOA của bàn
-        // Nếu bàn có MAHANGHOA, tìm thông tin món đó trong menuItems để add vào
         if (currentTable.MAHANGHOA) {
           const serviceItem = menuItems.find(
             (item) => item.id === currentTable.MAHANGHOA,
           );
           if (serviceItem) {
-            // Ép giá về 0 trên bill để hiển thị (tiền giờ tính riêng ở tổng kết)
-            const finalItem = { ...serviceItem, price: 0, qty: 1 };
+            const finalItem = { ...serviceItem, qty: 1 };
             setOrdersByTable((prev) => ({
               ...prev,
               [activeTabId]: [finalItem],
             }));
-            // Sync xuống DB
             await axios.put(
               `http://localhost:5000/api/bills/${newBillId}/items`,
               { items: [finalItem] },
@@ -370,8 +369,8 @@ function Cashier() {
     // Lấy trạng thái công tắc
     const choPhepBanAm = storeSettings?.NHAN_GOIMON === true;
 
-    // Kiểm tra tồn kho nếu không phải Dịch vụ
-    if (item.category !== "Dịch vụ" && item.tonKho <= 0 && !choPhepBanAm) {
+    // Kiểm tra tồn kho nếu không phải loại bàn
+    if (item.category !== "LOẠI BÀN" && item.tonKho <= 0 && !choPhepBanAm) {
       Swal.fire({
         icon: "warning",
         title: "Đã hết hàng!",
@@ -402,7 +401,7 @@ function Cashier() {
     }
     const isServiceItem =
       tableServiceId && String(item.id) === String(tableServiceId);
-    const finalItem = isServiceItem ? { ...item, price: 0 } : item;
+    const finalItem = item;
 
     if (existingItem) {
       updated = currentOrders.map((i) =>
@@ -658,10 +657,20 @@ function Cashier() {
   };
 
   const currentOrderItems = ordersByTable[activeTabId] || [];
-  const rawTotal = currentOrderItems.reduce(
+  const displayOrderItems = currentOrderItems.filter(
+    (item) => String(item.id) !== String(currentTableInfo?.MAHANGHOA),
+  );
+  const currentTableServiceId = currentTableInfo?.MAHANGHOA;
+  const isServiceItem = (itemId) => {
+    return (
+      currentTableServiceId && String(itemId) === String(currentTableServiceId)
+    );
+  };
+  const rawTotal = displayOrderItems.reduce(
     (acc, item) => acc + item.price * item.qty,
     0,
   );
+
   const tableServiceItem = menuItems.find(
     (item) => item.id === currentTableInfo?.MAHANGHOA,
   );
@@ -711,10 +720,10 @@ function Cashier() {
     const allServiceIds = tables
       .map((t) => String(t.MAHANGHOA))
       .filter(Boolean);
-    const tableServiceId = currentTableInfo?.MAHANGHOA;
+    // const tableServiceId = currentTableInfo?.MAHANGHOA;
     if (
-      allServiceIds.includes(String(item.id)) &&
-      String(item.id) !== String(tableServiceId)
+      allServiceIds.includes(String(item.id)) ||
+      item.category === "LOẠI BÀN"
     ) {
       return false;
     }
@@ -803,15 +812,31 @@ function Cashier() {
     setShowDiscountModal(false);
   };
 
-  const handleNotifyKitchen = () => {
-    if (!billIdByTable[activeTabId]) return;
-    Swal.fire({
-      icon: "success",
-      title: "Đã báo bếp!",
-      text: "Bếp đã nhận được yêu cầu.",
-      timer: 1500,
-      showConfirmButton: false,
-    });
+  const handleNotifyKitchen = async () => {
+    const billId = billIdByTable[activeTabId];
+    if (!billId) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put(
+        `http://localhost:5000/api/kitchen/notify/${billId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      if (res.data.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Đã báo bếp!",
+          text: "Bếp đã nhận được danh sách món.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Lỗi", "Không thể báo bếp, vui lòng thử lại!", "error");
+    }
   };
 
   const handleTransferTable = () => {
@@ -960,7 +985,7 @@ function Cashier() {
                   <div className="grid grid-cols-4 xl:grid-cols-5 gap-3">
                     {filteredMenuItems.map((item) => {
                       const isOutOfStock =
-                        item.category !== "Dịch vụ" && item.tonKho <= 0;
+                        item.category !== "LOẠI BÀN" && item.tonKho <= 0;
                       return (
                         <div
                           key={item.id}
@@ -1099,7 +1124,7 @@ function Cashier() {
                         </tr>
                       </thead>
                       <tbody>
-                        {currentOrderItems.length === 0 ? (
+                        {displayOrderItems.length === 0 ? (
                           <tr>
                             <td
                               colSpan="4"
@@ -1109,12 +1134,15 @@ function Cashier() {
                             </td>
                           </tr>
                         ) : (
-                          currentOrderItems.map((item) => (
+                          displayOrderItems.map((item, idx) => (
                             <tr
                               key={item.id}
                               className="group border-b border-gray-100 bg-white hover:bg-blue-50/50 transition-colors"
                             >
                               <td className="p-3 text-gray-800 font-bold text-[13px]">
+                                <span className="text-gray-400 mr-2">
+                                  {idx + 1}.
+                                </span>
                                 {item.name}
                               </td>
                               <td className="p-3">
@@ -1150,6 +1178,7 @@ function Cashier() {
                                   </button>
                                 </div>
                               </td>
+
                               <td className="p-3 text-right text-gray-700 text-[16px] font-medium">
                                 {item.price.toLocaleString()}
                               </td>
@@ -1213,7 +1242,7 @@ function Cashier() {
 
                       <div className="flex justify-between items-center text-[13px]">
                         <span className="text-gray-600 font-medium flex items-center gap-2">
-                          <i className="fa-regular fa-clock"></i> Tổng tiền chơi
+                          <i className="fa-regular fa-clock"></i> Tổng giờ chơi
                           ({hourlyRate.toLocaleString()}đ/h)
                         </span>
                         <div className="flex items-center gap-3">
