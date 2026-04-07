@@ -51,7 +51,9 @@ function AddTableModal({ isOpen, onSave, onCancel, tables }) {
       });
       const data = await res.json();
       const filteredServices = data.filter(
-        (item) => item.MADANHMUC === "DM8227",
+        (item) =>
+          item.NHOMHANG?.toUpperCase() === "LOẠI BÀN" ||
+          item.TENDANHMUC?.toUpperCase() === "LOẠI BÀN",
       );
 
       setServiceProducts(filteredServices);

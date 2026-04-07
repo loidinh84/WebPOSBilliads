@@ -24,7 +24,6 @@ const getStoreSettings = async (req, res) => {
 // 2. API Lưu dữ liệu khi Admin bấm nút "Lưu thông tin"
 const updateStoreSettings = async (req, res) => {
   try {
-    // Rút trích tất cả dữ liệu được gửi từ React lên
     const {
       giaVonTrungBinh,
       hangHoaThuocTinh,
@@ -45,12 +44,12 @@ const updateStoreSettings = async (req, res) => {
       diaChi,
       email,
       anhDaiDien,
+      choPhepChinhGio,
     } = req.body;
 
     const pool = await poolPromise;
     await pool
       .request()
-      // Ép kiểu dữ liệu (Công tắc true/false thì chuyển thành 1/0 cho SQL)
       .input("GIAVON", sql.Bit, giaVonTrungBinh ? 1 : 0)
       .input("THUOCTINH", sql.Bit, hangHoaThuocTinh ? 1 : 0)
       .input("DINHLUONG", sql.Bit, dinhLuongNguyenLieu ? 1 : 0)
@@ -60,8 +59,8 @@ const updateStoreSettings = async (req, res) => {
       .input("LAMTRON", sql.Bit, lamTronTien ? 1 : 0)
       .input("KHUYENMAI", sql.Bit, khuyenMai ? 1 : 0)
       .input("DATBAN", sql.Bit, datBanTruoc ? 1 : 0)
+      .input("CHINHGIO", sql.Bit, choPhepChinhGio ? 1 : 0)
 
-      // Các ô nhập liệu và Dropdown
       .input("PHUTBLOCK", sql.Int, soPhutBlock || 15)
       .input("KIEULAMTRON", sql.VarChar, kieuLamTron || "round")
       .input("BIN", sql.VarChar, bankBin)
@@ -85,6 +84,7 @@ const updateStoreSettings = async (req, res) => {
           DATBAN_TRUOC = @DATBAN,
           SOPHUT_BLOCK = @PHUTBLOCK,
           KIEU_LAMTRON = @KIEULAMTRON,
+          CHOPHEP_CHINHGIO = @CHINHGIO,
           NGANHANG_BIN = @BIN,
           SOTAIKHOAN = @STK,
           TENTAIKHOAN = @TENTK,

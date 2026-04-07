@@ -31,6 +31,7 @@ function StoreSetup() {
     lamTronTien: false,
     khuyenMai: true,
     datBanTruoc: true,
+    choPhepChinhGio: false,
   });
 
   const [subSettings, setSubSettings] = useState({
@@ -99,6 +100,7 @@ function StoreSetup() {
           lamTronTien: db.LAMTRON_TIEN,
           khuyenMai: db.KHUYENMAI,
           datBanTruoc: db.DATBAN_TRUOC,
+          choPhepChinhGio: db.CHOPHEP_CHINHGIO,
         });
 
         // Bơm dữ liệu vào Dropdown
@@ -394,12 +396,30 @@ function StoreSetup() {
                       <div className="flex items-center gap-3">
                         <i className="fa-solid fa-bell-concierge text-[#00a651] text-lg w-6 text-center"></i>
                         <p className="font-medium text-gray-700">
-                          Nhận gọi món
+                          Cho phép gọi món khi hết hàng
                         </p>
                       </div>
                       <ToggleSwitch
                         checked={settings.nhanGoiMon}
                         onChange={() => handleToggle("nhanGoiMon")}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <i className="fa-solid fa-clock-rotate-left text-[#00a651] text-lg w-6 text-center"></i>
+                        <div>
+                          <p className="font-medium text-gray-700">
+                            Cho phép chỉnh giờ bắt đầu
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Bật để thu ngân có thể sửa giờ bắt đầu tính giờ
+                          </p>
+                        </div>
+                      </div>
+                      <ToggleSwitch
+                        checked={settings.choPhepChinhGio}
+                        onChange={() => handleToggle("choPhepChinhGio")}
                       />
                     </div>
 
@@ -474,13 +494,9 @@ function StoreSetup() {
                               })
                             }
                           >
-                            <option value="round">
-                              Tự động (= 500đ làm tròn lên)
-                            </option>
+                            <option value="round">Tự động</option>
                             <option value="ceil">Luôn làm tròn lên</option>
-                            <option value="floor">
-                              Luôn làm tròn xuống (Cắt bỏ)
-                            </option>
+                            <option value="floor">Luôn làm tròn xuống</option>
                           </select>
                         </div>
                       )}
