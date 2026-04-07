@@ -113,12 +113,12 @@ const billController = {
         `);
 
       // === GHI LOG ===
-      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || "NV001";
       await ActionHistoryModel.insertActionLog(
-          maNhanVien,
-          'HỦY HÓA ĐƠN',
-          id,
-          `Hủy hóa đơn chưa thanh toán`
+        maNhanVien,
+        "HỦY HÓA ĐƠN",
+        id,
+        `Hủy hóa đơn chưa thanh toán`,
       );
 
       res.json({ success: true, message: "Đã hủy hóa đơn thành công!" });
@@ -164,12 +164,12 @@ const billController = {
       }
 
       // === GHI LOG ===
-      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || "NV001";
       await ActionHistoryModel.insertActionLog(
-          maNhanVien,
-          'CHUYỂN BÀN',
-          id,
-          `Chuyển khách từ bàn ${maBanCu} sang bàn mới: ${MABAN_MOI}`
+        maNhanVien,
+        "CHUYỂN BÀN",
+        id,
+        `Chuyển khách từ bàn ${maBanCu} sang bàn mới: ${MABAN_MOI}`,
       );
 
       res.json({ success: true });
@@ -237,7 +237,8 @@ const billController = {
       }
 
       // Xử lý lấy mã nhân viên thực tế đang đăng nhập nếu có, ưu tiên token
-      const maNhanVienThucTe = req.user?.MANVIEN || req.body?.MANVIEN || manvien;
+      const maNhanVienThucTe =
+        req.user?.MANVIEN || req.body?.MANVIEN || manvien;
 
       await pool
         .request()
@@ -259,10 +260,10 @@ const billController = {
 
       // === GHI LOG ===
       await ActionHistoryModel.insertActionLog(
-          maNhanVienThucTe,
-          'MỞ BÀN',
-          newId,
-          `Khởi tạo hóa đơn mới cho bàn: ${MABAN}`
+        maNhanVienThucTe,
+        "MỞ BÀN",
+        newId,
+        `Khởi tạo hóa đơn mới cho bàn: ${MABAN}`,
       );
 
       res.json({ success: true, MAHOADON: newId });
@@ -323,12 +324,12 @@ const billController = {
       }
 
       // === GHI LOG ===
-      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || "NV001";
       await ActionHistoryModel.insertActionLog(
-          maNhanVien,
-          'CẬP NHẬT MÓN',
-          id,
-          `Thêm/Sửa danh sách món (Tổng: ${items.length} mặt hàng)`
+        maNhanVien,
+        "CẬP NHẬT MÓN",
+        id,
+        `Thêm/Sửa danh sách món (Tổng: ${items.length} mặt hàng)`,
       );
 
       res.json({ success: true });
@@ -409,12 +410,12 @@ const billController = {
       await transaction.commit();
 
       // === GHI LOG SAU KHI TRANSACTION THÀNH CÔNG ===
-      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || "NV001";
       await ActionHistoryModel.insertActionLog(
-          maNhanVien,
-          'THANH TOÁN HÓA ĐƠN',
-          id,
-          `Hoàn tất thanh toán. Tổng tiền: ${TONGTHANHTOAN?.toLocaleString()}đ (${PHUONGTHUCTHANHTOAN})`
+        maNhanVien,
+        "THANH TOÁN HÓA ĐƠN",
+        id,
+        `Hoàn tất thanh toán. Tổng tiền: ${TONGTHANHTOAN?.toLocaleString()}đ (${PHUONGTHUCTHANHTOAN})`,
       );
 
       res.json({ success: true, message: "Thanh toán thành công!" });
@@ -441,17 +442,86 @@ const billController = {
         );
 
       // === GHI LOG ===
-      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || "NV001";
       await ActionHistoryModel.insertActionLog(
-          maNhanVien,
-          'CẬP NHẬT GIỜ CHƠI',
-          id,
-          `Bắt đầu tính giờ chơi lúc ${GIOBATDAU}`
+        maNhanVien,
+        "CẬP NHẬT GIỜ CHƠI",
+        id,
+        `Bắt đầu tính giờ chơi lúc ${GIOBATDAU}`,
       );
 
       res.json({ success: true, message: "Đã kích hoạt giờ chơi!" });
     } catch (err) {
       console.error("Lỗi updateStartTime:", err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // Thêm vào billController.js
+  getDashboardStats: async (req, res) => {
+    try {
+      const pool = await poolPromise;
+
+      // 1. Lấy ngày hiện tại theo giờ Việt Nam (Định dạng: YYYY-MM-DD)
+      const todayVN = new Intl.DateTimeFormat("sv-SE", {
+        timeZone: "Asia/Ho_Chi_Minh",
+      }).format(new Date());
+
+      // 2. Tính toán Công suất bàn (%)
+      const tableStats = await pool.request().query(`
+        SELECT COUNT(*) as Total, 
+        SUM(CASE WHEN TRANGTHAI IN (N'Đang sử dụng', N'Đang chơi') THEN 1 ELSE 0 END) as Active FROM BAN`);
+      const { Total, Active } = tableStats.recordset[0];
+      const occupancyRate = Total > 0 ? Math.round((Active / Total) * 100) : 0;
+
+      // 3. Thống kê Doanh thu (So sánh chuỗi ngày để triệt tiêu lệch múi giờ)
+      const statsResult = await pool
+        .request()
+        .input("Today", sql.VarChar, todayVN).query(`
+          SELECT COUNT(MAHOADON) as TotalOrders, ISNULL(SUM(TONGTHANHTOAN), 0) as TotalRevenue
+          FROM HOADON 
+          WHERE TRANGTHAI = N'Đã thanh toán' 
+          AND CONVERT(VARCHAR(10), NGAY, 126) = @Today`); // Lọc đúng chuỗi "2026-04-07"
+
+      // 4. Lấy dữ liệu biểu đồ (Thống kê theo giờ của ngày hôm nay)
+      const chartResult = await pool
+        .request()
+        .input("Today", sql.VarChar, todayVN).query(`
+          SELECT DATEPART(HOUR, NGAY) as Hour, SUM(TONGTHANHTOAN) as Revenue
+          FROM HOADON 
+          WHERE TRANGTHAI = N'Đã thanh toán' 
+          AND CONVERT(VARCHAR(10), NGAY, 126) = @Today
+          GROUP BY DATEPART(HOUR, NGAY)`);
+
+      const hourlyRevenue = Array.from({ length: 24 }, (_, i) => ({
+        time: `${i}h`,
+        revenue: 0,
+      }));
+      chartResult.recordset.forEach((row) => {
+        if (hourlyRevenue[row.Hour])
+          hourlyRevenue[row.Hour].revenue = row.Revenue;
+      });
+
+      // 5. Giao dịch gần đây (FORMAT giờ trực tiếp từ SQL)
+      const recentTxResult = await pool.request().query(`
+        SELECT TOP 5 H.MAHOADON, B.TENBAN, H.TONGTHANHTOAN, FORMAT(H.GIOKETTHUC, 'HH:mm') as GIO_STR
+        FROM HOADON H JOIN BAN B ON H.MABAN = B.MABAN
+        WHERE H.TRANGTHAI = N'Đã thanh toán'
+        ORDER BY H.NGAY DESC, H.MAHOADON DESC`);
+
+      res.json({
+        success: true,
+        stats: {
+          completedOrders: statsResult.recordset[0].TotalOrders || 0,
+          revenue: statsResult.recordset[0].TotalRevenue || 0,
+          activeOrders: Active || 0,
+          occupancyRate: occupancyRate,
+        },
+        hourlyRevenue,
+        recentTransactions: recentTxResult.recordset,
+      });
+    } catch (err) {
+      console.error("Lỗi Dashboard API:", err);
       res.status(500).json({ success: false, message: err.message });
     }
   },
