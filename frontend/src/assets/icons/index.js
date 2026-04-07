@@ -51,6 +51,8 @@ import Discount from "./Discount.svg";
 import Timekeep from "./Timekeep.svg";
 import ImportFile from "./ImportFile.svg";
 import FileExport from "./FilExport.svg";
+import Save from "./Save.svg";
+import Minus from "./Minus.svg";
 
 // Export để sử dụng ở nơi khác
 export {
@@ -106,4 +108,6 @@ export {
   ArrowBackLong,
   ImportFile,
   FileExport,
+  Save,
+  Minus,
 };

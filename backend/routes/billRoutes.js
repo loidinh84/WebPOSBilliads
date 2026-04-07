@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const billController = require("../controllers/billController");
 
+router.get("/tables", billController.getTables);
 router.get("/active", billController.getActiveBills);
 router.post("/open", billController.openBill);
 router.get("/tables/:maban/history", billController.getHistoryByTable);
@@ -12,6 +13,6 @@ router.put("/:id/transfer", billController.transferBill);
 router.put("/:id/checkout", billController.checkoutBill);
 router.put("/:id/cancel", billController.cancelInvoice);
 router.patch("/:id/start", billController.updateStartTime);
+router.get("/dashboard/stats", billController.getDashboardStats);
 
 module.exports = router;
-

@@ -17,7 +17,11 @@ function EditTableModal({ isOpen, table, onSave, onCancel, onDelete }) {
           });
           const data = await res.json();
           // Lọc các mặt hàng thuộc nhóm Loại bàn
-          const filtered = data.filter((item) => item.MADANHMUC === "DM8227");
+          const filtered = data.filter(
+            (item) =>
+              item.NHOMHANG?.toUpperCase() === "LOẠI BÀN" ||
+              item.TENDANHMUC?.toUpperCase() === "LOẠI BÀN",
+          );
           setServiceProducts(filtered);
         } catch (err) {
           console.error("Lỗi lấy loại bàn:", err);

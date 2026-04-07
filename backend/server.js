@@ -50,11 +50,20 @@ app.use("/api/transactions/exports", exportRoutes);
 const adminUserRoutes = require("./routes/AdminUserRoutes.js");
 app.use("/api/users", adminUserRoutes);
 
+<<<<<<< HEAD
 const attendanceRoutes = require("./routes/attendanceRoutes");
 app.use("/api/attendance", attendanceRoutes);
 
 const salaryRoutes = require("./routes/salaryRoutes");
 app.use("/api/salary", salaryRoutes);
+=======
+const storeSettingsRoutes = require("./routes/storeSettingsRoutes.js");
+app.use("/api/store-settings", storeSettingsRoutes);
+
+const actionHistoryRoutes = require('./routes/actionHistoryRoutes');
+app.use('/api/action-history', actionHistoryRoutes);
+>>>>>>> 8cf4bf1287c133f799c49120278691300d844e0a
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server chạy tại cổng ${PORT}`));
+
