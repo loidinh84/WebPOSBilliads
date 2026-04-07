@@ -1,79 +1,124 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import * as Icons from "../../assets/icons/index";
 import EmployeeModal from "./Modal";
+import axios from "axios";
+import Swal from "sweetalert2";
+
+const API_BASE_URL = "http://localhost:5000/api/schedule";
 
 function Schedule() {
-  const [currentWeek] = useState("Tuần 1 - Th. 3 2026");
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-  const [employees, setEmployees] = useState([
-    {
-      id: 1,
-      staffId: "NV001",
-      name: "Trần Thanh Khang",
-      schedule: {
-        mon: "08:00 - 17:00",
-        tue: "08:00 - 17:00",
-        wed: "08:00 - 17:00",
-        thu: "08:00 - 17:00",
-        fri: "08:00 - 17:00",
-        sat: "08:00 - 12:00",
-        sun: "OFF",
-      },
-      expectedSalary: "12,500,000",
-    },
-    {
-      id: 2,
-      staffId: "NV002",
-      name: "Nguyễn Thị Mai",
-      schedule: {
-        mon: "14:00 - 22:00",
-        tue: "14:00 - 22:00",
-        wed: "OFF",
-        thu: "14:00 - 22:00",
-        fri: "14:00 - 22:00",
-        sat: "14:00 - 22:00",
-        sun: "08:00 - 17:00",
-      },
-      expectedSalary: "10,000,000",
-    },
-  ]);
+  // Helper: Lấy ngày Thứ 2 và Chủ Nhật của tuần (Dùng Local Time chuẩn xác)
+  const getWeekRange = (date) => {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const day = d.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    
+    const mon = new Date(d);
+    mon.setDate(d.getDate() + diffToMonday);
+    
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+
+    const format = (dObj) => {
+      const year = dObj.getFullYear();
+      const month = String(dObj.getMonth() + 1).padStart(2, "0");
+      const dayOfMonth = String(dObj.getDate()).padStart(2, "0");
+      return `${year}-${month}-${dayOfMonth}`;
+    };
+
+    return {
+      monday: format(mon),
+      sunday: format(sun),
+      mondayObj: mon,
+    };
+  };
+
+  const { monday, sunday, mondayObj } = getWeekRange(currentDate);
+  const weekLabel = `Tuần ${Math.ceil(mondayObj.getDate() / 7)} - Th. ${mondayObj.getMonth() + 1} ${mondayObj.getFullYear()}`;
+
+  const fetchSchedules = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/weekly?startDate=${monday}&endDate=${sunday}`);
+      setEmployees(response.data);
+    } catch (err) {
+      console.error("Lỗi khi tải lịch làm việc:", err);
+      const errorMsg = err.response?.data?.message || "Không thể tải lịch làm việc.";
+      Swal.fire("Lỗi", errorMsg, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchedules();
+  }, [currentDate]);
+
+  const changeWeek = (offset) => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(currentDate.getDate() + offset * 7);
+    setCurrentDate(newDate);
+  };
 
   // ─── CHỈ THÊM PHẦN LOGIC NÀY ─────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState("");
   const filteredEmployees = employees.filter(
     (emp) =>
-      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.staffId.toLowerCase().includes(searchTerm.toLowerCase()),
+      (emp.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.staffId || "").toLowerCase().includes(searchTerm.toLowerCase()),
   );
   // ─────────────────────────────────────────────────────────────────────────
 
   const [modal, setModal] = useState({ isOpen: false, type: "", data: null });
-  const openModal = (type, data = null) =>
-    setModal({ isOpen: true, type, data });
+  const openModal = (type, extraData = null) => {
+    setModal({
+      isOpen: true,
+      type,
+      data: extraData,
+    });
+  };
   const closeModal = () => setModal({ isOpen: false, type: "", data: null });
 
-  const handleSave = (newValue) => {
+  const handleSave = async (newValue) => {
     const { type, data } = modal;
     if (type === "EDIT_SHIFT") {
       const { employeeId, day } = data;
-      setEmployees((prev) =>
-        prev.map((emp) =>
-          emp.id === employeeId
-            ? { ...emp, schedule: { ...emp.schedule, [day]: newValue } }
-            : emp,
-        ),
-      );
+      
+      // Sửa lỗi nhảy ngày: Tách ngày tháng năm từ chuỗi Monday (YYYY-MM-DD)
+      const daysOffset = { mon: 0, tue: 1, wed: 2, thu: 3, fri: 4, sat: 5, sun: 6 };
+      const [y, m, d] = monday.split("-").map(Number);
+      const shiftDate = new Date(y, m - 1, d); // Thứ 2 chuẩn Local
+      shiftDate.setDate(shiftDate.getDate() + daysOffset[day]);
+      
+      const resY = shiftDate.getFullYear();
+      const resM = String(shiftDate.getMonth() + 1).padStart(2, "0");
+      const resD = String(shiftDate.getDate()).padStart(2, "0");
+      const dateString = `${resY}-${resM}-${resD}`;
+
+      try {
+        await axios.post(`${API_BASE_URL}/upsert`, {
+          employeeId,
+          date: dateString,
+          value: newValue
+        });
+        Swal.fire("Thành công", "Đã cập nhật ca làm!", "success");
+        fetchSchedules();
+      } catch (err) {
+        console.error("Lỗi khi cập nhật ca làm:", err);
+        const errorMsg = err.response?.data?.message || "Không thể cập nhật ca làm.";
+        Swal.fire("Lỗi", errorMsg, "error");
+      }
     } else if (type === "EDIT_SALARY") {
-      const { employeeId } = data;
-      setEmployees((prev) =>
-        prev.map((emp) =>
-          emp.id === employeeId ? { ...emp, expectedSalary: newValue } : emp,
-        ),
-      );
+      Swal.fire("Thông báo", "Tính năng chỉnh sửa lương đang được phát triển.", "info");
     }
+    closeModal();
   };
 
   return (
@@ -114,17 +159,23 @@ function Schedule() {
             </div>
 
             <div className="flex items-center bg-white border border-gray-200 rounded shadow-sm overflow-hidden h-[34px]">
-              <button className="px-2 hover:bg-gray-50 transition-colors border-r border-gray-200 h-full flex items-center justify-center">
+              <button 
+                onClick={() => changeWeek(-1)}
+                className="px-2 hover:bg-gray-50 transition-colors border-r border-gray-200 h-full flex items-center justify-center cursor-pointer"
+              >
                 <img
                   src={Icons.ArrowBack}
                   className="w-2.5 h-2.5 opacity-60"
                   alt="prev"
                 />
               </button>
-              <div className="px-3 text-[13px] font-medium text-gray-700 min-w-[120px] text-center">
-                {currentWeek}
+              <div className="px-3 text-[13px] font-bold text-gray-700 min-w-[120px] text-center">
+                {weekLabel}
               </div>
-              <button className="px-2 hover:bg-gray-50 transition-colors border-l border-gray-200 h-full flex items-center justify-center">
+              <button 
+                onClick={() => changeWeek(1)}
+                className="px-2 hover:bg-gray-50 transition-colors border-l border-gray-200 h-full flex items-center justify-center cursor-pointer"
+              >
                 <img
                   src={Icons.ArrowBack}
                   className="w-2.5 h-2.5 opacity-60 rotate-180"
@@ -132,47 +183,27 @@ function Schedule() {
                 />
               </button>
             </div>
-
-            <button className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-3 py-1 rounded text-[13px] font-medium transition-all shadow-sm active:scale-95 h-[34px]">
+ 
+            <button 
+              onClick={() => setCurrentDate(new Date())}
+              className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-3 py-1 rounded text-[13px] font-bold transition-all shadow-sm active:scale-95 h-[34px] cursor-pointer"
+            >
               Tuần này
             </button>
           </div>
-
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => openModal("VIEW_BY_SHIFT")}
-              className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-3 py-1.5 rounded flex items-center gap-2 text-[13px] font-bold transition-all shadow-sm active:scale-95"
-            >
-              <img
-                src={Icons.Person}
-                className="w-3.5 h-3.5 opacity-80"
-                alt="view"
-              />
-              <span>Xem theo nhân viên</span>
-            </button>
-            <button
-              onClick={() => openModal("IMPORT")}
-              className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-3 py-1.5 rounded flex items-center gap-2 text-[13px] font-bold transition-all shadow-sm active:scale-95"
-            >
-              <img
-                src={Icons.SaveFile}
-                className="w-3.5 h-3.5 opacity-80"
-                alt="import"
-              />
-              <span>Import</span>
-            </button>
-            <button
-              onClick={() => openModal("EXPORT")}
-              className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-3 py-1.5 rounded flex items-center gap-2 text-[13px] font-bold transition-all shadow-sm active:scale-95"
-            >
-              <img
-                src={Icons.SaveFile}
-                className="w-3.5 h-3.5 opacity-80"
-                alt="export"
-              />
-              <span>Xuất file</span>
-            </button>
-          </div>
+             <button
+               onClick={() => openModal("VIEW_BY_SHIFT")}
+               className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-3 py-1.5 rounded flex items-center gap-2 text-[13px] font-bold transition-all shadow-sm active:scale-95"
+             >
+               <img
+                 src={Icons.Person}
+                 className="w-3.5 h-3.5 opacity-80"
+                 alt="view"
+               />
+               <span>Xem theo nhân viên</span>
+             </button>
+           </div>
         </div>
 
         <div className="bg-white rounded border border-gray-200 shadow-sm overflow-hidden flex flex-col min-h-[650px]">
@@ -239,9 +270,22 @@ function Schedule() {
                         NGHỈ
                       </span>
                     ) : (
-                      <span className="px-2 py-1 bg-blue-50 text-[#5D5FEF] rounded text-[11px] font-bold group-hover/cell:bg-[#5D5FEF] group-hover/cell:text-white transition-all">
-                        {emp.schedule[item.day]}
-                      </span>
+                      <div className="flex flex-col items-center gap-1">
+                        <span className={`px-2 py-1 rounded text-[11px] font-bold transition-all border ${
+                          emp.schedule[item.day]?.isCompleted 
+                            ? 'bg-green-100 text-green-700 border-green-200' 
+                            : 'bg-blue-50 text-[#5D5FEF] border-blue-100 group-hover/cell:bg-[#5D5FEF] group-hover/cell:text-white'
+                        }`}>
+                          {typeof emp.schedule[item.day] === "object" && emp.schedule[item.day] !== null 
+                            ? emp.schedule[item.day]?.time?.toString() 
+                            : (emp.schedule[item.day]?.toString() || "OFF")}
+                        </span>
+                        {emp.schedule[item.day]?.isCompleted && (
+                          <span className="text-[10px] text-green-600 font-bold flex items-center gap-0.5">
+                            <span className="scale-125">✓</span> Xong
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}

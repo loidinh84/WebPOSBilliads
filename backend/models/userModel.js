@@ -14,7 +14,7 @@ const User = {
                 n.DIACHI, n.GIOITINH, n.NGAYSINH, n.HINHANH
             FROM TAIKHOAN t
             LEFT JOIN NHANVIEN n ON t.TENDANGNHAP = n.TENDANGNHAP
-            WHERE t.TENDANGNHAP = @username
+            WHERE t.TENDANGNHAP = @username AND (t.DAXOA = 0 OR t.DAXOA IS NULL)
         `);
       return result.recordset[0];
     } catch (error) {
@@ -68,7 +68,7 @@ const User = {
         const pool = await poolPromise;
         const result = await pool.request()
             .input("username", sql.VarChar, username)
-            .query("SELECT MATKHAU FROM TAIKHOAN WHERE TENDANGNHAP = @username");
+            .query("SELECT MATKHAU FROM TAIKHOAN WHERE TENDANGNHAP = @username AND (DAXOA = 0 OR DAXOA IS NULL)");
         return result.recordset[0];
     } catch (error) {
         throw error;

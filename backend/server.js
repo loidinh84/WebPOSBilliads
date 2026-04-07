@@ -38,11 +38,23 @@ app.use("/api/return-imports", returnImportRoutes);
 const discountRoutes = require("./routes/discountRoutes");
 app.use("/api/discounts", discountRoutes);
 
+const leaveRoutes = require("./routes/leaveRoutes");
+app.use("/api/leave", leaveRoutes);
+
+const scheduleRoutes = require("./routes/scheduleRoutes");
+app.use("/api/schedule", scheduleRoutes);
+
 const exportRoutes = require("./routes/exportRoutes.js");
 app.use("/api/transactions/exports", exportRoutes);
 
 const adminUserRoutes = require("./routes/AdminUserRoutes.js");
 app.use("/api/users", adminUserRoutes);
+
+const attendanceRoutes = require("./routes/attendanceRoutes");
+app.use("/api/attendance", attendanceRoutes);
+
+const salaryRoutes = require("./routes/salaryRoutes");
+app.use("/api/salary", salaryRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server chạy tại cổng ${PORT}`));

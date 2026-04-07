@@ -18,7 +18,9 @@
     "react-router-dom": "^7.13.2",
     "sweetalert2": "^11.26.24",
     "vite-plugin-svgr": "^4.5.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
