@@ -56,8 +56,8 @@ app.use("/api/transactions/exports", exportRoutes);
 const adminUserRoutes = require("./routes/AdminUserRoutes.js");
 app.use("/api/users", adminUserRoutes);
 
-const actionHistoryRoutes = require("./routes/actionHistoryRoutes");
-app.use("/api/action-history", actionHistoryRoutes);
+const actionHistoryRoutes = require('./routes/actionHistoryRoutes');
+app.use('/api/action-history', actionHistoryRoutes);
 
 // --- LISTEN ---
 const PORT = process.env.PORT || 5000;

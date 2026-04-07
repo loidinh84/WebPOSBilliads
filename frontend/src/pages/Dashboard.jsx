@@ -42,6 +42,7 @@ function Dashboard() {
 
   useEffect(() => {
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, [selectedDate]);
