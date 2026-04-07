@@ -14,10 +14,99 @@ function DashboardHeader() {
       : { QUYENHAN: "Chưa rõ", TENDANGNHAP: "" };
   });
 
-  // eslint-disable-next-line no-unused-vars
-  const [storeName, setStoreName] = useState(() => {
-    return localStorage.getItem("storeName") || "Billiards Lục Lợi";
+  const [headerStoreInfo, setHeaderStoreInfo] = useState({
+    tenCuaHang: "Đang tải...",
+    anhDaiDien: null,
   });
+
+  const [userProfile, setUserProfile] = useState({
+    TENNGUOIDUNG: "",
+    HINHANH: null,
+  });
+
+  useEffect(() => {
+    const fetchHeaderData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        // Nhớ đổi port 5000 nếu backend của bạn chạy port khác
+        const response = await fetch(
+          "http://localhost:5000/api/store-settings",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+        const result = await response.json();
+
+        if (result.success) {
+          setHeaderStoreInfo({
+            tenCuaHang: result.data.TENCUAHANG || "Tên Cửa Hàng",
+            anhDaiDien: result.data.ANHDAIDIEN || null,
+          });
+        }
+      } catch (error) {
+        console.error("Lỗi tải thông tin Header:", error);
+      }
+    };
+
+    fetchHeaderData();
+  }, []);
+
+  useEffect(() => {
+    const fetchHeaderData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const savedUser = JSON.parse(localStorage.getItem("user"));
+        const loginName = savedUser?.TENDANGNHAP || savedUser?.username;
+
+        // A. Kéo dữ liệu Cửa hàng
+        const resStore = await fetch(
+          "http://localhost:5000/api/store-settings",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+        const resultStore = await resStore.json();
+        if (resultStore.success) {
+          setHeaderStoreInfo({
+            tenCuaHang: resultStore.data.TENCUAHANG || "Tên Cửa Hàng",
+            anhDaiDien: resultStore.data.ANHDAIDIEN || null,
+          });
+        }
+
+        // B. Kéo dữ liệu Profile User hiện tại (MỚI THÊM)
+        if (loginName) {
+          const resUser = await fetch(
+            `http://localhost:5000/api/user/profile/${loginName}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+          const dataUser = await resUser.json();
+          if (dataUser) {
+            setUserProfile({
+              TENNGUOIDUNG: dataUser.TENNGUOIDUNG || dataUser.TENDANGNHAP,
+              HINHANH: dataUser.HINHANH || null,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Lỗi tải thông tin Header:", error);
+      }
+    };
+
+    fetchHeaderData();
+  }, []);
 
   // LOGIC ĐIỀU HƯỚNG CHUẨN
   useEffect(() => {
@@ -48,12 +137,24 @@ function DashboardHeader() {
       <div className="flex justify-between items-center px-6 lg:px-12 py-4">
         {/* Bên trái: Logo và Tên cửa hàng */}
         <div
-          className="flex items-center gap-4 cursor-pointer"
+          className="flex items-center gap-1.5 cursor-pointer"
           onClick={() => navigate("/dashboard")}
         >
-          <img src={Logo} alt="Logo" className="h-10 w-auto object-contain" />
-          <h1 className="text-2xl font-extrabold text-[#5D5FEF] tracking-tight">
-            {storeName}
+          {headerStoreInfo.anhDaiDien ? (
+            <img
+              src={headerStoreInfo.anhDaiDien}
+              alt="Logo Cửa Hàng"
+              className="h-12 w-12 object-cover rounded-full"
+            />
+          ) : (
+            <img
+              src={Logo}
+              alt="Logo Mặc Định"
+              className="h-10 w-auto object-contain"
+            />
+          )}
+          <h1 className="text-2xl font-bold text-[#5D5FEF] tracking-tight ">
+            {headerStoreInfo.tenCuaHang}
           </h1>
         </div>
 
@@ -71,16 +172,7 @@ function DashboardHeader() {
             </div>
           )}
 
-          <div className="flex items-center cursor-pointer hover:text-[#5D5FEF]">
-            Tiếng Việt (VN)
-            <img
-              src={Icons.ArrowDrop}
-              alt="Dropdown"
-              className="w-7 h-10 object-contain"
-            />
-          </div>
-
-          {/* Nút Thiết lập: Đã thêm onClick cho Admin */}
+          {/* Nút Thiết lập: */}
           {userInfo.QUYENHAN === "Admin" && (
             <div className="relative group">
               <button className="flex items-center cursor-pointer gap-2 hover:text-[#5D5FEF] py-2">
@@ -116,7 +208,7 @@ function DashboardHeader() {
                   onClick={() => navigate("/settings/discount")}
                   className="w-full text-left px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] font-bold transition-colors text-[14px] border-b border-gray-50 cursor-pointer"
                 >
-                  Quản lý KM
+                  Quản lý khuyến mãi
                 </button>
                 <button
                   onClick={() => navigate("/settings/history")}
@@ -132,12 +224,12 @@ function DashboardHeader() {
           <div className="relative group">
             <div className="flex items-center gap-3 bg-gray-100 px-5 py-2 rounded-full cursor-pointer hover:bg-gray-200 transition-all">
               <img
-                src={Icons.User}
+                src={userProfile.HINHANH || Icons.User}
                 alt="Avatar"
-                className="w-6 h-6 object-contain"
+                className="w-8 h-8 object-cover rounded-full"
               />
               <span className="text-gray-700 font-bold">
-                {userInfo.TENDANGNHAP}
+                {userProfile.TENNGUOIDUNG || userInfo.TENDANGNHAP}
               </span>
             </div>
 

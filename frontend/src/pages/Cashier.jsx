@@ -1,43 +1,78 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Logo from "../assets/images/Logo.png";
 import * as Icons from "../assets/icons/index";
+import Swal from "sweetalert2";
+import PrintBillModal from "../components/PrintBillModal";
+
+const TimeSpinner = ({ label, value, max, onUp, onDown, onChange }) => (
+  <div className="flex flex-col items-center gap-1">
+    <button
+      onClick={onUp}
+      className="w-10 h-8 text-gray-400 hover:text-blue-500 text-lg font-bold transition-colors select-none"
+    >
+      ▲
+    </button>
+    <input
+      type="number"
+      min={0}
+      max={max}
+      value={String(value).padStart(2, "0")}
+      onChange={(e) =>
+        onChange(Math.max(0, Math.min(max, Number(e.target.value))))
+      }
+      className="w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 focus:border-blue-500 rounded-xl outline-none transition-colors"
+    />
+    <button
+      onClick={onDown}
+      className="w-10 h-8 text-gray-400 hover:text-blue-500 text-lg font-bold transition-colors select-none"
+    >
+      ▼
+    </button>
+    <span className="text-xs text-gray-400 mt-1">{label}</span>
+  </div>
+);
 
 function Cashier() {
+  const navigate = useNavigate();
   const [leftTab, setLeftTab] = useState("tables");
-  const [tableFilter, setTableFilter] = useState("all"); // 'all', 'occupied', 'empty'
+  const [tableFilter, setTableFilter] = useState("all");
   const [openMenuOnSelect, setOpenMenuOnSelect] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printBillData, setPrintBillData] = useState(null);
+  const [editingStartTime, setEditingStartTime] = useState(false);
+  const [tempStartTime, setTempStartTime] = useState("");
+
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const isManagerOrAdmin =
+    currentUser.QUYENHAN === "Admin" || currentUser.QUYENHAN === "Quản lý";
 
   // --- LOGIC THỜI GIAN REAL-TIME ---
-  const [startTimeByTable, setStartTimeByTable] = useState({}); // { tableId: "HH:mm" }
+  const [startTimeByTable, setStartTimeByTable] = useState({});
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000); // 1s cập nhật 1 lần cho chuẩn xác tuyệt đối
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Hàm format chuỗi giờ bắt đầu thành HH:mm:ss để hiển thị và xử lý
   const formatStartTime = (timeStr) => {
     if (!timeStr) return "";
-    // Nếu là định dạng ISO (ví dụ: 1900-01-01T15:30:00.000Z)
     if (timeStr.includes("T")) {
-      const timePart = timeStr.split("T")[1]; // lấy "15:30:00.000Z"
-      return timePart.split(".")[0]; // lấy "15:30:00"
+      const timePart = timeStr.split("T")[1];
+      return timePart.split(".")[0];
     }
-    // Nếu là HH:mm, thêm :00 vào cuối
     if (timeStr.length === 5) return timeStr + ":00";
-    return timeStr.slice(0, 8); // HH:mm:ss
+    return timeStr.slice(0, 8);
   };
 
-  // Hàm tính số giây đã chơi
   const getDurationInSeconds = (startTimeStr) => {
     if (!startTimeStr) return 0;
     const cleanTime = formatStartTime(startTimeStr);
     const [h, m, s] = cleanTime.split(":").map(Number);
     if (isNaN(h) || isNaN(m)) return 0;
-    
+
     const start = new Date(currentTime);
     start.setHours(h, m, s || 0, 0);
 
@@ -49,96 +84,108 @@ function Cashier() {
         return 0;
       }
     }
-
     return Math.floor((currentTime - start) / 1000);
   };
 
-  // Hàm format số giây thành "H:mm:ss"
   const formatDuration = (totalSeconds) => {
     const h = Math.floor(totalSeconds / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
     const s = totalSeconds % 60;
     return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
+  const [storeSettings, setStoreSettings] = useState(null);
+  const [tables, setTables] = useState([]);
 
-  // Bảng danh sách bàn (trạng thái khởi đầu: tất cả trống - sẽ được cậ nhật từ DB)
-  const [tables, setTables] = useState([
-    { id: 1, name: "Bàn 1", maban: "B001", status: "empty" },
-    { id: 2, name: "Bàn 2", maban: "B002", status: "empty" },
-    { id: 3, name: "Bàn 3", maban: "B003", status: "empty" },
-    { id: 4, name: "Bàn 4", maban: "B004", status: "empty" },
-    { id: 5, name: "Bàn 5", maban: "B005", status: "empty" },
-    { id: 6, name: "Bàn 6", maban: "B006", status: "empty" },
-    { id: 7, name: "Bàn 7", maban: "B007", status: "empty" },
-    { id: 8, name: "Bàn 8", maban: "B008", status: "empty" },
-    { id: 9, name: "Bàn 9", maban: "B009", status: "empty" },
-    { id: 10, name: "Bàn 10", maban: "B010", status: "empty" },
-    { id: 11, name: "Bàn 11", maban: "B011", status: "empty" },
-    { id: 12, name: "Bàn 12", maban: "B012", status: "empty" },
-    { id: 13, name: "Bàn 13", maban: "B013", status: "empty" },
-  ]);
+  const [categories, setCategories] = useState(["Tất cả"]);
 
-  const menuCategories = [
-    "Tất cả",
-    "Hàng hóa",
-    "Thức ăn",
-    "Đồ uống",
-    "Thuốc lá",
-    "Dịch vụ",
-  ];
   const [activeCategory, setActiveCategory] = useState("Tất cả");
-
   const [menuItems, setMenuItems] = useState([]);
+  const [searchMenuQuery, setSearchMenuQuery] = useState("");
 
   const [openTabs, setOpenTabs] = useState([]);
   const [activeTabId, setActiveTabId] = useState(null);
-
-  // --- LOGIC KHUYẾN MÃI ---
+  const [ordersByTable, setOrdersByTable] = useState({});
+  const [billIdByTable, setBillIdByTable] = useState({});
   const [discountsList, setDiscountsList] = useState([]);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountByTable, setDiscountByTable] = useState({});
-
-  // --- LOGIC CHUYỂN BÀN ---
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [targetTableId, setTargetTableId] = useState(null);
-
-  // --- LOGIC HÓA ĐƠN (DB) ---
-  const [billIdByTable, setBillIdByTable] = useState({}); // { tableId: 'HD001' }
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [checkoutData, setCheckoutData] = useState(null);
+  const [qrUrl, setQrUrl] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("Tiền mặt");
+  const [customerPaid, setCustomerPaid] = useState("");
+  const currentTableInfo = tables.find((t) => t.id === activeTabId);
 
   useEffect(() => {
-    // Load cả danh sách KM và các hóa đơn đang chơi
     const init = async () => {
       try {
-        // 1. Lấy khuyến mãi
-        const discRes = await axios.get("http://localhost:5000/api/discounts");
+        const token = localStorage.getItem("token");
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+
+        const [setRes, discRes, prodRes, catRes, tablesRes, activeRes] =
+          await Promise.all([
+            axios.get("http://localhost:5000/api/store-settings", config).catch(() => ({ data: { success: false, data: {} } })),
+            axios.get("http://localhost:5000/api/discounts", config).catch(() => ({ data: { success: false, data: [] } })),
+            axios.get("http://localhost:5000/api/products", config).catch(() => ({ data: [] })),
+            axios.get("http://localhost:5000/api/products/categories", config).catch(() => ({ data: { data: [] } })),
+            axios.get("http://localhost:5000/api/tables", config).catch(() => ({ data: { data: [] } })),
+            axios.get("http://localhost:5000/api/bills/active", config).catch(() => ({ data: { success: false, data: [] } })),
+          ]);
+
+        // --- 1. XỬ LÝ CÀI ĐẶT CỬA HÀNG ---
+        if (setRes.data.success) setStoreSettings(setRes.data.data);
+
+        // --- 2. XỬ LÝ KHUYẾN MÃI ---
+        let fetchedDiscounts = [];
         if (discRes.data.success) {
-          setDiscountsList(discRes.data.data.filter((d) => d.TRANGTHAI));
+          fetchedDiscounts = discRes.data.data.filter((d) => d.TRANGTHAI);
+          setDiscountsList(fetchedDiscounts);
         }
 
-        // 1b. Lấy danh sách hàng hóa từ CSDL
-        const prodRes = await axios.get("http://localhost:5000/api/products");
-        let mappedItems = [];
+        // --- 3. XỬ LÝ DANH SÁCH MÓN ĂN ---
         if (Array.isArray(prodRes.data) && prodRes.data.length > 0) {
-          mappedItems = prodRes.data.map(item => ({
+          const mappedItems = prodRes.data.map((item) => ({
             id: item.MAHANGHOA,
             name: item.TENHANGHOA,
             price: item.DONGIABAN,
             category: item.NHOMHANG || "Hàng hóa",
-            image: item.HINHANH || ""
+            image: item.HINHANH || "",
+            tonKho: item.SOLUONGTONKHO || 0,
           }));
-        } else {
-          mappedItems = [
-            { id: "HH001", name: "Nước suối Lavie 500ml", price: 10000, category: "Hàng hóa", image: "" },
-            { id: "HH002", name: "Coca Cola lon 330ml", price: 15000, category: "Hàng hóa", image: "" },
-            { id: "HH003", name: "Bia Tiger lon 330ml", price: 25000, category: "Hàng hóa", image: "" },
-            { id: "HH004", name: "Snack Pringles", price: 35000, category: "Hàng hóa", image: "" },
-            { id: "108", name: "Bàn lỗ (Giờ)", price: 55000, category: "Dịch vụ", image: "" },
-          ];
+          setMenuItems(mappedItems);
         }
-        setMenuItems(mappedItems);
 
-        // 2. Phục hồi các phiên bàn đang chơi từ DB
-        const activeRes = await axios.get("http://localhost:5000/api/bills/active");
+        // --- 4. XỬ LÝ DANH MỤC ---
+        if (
+          Array.isArray(catRes.data) ||
+          (catRes.data && Array.isArray(catRes.data.data))
+        ) {
+          const rawCategories = Array.isArray(catRes.data)
+            ? catRes.data
+            : catRes.data.data;
+          const catNames = rawCategories
+            .map((c) => c.TENDANHMUC)
+            .filter((name) => name !== "Tất cả" && name !== "ALL");
+          setCategories(["Tất cả", ...catNames]);
+        }
+
+        // --- 5. XỬ LÝ SƠ ĐỒ BÀN  ---
+        let baseTables = [];
+        const rawTables = tablesRes.data.data || tablesRes.data;
+        if (Array.isArray(rawTables) && rawTables.length > 0) {
+          baseTables = rawTables.map((t) => ({
+            id: t.MABAN ? parseInt(t.MABAN.replace(/\D/g, ""), 10) : t.id,
+            name: t.TENBAN || t.name,
+            maban: t.MABAN || t.maban,
+            MAHANGHOA: t.MAHANGHOA,
+            status: "empty",
+          }));
+        }
+
+        // --- 6. PHỤC HỒI BÀN ĐANG CHƠI VÀ GHI ĐÈ TRẠNG THÁI ---
         if (activeRes.data.success && activeRes.data.data.length > 0) {
           const activeBills = activeRes.data.data;
           const newOrders = {};
@@ -147,10 +194,11 @@ function Cashier() {
           const newDiscounts = {};
           const newStartTimes = {};
 
-          activeBills.forEach(bill => {
-            // Tìm bàn tương ứng theo MABAN (B001, B002...)
-            const tableNum = parseInt(bill.MABAN.replace('B', ''), 10);
-            newOrders[tableNum] = (bill.items || []).map(item => ({
+          activeBills.forEach((bill) => {
+            const tableNum =
+              parseInt(bill.MABAN.replace(/\D/g, ""), 10) || bill.MABAN;
+
+            newOrders[tableNum] = (bill.items || []).map((item) => ({
               id: item.MAHANGHOA,
               name: item.TENHANGHOA || item.MAHANGHOA,
               qty: item.SOLUONG,
@@ -159,192 +207,146 @@ function Cashier() {
             newBillIds[tableNum] = bill.MAHOADON;
             newStartTimes[tableNum] = bill.GIOBATDAU;
             newOpenTabs.push({ id: tableNum, name: `Bàn ${tableNum}` });
+
             if (bill.MAKHUYENMAI) {
-              const km = discRes.data.data.find(d => d.MAKHUYENMAI === bill.MAKHUYENMAI);
+              const km = fetchedDiscounts.find(
+                (d) => d.MAKHUYENMAI === bill.MAKHUYENMAI,
+              );
               if (km) newDiscounts[tableNum] = km;
             }
           });
 
-          // Cập nhật trạng thái bàn dựa trên danh sách billIds đã lọc
-          setTables(prev => prev.map(t => ({
+          // Ghi đè trạng thái của những bàn có Hóa đơn thành 'occupied'
+          baseTables = baseTables.map((t) => ({
             ...t,
-            status: newBillIds[t.id] ? 'occupied' : 'empty'
-          })));
+            status: newBillIds[t.id] ? "occupied" : "empty",
+          }));
 
-          setOrdersByTable(prev => ({ ...prev, ...newOrders }));
+          setOrdersByTable((prev) => ({ ...prev, ...newOrders }));
           setBillIdByTable(newBillIds);
           setStartTimeByTable(newStartTimes);
           setOpenTabs(newOpenTabs);
-          if (Object.keys(newDiscounts).length > 0) setDiscountByTable(newDiscounts);
+          if (Object.keys(newDiscounts).length > 0)
+            setDiscountByTable(newDiscounts);
           if (newOpenTabs.length > 0) setActiveTabId(newOpenTabs[0].id);
         }
+
+        // Cuối cùng: Đẩy danh sách bàn (đã trộn trạng thái Đang chơi) lên màn hình 1 LẦN DUY NHẤT
+        setTables(baseTables);
       } catch (error) {
         console.error("Lỗi khởi tạo Cashier:", error);
       }
     };
+
     init();
   }, []);
-
-  const handleApplyDiscount = (discount) => {
-    if (!activeTabId) return;
-    setDiscountByTable((prev) => ({ ...prev, [activeTabId]: discount }));
-    setShowDiscountModal(false);
-  };
-
-  const clearDiscount = () => {
-    if (!activeTabId) return;
-    setDiscountByTable((prev) => {
-      const clone = { ...prev };
-      delete clone[activeTabId];
-      return clone;
-    });
-  };
 
   const handleTableClick = async (table) => {
     const isAlreadyOpen = openTabs.find((t) => t.id === table.id);
     if (!isAlreadyOpen) {
-      setOpenTabs([...openTabs, { id: table.id, name: table.name }]);
-      // Tạo hóa đơn mới trong DB nếu chưa có
-      if (!billIdByTable[table.id]) {
-        try {
-          const now = new Date();
-          const timeStr = now.toLocaleTimeString("en-GB", { hour12: false });
-          const res = await axios.post("http://localhost:5000/api/bills/open", {
-            MABAN: table.maban || `B${String(table.id).padStart(3, "0")}`,
-            GIOBATDAU: null, // ĐỂ TRỐNG GIỜ KHI MỚI MỞ BÀN
-            NGAY: now.toISOString().slice(0, 10),
-          });
-          if (res.data.success) {
-            setBillIdByTable((prev) => ({
-              ...prev,
-              [table.id]: res.data.MAHOADON,
-            }));
-            // KHÔNG setStartTimeByTable ở ĐÂY NỮA
-            
-            // CẬP NHẬT TRẠNG THÁI BÀN TRÊN SƠ ĐỒ
-            setTables((prev) =>
-              prev.map((t) =>
-                t.id === table.id ? { ...t, status: "occupied" } : t,
-              ),
-            );
-          } else {
-            alert(
-              "Không thể tạo hóa đơn trên DB: " +
-                (res.data.message || "Lỗi không xác định"),
-            );
-          }
-        } catch (err) {
-          console.error("Lỗi tạo hóa đơn:", err);
-          alert("Lỗi kết nối server khi mở bàn. Vui lòng kiểm tra lại backend!");
-        }
-      }
+      setOpenTabs([
+        ...openTabs,
+        {
+          id: table.id,
+          name: table.name,
+          maban: table.maban,
+          mahanghoa: table.MAHANGHOA,
+        },
+      ]);
     }
     setActiveTabId(table.id);
-    if (openMenuOnSelect) {
-      setLeftTab("menu");
-    }
+    if (openMenuOnSelect) setLeftTab("menu");
   };
 
-  const handleTransferTable = async () => {
-    if (!activeTabId || !targetTableId) return;
+  const handleOpenTable = async () => {
+    if (!activeTabId) return;
 
-    // Lấy ID hóa đơn hiện tại
-    const billId = billIdByTable[activeTabId];
-    if (!billId) {
-      alert("Không tìm thấy thông tin hóa đơn cho bàn này để chuyển!");
-      return;
-    }
-
-    const sourceId = activeTabId;
-    const destId = targetTableId;
-    const targetTableObj = tables.find((t) => t.id === destId);
-
-    if (!targetTableObj) {
-      alert("Không tìm thấy thông tin bàn đích!");
-      return;
-    }
+    // Tìm thông tin bàn đang được chọn
+    const currentTable = tables.find((t) => t.id === activeTabId);
+    if (!currentTable) return;
 
     try {
-      // 1. Cập nhật DB trước: Đổi MABAN trong HOADON
-      const newMaban = targetTableObj.maban || `B${String(destId).padStart(3, '0')}`;
-      const res = await axios.put(`http://localhost:5000/api/bills/${billId}/transfer`, { MABAN: newMaban });
-      
-      if (!res.data.success) {
-        throw new Error("Backend không cho phép chuyển bàn");
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString("en-GB", { hour12: false });
+
+      // 1. Gọi API mở hóa đơn (Kèm luôn Giờ bắt đầu)
+      const res = await axios.post("http://localhost:5000/api/bills/open", {
+        MABAN: currentTable.maban,
+        GIOBATDAU: timeStr,
+        NGAY: now.toISOString().slice(0, 10),
+      });
+
+      if (res.data.success) {
+        const newBillId = res.data.MAHOADON;
+
+        // 2. Cập nhật state trên React
+        setBillIdByTable((prev) => ({ ...prev, [activeTabId]: newBillId }));
+        setStartTimeByTable((prev) => ({ ...prev, [activeTabId]: timeStr }));
+        setTables((prev) =>
+          prev.map((t) =>
+            t.id === activeTabId ? { ...t, status: "occupied" } : t,
+          ),
+        );
+
+        // 3. Tự động nạp món Dịch vụ (Tiền giờ) vào hóa đơn dựa trên MAHANGHOA của bàn
+        // Nếu bàn có MAHANGHOA, tìm thông tin món đó trong menuItems để add vào
+        if (currentTable.MAHANGHOA) {
+          const serviceItem = menuItems.find(
+            (item) => item.id === currentTable.MAHANGHOA,
+          );
+          if (serviceItem) {
+            // Ép giá về 0 trên bill để hiển thị (tiền giờ tính riêng ở tổng kết)
+            const finalItem = { ...serviceItem, price: 0, qty: 1 };
+            setOrdersByTable((prev) => ({
+              ...prev,
+              [activeTabId]: [finalItem],
+            }));
+            // Sync xuống DB
+            await axios.put(
+              `http://localhost:5000/api/bills/${newBillId}/items`,
+              { items: [finalItem] },
+            );
+          }
+        }
+
+        Swal.fire({
+          icon: "success",
+          title: "Đã mở bàn!",
+          text: `Bắt đầu tính giờ từ ${timeStr}`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
       }
-
-      // 2. Cập nhật State Frontend sau khi DB đã OK
-      
-      // Chuyển Orders
-      setOrdersByTable((prev) => {
-        const next = { ...prev };
-        next[destId] = prev[sourceId] || [];
-        delete next[sourceId];
-        return next;
-      });
-
-      // Chuyển Khuyến Mãi
-      setDiscountByTable((prev) => {
-        const next = { ...prev };
-        if (prev[sourceId]) {
-          next[destId] = prev[sourceId];
-          delete next[sourceId];
-        }
-        return next;
-      });
-
-      // Chuyển Bill ID
-      setBillIdByTable((prev) => {
-        const next = { ...prev };
-        next[destId] = billId;
-        delete next[sourceId];
-        return next;
-      });
-
-      // Chuyển Start Time
-      setStartTimeByTable((prev) => {
-        const next = { ...prev };
-        if (prev[sourceId]) {
-          next[destId] = prev[sourceId];
-          delete next[sourceId];
-        }
-        return next;
-      });
-
-      // Đổi trạng thái hiển thị của các bàn trên sơ đồ
-      setTables((prev) =>
-        prev.map((t) => {
-          if (t.id === sourceId) return { ...t, status: "empty" };
-          if (t.id === destId) return { ...t, status: "occupied" };
-          return t;
-        }),
-      );
-
-      // Cập nhật danh sách Tab
-      setOpenTabs((prev) =>
-        prev.map((tab) =>
-          tab.id === sourceId
-            ? { id: destId, name: targetTableObj.name }
-            : tab,
-        ),
-      );
-
-      // Chuyển tiêu điểm sang bàn mới
-      setActiveTabId(destId);
-      
-      alert(`Đã chuyển thành công từ Bàn ${sourceId} sang ${targetTableObj.name}`);
-
     } catch (err) {
-      console.error('Lỗi chuyển bàn:', err);
-      alert('Lỗi khi chuyển bàn: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setShowTransferModal(false);
-      setTargetTableId(null);
+      Swal.fire("Lỗi", "Không thể kết nối server để mở bàn!", "error");
     }
   };
 
   const handleCloseTab = (e, tableId) => {
     e.stopPropagation();
+    if (billIdByTable[tableId]) {
+      Swal.fire({
+        title: "Bàn đang có hóa đơn!",
+        text: "Hóa đơn vẫn còn đang chạy. Bạn vẫn muốn đóng tab này không?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Vẫn đóng",
+        cancelButtonText: "Không",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const newTabs = openTabs.filter((t) => t.id !== tableId);
+          setOpenTabs(newTabs);
+          if (activeTabId === tableId) {
+            setActiveTabId(
+              newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null,
+            );
+          }
+        }
+      });
+      return;
+    }
     const newTabs = openTabs.filter((t) => t.id !== tableId);
     setOpenTabs(newTabs);
     if (activeTabId === tableId) {
@@ -354,25 +356,76 @@ function Cashier() {
     }
   };
 
-  const [ordersByTable, setOrdersByTable] = useState({});
-
-  // Sync món ăn xuống DB mỗi khi thay đổi
-  const syncItemsToDB = async (tableId, updatedItems) => {
-    const billId = billIdByTable[tableId];
-    if (!billId) return;
-    try {
-      await axios.put(`http://localhost:5000/api/bills/${billId}/items`, { items: updatedItems });
-    } catch (err) {
-      console.error('Lỗi sync món:', err);
+  // TÍNH NĂNG: GỌI MÓN
+  const handleAddItemToBill = (item) => {
+    if (!activeTabId) {
+      Swal.fire(
+        "Thông báo",
+        "Vui lòng chọn bàn đang hoạt động trước khi gọi món!",
+        "info",
+      );
+      return;
     }
-  };
 
-  const currentOrderItems = ordersByTable[activeTabId] || [];
+    // Lấy trạng thái công tắc
+    const choPhepBanAm = storeSettings?.NHAN_GOIMON === true;
 
-  const handleDeleteItem = (itemId) => {
-    const updated = (ordersByTable[activeTabId] || []).filter((item) => item.id !== itemId);
+    // Kiểm tra tồn kho nếu không phải Dịch vụ
+    if (item.category !== "Dịch vụ" && item.tonKho <= 0 && !choPhepBanAm) {
+      Swal.fire({
+        icon: "warning",
+        title: "Đã hết hàng!",
+        text: `Món "${item.name}" đã hết tồn kho. Hãy bật 'Cho phép bán khi hết hàng' trong Thiết lập để tiếp tục.`,
+      });
+      return;
+    }
+
+    const currentOrders = ordersByTable[activeTabId] || [];
+    const existingItem = currentOrders.find((i) => i.id === item.id);
+    let updated;
+
+    const tableServiceId = currentTableInfo?.MAHANGHOA;
+    const allServiceIds = tables
+      .map((t) => String(t.MAHANGHOA))
+      .filter(Boolean);
+
+    if (
+      allServiceIds.includes(String(item.id)) &&
+      String(item.id) !== String(tableServiceId)
+    ) {
+      Swal.fire({
+        icon: "warning",
+        title: "Không thể thêm!",
+        text: `Bàn này đang dùng loại dịch vụ khác. Không thể thêm "${item.name}" vào đây.`,
+      });
+      return;
+    }
+    const isServiceItem =
+      tableServiceId && String(item.id) === String(tableServiceId);
+    const finalItem = isServiceItem ? { ...item, price: 0 } : item;
+
+    if (existingItem) {
+      updated = currentOrders.map((i) =>
+        i.id === finalItem.id ? { ...i, qty: i.qty + 1 } : i,
+      );
+    } else {
+      updated = [...currentOrders, { ...finalItem, qty: 1 }];
+    }
+
     setOrdersByTable((prev) => ({ ...prev, [activeTabId]: updated }));
     syncItemsToDB(activeTabId, updated);
+
+    if (isServiceItem && !startTimeByTable[activeTabId]) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString("en-GB", { hour12: false });
+      setStartTimeByTable((prev) => ({ ...prev, [activeTabId]: timeStr }));
+      const billId = billIdByTable[activeTabId];
+      if (billId) {
+        axios.patch(`http://localhost:5000/api/bills/${billId}/start`, {
+          GIOBATDAU: timeStr,
+        });
+      }
+    }
   };
 
   const updateQuantity = (itemId, delta) => {
@@ -387,341 +440,564 @@ function Cashier() {
     syncItemsToDB(activeTabId, updated);
   };
 
-  const handleAddItemToBill = (item) => {
-    if (!activeTabId) {
-      alert("Vui lòng chọn bàn ở tab 'Phòng bàn' trước khi gọi món!");
+  const handleDeleteItem = (itemId) => {
+    const updated = (ordersByTable[activeTabId] || []).filter(
+      (item) => item.id !== itemId,
+    );
+    setOrdersByTable((prev) => ({ ...prev, [activeTabId]: updated }));
+    syncItemsToDB(activeTabId, updated);
+  };
+
+  const syncItemsToDB = async (tableId, updatedItems) => {
+    const billId = billIdByTable[tableId];
+    if (!billId) return;
+    try {
+      await axios.put(`http://localhost:5000/api/bills/${billId}/items`, {
+        items: updatedItems,
+      });
+    } catch (err) {
+      console.error("Lỗi sync món:", err);
+    }
+  };
+
+  const handleOpenCheckout = () => {
+    if (!billIdByTable[activeTabId]) return;
+    const currentFinalTotal = finalTotal;
+    setCheckoutData({
+      timePrice: timePrice,
+      hourlyRate: hourlyRate,
+      rawTotal: rawTotal,
+      discountAmount: discountAmount,
+      finalTotal: finalTotal,
+      durationSeconds: durationSeconds,
+      endTime: new Date().toTimeString().slice(0, 5),
+    });
+
+    if (storeSettings?.SOTAIKHOAN) {
+      const bank = storeSettings.NGANHANG_BIN || storeSettings.NGANHANG || "";
+      const acc = storeSettings.SOTAIKHOAN || "";
+      const name = encodeURIComponent(
+        storeSettings.TENTAIKHOAN || storeSettings.TENCHUTAIKHOAN || "",
+      );
+      const info = `THANHTOAN_${billIdByTable[activeTabId]}`;
+
+      const url = `https://img.vietqr.io/image/${bank}-${acc}-compact2.png?amount=${currentFinalTotal}&addInfo=${info}&accountName=${name}`;
+      setQrUrl(url);
+    }
+
+    setCustomerPaid(currentFinalTotal.toString());
+    setShowCheckoutModal(true);
+  };
+
+  // --- TẠO MÃ QR CHO PHƯƠNG THỨC KẾT HỢP ---
+  const generateCombinedQR = () => {
+    const cash = Number(customerPaid || 0);
+    const finalTot = checkoutData?.finalTotal || 0;
+    const remaining = finalTot - cash;
+
+    if (remaining <= 0) {
+      Swal.fire(
+        "Thông báo",
+        "Số tiền mặt đã đủ thanh toán, không cần chuyển khoản thêm!",
+        "info",
+      );
       return;
     }
 
-    const currentOrders = ordersByTable[activeTabId] || [];
-    const existingItem = currentOrders.find((i) => i.id === item.id);
-    let updated;
-    
-    // Nếu là món Bàn lỗ (Giờ), hiện giá 55k ở Menu nhưng vào Hóa đơn thì ép về 0đ 
-    // để hệ thống chỉ tính tiền theo thời gian chơi thực tế (Tiền giờ).
-    const finalItem = String(item.id) === "108" ? { ...item, price: 0 } : item;
+    if (storeSettings?.SOTAIKHOAN) {
+      const bank = storeSettings.NGANHANG_BIN || storeSettings.NGANHANG || "";
+      const acc = storeSettings.SOTAIKHOAN || "";
+      const name = encodeURIComponent(
+        storeSettings.TENTAIKHOAN || storeSettings.TENCHUTAIKHOAN || "",
+      );
+      const info = `THANHTOAN_${billIdByTable[activeTabId]}`;
 
-    if (existingItem) {
-      updated = currentOrders.map((i) => i.id === finalItem.id ? { ...i, qty: i.qty + 1 } : i);
-    } else {
-      updated = [...currentOrders, { ...finalItem, qty: 1 }];
-    }
-    setOrdersByTable((prev) => ({ ...prev, [activeTabId]: updated }));
-    syncItemsToDB(activeTabId, updated);
-    setTables(
-      tables.map((t) => (t.id === activeTabId ? { ...t, status: "occupied" } : t)),
-    );
+      const url = `https://img.vietqr.io/image/${bank}-${acc}-compact2.png?amount=${remaining}&addInfo=${info}&accountName=${name}`;
+      setQrUrl(url);
 
-    // KÍCH HOẠT GIỜ NẾU CHỌN MÓN "BÀN LỖ (GIỜ)" (Mã 108)
-    if (String(item.id) === "108" && !startTimeByTable[activeTabId]) {
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString("en-GB", { hour12: false });
-      setStartTimeByTable((prev) => ({ ...prev, [activeTabId]: timeStr }));
-
-      // Đồng bộ giờ bắt đầu lên DB
-      const billId = billIdByTable[activeTabId];
-      if (billId) {
-        axios
-          .patch(`http://localhost:5000/api/bills/${billId}/start`, {
-            GIOBATDAU: timeStr,
-          })
-          .catch((err) => console.error("Lỗi kích hoạt giờ:", err));
-      }
-    }
-  };
-
-  const handleCheckout = async () => {
-    const billId = billIdByTable[activeTabId];
-    if (!billId || currentOrderItems.length === 0) return;
-    if (!window.confirm(`Xác nhận thanh toán bàn này?\nTổng tiền: ${finalTotal.toLocaleString()}đ`)) return;
-    try {
-      const now = new Date();
-      await axios.put(`http://localhost:5000/api/bills/${billId}/checkout`, {
-        GIOKETTHUC: now.toTimeString().slice(0, 5),
-        TONGTIENGIO: timePrice,
-        TONGTIENHANG: rawTotal,
-        MAKHUYENMAI: discountByTable[activeTabId]?.MAKHUYENMAI || null,
-        TONGTHANHTOAN: finalTotal,
+      Swal.fire({
+        icon: "success",
+        title: "Đã cập nhật mã QR",
+        text: `Mã QR đã đổi thành: ${remaining.toLocaleString()}đ`,
+        timer: 1500,
+        showConfirmButton: false,
       });
-      // Reset trạng thái bàn
-      setTables((prev) => prev.map((t) => t.id === activeTabId ? { ...t, status: 'empty' } : t));
-      setOrdersByTable((prev) => { const c = { ...prev }; delete c[activeTabId]; return c; });
-      setBillIdByTable((prev) => { const c = { ...prev }; delete c[activeTabId]; return c; });
-      setDiscountByTable((prev) => { const c = { ...prev }; delete c[activeTabId]; return c; });
-      setStartTimeByTable((prev) => { const c = { ...prev }; delete c[activeTabId]; return c; });
-      // Đóng tab
-      const newTabs = openTabs.filter(t => t.id !== activeTabId);
-      setOpenTabs(newTabs);
-      setActiveTabId(newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null);
-      alert('Thanh toán thành công!');
-    } catch (err) {
-      console.error('Lỗi thanh toán:', err);
-      alert('Thanh toán thất bại. Vui lòng thử lại!');
     }
   };
 
-  const handleCancelTable = async () => {
+  const confirmCheckout = async () => {
     const billId = billIdByTable[activeTabId];
-    if (!billId) return;
+    if (!billId || !checkoutData) return;
 
-    if (!window.confirm(`Xác nhận HỦY BÀN này? Thao tác này sẽ xóa mọi dữ liệu món ăn hiện tại và không thể hoàn tác.`)) return;
+    const paidAmount = Number(customerPaid || 0);
+    if (paymentMethod === "Tiền mặt" && paidAmount < checkoutData.finalTotal) {
+      Swal.fire({
+        icon: "warning",
+        title: "Thiếu tiền!",
+        text: `Khách cần trả ${checkoutData.finalTotal.toLocaleString()}đ nhưng mới đưa ${paidAmount.toLocaleString()}đ`,
+      });
+      return;
+    }
+
+    if (paymentMethod === "Kết hợp" && paidAmount <= 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "Chưa nhập số tiền!",
+        text: "Vui lòng nhập số tiền khách thanh toán.",
+      });
+      return;
+    }
 
     try {
-      await axios.put(`http://localhost:5000/api/bills/${billId}/cancel`);
-      
-      // Reset trạng thái bàn về trống
-      setTables((prev) => prev.map((t) => t.id === activeTabId ? { ...t, status: 'empty' } : t));
-      
-      // Xóa dữ liệu session
-      setOrdersByTable((prev) => { const c = { ...prev }; delete c[activeTabId]; return c; });
-      setBillIdByTable((prev) => { const c = { ...prev }; delete c[activeTabId]; return c; });
-      setDiscountByTable((prev) => { const c = { ...prev }; delete c[activeTabId]; return c; });
-      setStartTimeByTable((prev) => { const c = { ...prev }; delete c[activeTabId]; return c; });
+      const token = localStorage.getItem("token");
 
-      // Đóng tab bàn hiện tại
-      const newTabs = openTabs.filter(t => t.id !== activeTabId);
-      setOpenTabs(newTabs);
-      setActiveTabId(newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null);
+      await axios.put(
+        `http://localhost:5000/api/bills/${billId}/checkout`,
+        {
+          GIOKETTHUC: checkoutData.endTime,
+          TONGTIENGIO: checkoutData.timePrice,
+          TONGTIENHANG: checkoutData.rawTotal,
+          MAKHUYENMAI: discountByTable[activeTabId]?.MAKHUYENMAI || null,
+          TONGTHANHTOAN: checkoutData.finalTotal,
+          TENKHACHHANG: customerName.trim() !== "" ? customerName : null,
+          PHUONGTHUCTHANHTOAN: paymentMethod,
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
 
-      alert('Đã hủy bàn thành công!');
+      Swal.fire({
+        icon: "success",
+        title: "Thanh toán thành công!",
+        text: "Bạn có muốn in hóa đơn không?",
+        showCancelButton: true,
+        confirmButtonColor: "#169c4e",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: '<i class="fa-solid fa-print"></i> In Hóa Đơn',
+        cancelButtonText: "Đóng",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+          setPrintBillData({
+            billId: billId,
+            tableName: tables.find((t) => t.id === activeTabId)?.name || "",
+            items: currentOrderItems.filter((i) => i.price > 0),
+            timePrice: checkoutData.timePrice,
+            rawTotal: checkoutData.rawTotal,
+            discountAmount: checkoutData.discountAmount,
+            finalTotal: checkoutData.finalTotal,
+            startTime: formatStartTime(activeStartTime),
+            endTime: checkoutData.endTime,
+            durationSeconds: checkoutData.durationSeconds,
+            storeSettings: storeSettings,
+            customerName: customerName,
+            paymentMethod: paymentMethod,
+            discountCode:
+              discountByTable[activeTabId]?.TENKHUYENMAI ||
+              discountByTable[activeTabId]?.MAKHUYENMAI ||
+              "",
+            cashierName: currentUser.TENNGUOIDUNG || currentUser.HOTEN || "",
+          });
+          setShowPrintModal(true);
+        }
+
+        setTables((prev) =>
+          prev.map((t) =>
+            t.id === activeTabId ? { ...t, status: "empty" } : t,
+          ),
+        );
+        setOrdersByTable((p) => {
+          const c = { ...p };
+          delete c[activeTabId];
+          return c;
+        });
+        setBillIdByTable((p) => {
+          const c = { ...p };
+          delete c[activeTabId];
+          return c;
+        });
+        setDiscountByTable((p) => {
+          const c = { ...p };
+          delete c[activeTabId];
+          return c;
+        });
+        setStartTimeByTable((p) => {
+          const c = { ...p };
+          delete c[activeTabId];
+          return c;
+        });
+
+        const newTabs = openTabs.filter((t) => t.id !== activeTabId);
+        setOpenTabs(newTabs);
+        setActiveTabId(
+          newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null,
+        );
+
+        setShowCheckoutModal(false);
+        setCustomerName("");
+        setCustomerPaid("");
+        setPaymentMethod("Tiền mặt");
+        setCheckoutData(null);
+      });
     } catch (err) {
-      console.error('Lỗi hủy bàn:', err);
-      alert('Có lỗi xảy ra khi hủy bàn!');
+      Swal.fire("Lỗi", "Thanh toán thất bại. Vui lòng thử lại!", "error");
     }
   };
 
   const getDiscountAmount = (rawTotal) => {
     if (!activeTabId || !discountByTable[activeTabId]) return 0;
+
     const discount = discountByTable[activeTabId];
-    // Đọc hiểu câu chữ theo yêu cầu (Regex trích xuất số đi kèm dấu %)
-    const detail = discount.MACHITETKHOAN || discount.MACHITIETKHUYENMAI || "";
-    const percentMatch = detail.match(/(\d+)\s*%/);
-    if (percentMatch) {
-      const percentage = parseInt(percentMatch[1], 10);
-      return (rawTotal * percentage) / 100;
+    const detail = discount.MACHITETKHOAN || discount.MACHITIETKHUYENMAI || "0";
+    const percentage = parseInt(String(detail).replace(/\D/g, ""), 10);
+
+    if (!isNaN(percentage) && percentage > 0) {
+      return Math.round((rawTotal * percentage) / 100);
     }
-    return 0; // Nếu không có % thì giảm 0đ (Các trường hợp "Tặng 1 nước")
+
+    return 0;
   };
 
+  const currentOrderItems = ordersByTable[activeTabId] || [];
   const rawTotal = currentOrderItems.reduce(
     (acc, item) => acc + item.price * item.qty,
     0,
   );
-
-  // Tính tiền giờ (55.000 / 60 phút)
+  const tableServiceItem = menuItems.find(
+    (item) => item.id === currentTableInfo?.MAHANGHOA,
+  );
+  const hourlyRate = tableServiceItem?.price || 0;
   const activeStartTime = startTimeByTable[activeTabId];
   const durationSeconds = getDurationInSeconds(activeStartTime);
-  const hourlyRate = 55000;
-  const timePrice = Math.round(((durationSeconds / 60) / 60) * hourlyRate);
+  const blockTinhGio = storeSettings?.BLOCK_TINHGIO === true;
+  const soPhutBlock = storeSettings?.SOPHUT_BLOCK || 15;
 
+  const timePrice = (() => {
+    if (!durationSeconds || !hourlyRate) return 0;
+    if (blockTinhGio) {
+      // Làm tròn lên theo block
+      const soBlock = Math.ceil(durationSeconds / 60 / soPhutBlock);
+      const giaMotBlock = (hourlyRate / 60) * soPhutBlock;
+      return Math.round(soBlock * giaMotBlock);
+    }
+    // Tính giờ thường
+    return Math.round((durationSeconds / 3600) * hourlyRate);
+  })();
   const discountAmount = getDiscountAmount(rawTotal + timePrice);
-  const finalTotal = rawTotal + timePrice - discountAmount;
+  const rawFinalTotal = rawTotal + timePrice - discountAmount;
 
-  const isTableEmpty = currentOrderItems.length === 0;
+  const lamTronTien = storeSettings?.LAMTRON_TIEN === true;
+  const kieuLamTron = storeSettings?.KIEU_LAMTRON || "round";
 
-  // Tính toán số lượng bàn cho UI
-  const totalTablesCount = tables.length;
-  const occupiedTablesCount = tables.filter(t => t.status === 'occupied').length;
-  const emptyTablesCount = tables.filter(t => t.status === 'empty').length;
+  const finalTotal = (() => {
+    if (!lamTronTien) return rawFinalTotal;
+    // Làm tròn đến hàng nghìn
+    if (kieuLamTron === "ceil") return Math.ceil(rawFinalTotal / 1000) * 1000;
+    if (kieuLamTron === "floor") return Math.floor(rawFinalTotal / 1000) * 1000;
+    return Math.round(rawFinalTotal / 1000) * 1000;
+  })();
 
-  // Lọc danh sách bàn để hiển thị
-  const displayTables = tables.filter(t => {
-    if (tableFilter === 'occupied') return t.status === 'occupied';
-    if (tableFilter === 'empty') return t.status === 'empty';
+  const displayTables = tables.filter((t) => {
+    if (tableFilter === "occupied") return t.status === "occupied";
+    if (tableFilter === "empty") return t.status === "empty";
     return true;
   });
 
-  const filteredMenuItems =
-    activeCategory === "Tất cả"
-      ? menuItems
-      : menuItems.filter((item) => item.category === activeCategory);
+  const filteredMenuItems = menuItems.filter((item) => {
+    const matchCat =
+      activeCategory === "Tất cả" || item.category === activeCategory;
+    const matchSearch = item.name
+      .toLowerCase()
+      .includes(searchMenuQuery.toLowerCase());
+    const allServiceIds = tables
+      .map((t) => String(t.MAHANGHOA))
+      .filter(Boolean);
+    const tableServiceId = currentTableInfo?.MAHANGHOA;
+    if (
+      allServiceIds.includes(String(item.id)) &&
+      String(item.id) !== String(tableServiceId)
+    ) {
+      return false;
+    }
+    return matchCat && matchSearch;
+  });
+
+  // --- 1. HÀM HỦY BÀN ---
+  const handleCancelTable = () => {
+    const billId = billIdByTable[activeTabId];
+    if (!billId) return;
+
+    Swal.fire({
+      title: "Xác nhận hủy bàn?",
+      text: "Thao tác này sẽ xóa mọi món ăn hiện tại và không thể hoàn tác!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Đồng ý Hủy",
+      cancelButtonText: "Không",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await axios.put(`http://localhost:5000/api/bills/${billId}/cancel`);
+          // Xóa sạch dữ liệu của bàn này
+          setTables((prev) =>
+            prev.map((t) =>
+              t.id === activeTabId ? { ...t, status: "empty" } : t,
+            ),
+          );
+          setOrdersByTable((p) => {
+            const c = { ...p };
+            delete c[activeTabId];
+            return c;
+          });
+          setBillIdByTable((p) => {
+            const c = { ...p };
+            delete c[activeTabId];
+            return c;
+          });
+          setDiscountByTable((p) => {
+            const c = { ...p };
+            delete c[activeTabId];
+            return c;
+          });
+          setStartTimeByTable((p) => {
+            const c = { ...p };
+            delete c[activeTabId];
+            return c;
+          });
+
+          // Đóng tab
+          const newTabs = openTabs.filter((t) => t.id !== activeTabId);
+          setOpenTabs(newTabs);
+          setActiveTabId(
+            newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null,
+          );
+
+          Swal.fire("Đã hủy!", "Hủy bàn thành công.", "success");
+        } catch (err) {
+          Swal.fire("Lỗi!", "Có lỗi xảy ra khi hủy bàn!", "error");
+        }
+      }
+    });
+  };
+
+  // --- 2. HÀM XÓA KHUYẾN MÃI ---
+  const clearDiscount = () => {
+    if (!activeTabId) return;
+    setDiscountByTable((prev) => {
+      const clone = { ...prev };
+      delete clone[activeTabId];
+      return clone;
+    });
+  };
+
+  // --- 3. HÀM ÁP DỤNG KHUYẾN MÃI ---
+  const handleApplyDiscount = (discount) => {
+    if (!activeTabId) return;
+
+    if (discountByTable[activeTabId]?.MAKHUYENMAI === discount.MAKHUYENMAI) {
+      clearDiscount();
+    } else {
+      setDiscountByTable((prev) => ({ ...prev, [activeTabId]: discount }));
+    }
+    setShowDiscountModal(false);
+  };
+
+  const handleNotifyKitchen = () => {
+    if (!billIdByTable[activeTabId]) return;
+    Swal.fire({
+      icon: "success",
+      title: "Đã báo bếp!",
+      text: "Bếp đã nhận được yêu cầu.",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  };
+
+  const handleTransferTable = () => {
+    if (!billIdByTable[activeTabId]) return;
+    setShowTransferModal(true);
+  };
 
   return (
-    <div className="h-screen flex flex-col font-sans text-[13px] bg-[#e9ecf4] overflow-hidden">
-      {/* ---------------- HEADER ---------------- */}
-      <header className="h-12 bg-[#2a3f85] flex justify-between items-center px-4 shrink-0 text-white shadow-sm z-10">
-        <div className="flex items-center gap-3">
-          <img
-            src={Logo}
-            alt="logo"
-            className="w-12 h-12 object-contain shrink-0"
-          />
-          <span className="font-bold text-[18px] uppercase tracking-wide">
-            Billiards Lục Lợi
-          </span>
-        </div>
-        <div className="flex items-center">
-          <span className="cursor-pointer hover:text-gray-200 flex items-center gap-2 font-medium bg-[#1e2d61] px-4 py-1.5 rounded-full transition-colors">
-            <img
-              src={Icons.User}
-              alt="user"
-              className="w-5 h-5 filter brightness-0 invert"
-            />
-            [Tên Tài Khoản]
-          </span>
-        </div>
-      </header>
-
-      {/* ---------------- MAIN WORKSPACE ---------------- */}
+    <div className="h-screen flex flex-col font-sans text-[13px] bg-[#1e2d61] px-3 py-5 gap-2 overflow-hidden">
+      {/* --- WORKSPACE --- */}
       <main className="flex-1 flex overflow-hidden">
-        {/* --- CỘT TRÁI: ĐỘNG (PHÒNG BÀN / THỰC ĐƠN) --- */}
-        <section className="flex-[5.5] flex flex-col h-full border-r border-gray-300 bg-white">
-          {/* SỬA LẠI Ở ĐÂY: Thêm thanh Search theo hình */}
-          <div className="flex justify-between items-end bg-[#0066ff] px-2 pt-2 shrink-0">
-            <div className="flex gap-1">
+        {/* --- CỘT TRÁI --- */}
+        <section className="flex-[6] flex flex-col h-full bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* TAB ĐIỀU HƯỚNG BÊN TRÁI */}
+          <div className="flex items-center justify-between px-3 pt-3 pb-2 border-b border-gray-200 shrink-0 gap-2">
+            <div className="flex bg-gray-100 p-1 rounded-full border border-gray-200">
               <button
                 onClick={() => setLeftTab("tables")}
-                className={`font-bold px-6 py-2 rounded-t-lg transition-colors cursor-pointer ${leftTab === "tables" ? "bg-white text-[#0066ff]" : "text-white hover:bg-blue-600"}`}
+                className={`flex items-center gap-2 font-bold px-5 py-1.5 rounded-full transition-all text-sm cursor-pointer ${leftTab === "tables" ? "bg-[#3b53ab] text-white shadow-md" : "text-gray-500 hover:text-gray-800 hover:bg-gray-200"}`}
               >
-                Phòng bàn
+                <i className="fa-solid fa-table-cells-large"></i> Sơ đồ bàn
               </button>
               <button
                 onClick={() => setLeftTab("menu")}
-                className={`font-bold px-6 py-2 rounded-t-lg transition-colors cursor-pointer ${leftTab === "menu" ? "bg-white text-[#0066ff]" : "text-white hover:bg-blue-600"}`}
+                className={`flex items-center gap-2 font-bold px-5 py-1.5 rounded-full transition-all text-sm cursor-pointer ${leftTab === "menu" ? "bg-[#3b53ab] text-white shadow-md" : "text-gray-500 hover:text-gray-800 hover:bg-gray-200"}`}
               >
-                Thực đơn
+                <i className="fa-solid fa-utensils"></i> Thực đơn
               </button>
             </div>
 
-            {/* THANH SEARCH */}
-            <div className="relative mb-1.5 mr-2">
-              <input
-                type="text"
-                className="bg-transparent border border-white/50 text-white rounded pr-8 pl-3 py-1 text-xs outline-none focus:border-white w-[250px] transition-colors placeholder-white/60"
-              />
-              <img
-                src={Icons.Search}
-                alt="search"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 filter brightness-0 invert opacity-80"
-              />
+            {/* Cụm Tìm kiếm & Option gộp chung */}
+            <div className="flex items-center gap-3">
+              {leftTab === "tables" && (
+                <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-gray-500 hover:text-gray-800 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={openMenuOnSelect}
+                    onChange={(e) => setOpenMenuOnSelect(e.target.checked)}
+                    className="w-3.5 h-3.5 accent-[#344fb1] rounded cursor-pointer"
+                  />
+                  Mở thực đơn khi chọn
+                </label>
+              )}
+              {leftTab === "menu" && (
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Tìm món..."
+                    value={searchMenuQuery}
+                    onChange={(e) => setSearchMenuQuery(e.target.value)}
+                    className="bg-gray-100 border border-gray-200 text-gray-700 rounded-full pr-8 pl-4 py-1.5 text-sm outline-none focus:border-[#324db0] focus:bg-white w-[200px] transition-all shadow-inner "
+                  />
+                  <i className="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="p-4 flex flex-col h-full bg-[#f4f6f8]">
+          {/* NỘI DUNG CỘT TRÁI */}
+          <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
             {leftTab === "tables" ? (
-              /* ====== CHẾ ĐỘ 1: PHÒNG BÀN ====== */
-              <>
-                <div className="flex justify-between items-center mb-6 shrink-0">
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={() => setTableFilter('all')}
-                      className={`px-5 py-1.5 rounded-full text-xs font-bold shadow-sm cursor-pointer transition-colors ${tableFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+              <div className="flex flex-col h-full p-4">
+                <div className="flex justify-between items-center mb-4 shrink-0">
+                  <div className="flex gap-2 bg-white p-1 rounded-full border border-gray-200 shadow-sm">
+                    <button
+                      onClick={() => setTableFilter("all")}
+                      className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-all ${tableFilter === "all" ? "bg-[#5D5FEF] text-white shadow-md" : "text-gray-600 hover:bg-gray-100"}`}
                     >
-                      Tất cả ({totalTablesCount})
+                      Tất cả ({tables.length})
                     </button>
-                    <button 
-                      onClick={() => setTableFilter('occupied')}
-                      className={`px-5 py-1.5 rounded-full text-xs font-bold shadow-sm cursor-pointer transition-colors ${tableFilter === 'occupied' ? 'bg-[#ff922b] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+                    <button
+                      onClick={() => setTableFilter("occupied")}
+                      className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-all ${tableFilter === "occupied" ? "bg-[#5D5FEF] text-white shadow-md" : "text-gray-600 hover:bg-gray-100"}`}
                     >
-                      Đang sử dụng ({occupiedTablesCount})
+                      Đang sử dụng (
+                      {tables.filter((t) => t.status === "occupied").length})
                     </button>
-                    <button 
-                      onClick={() => setTableFilter('empty')}
-                      className={`px-5 py-1.5 rounded-full text-xs font-bold shadow-sm cursor-pointer transition-colors ${tableFilter === 'empty' ? 'bg-[#20c997] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+                    <button
+                      onClick={() => setTableFilter("empty")}
+                      className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-all ${tableFilter === "empty" ? "bg-[#5D5FEF]  text-white shadow-md" : "text-gray-600 hover:bg-gray-100"}`}
                     >
-                      Còn trống ({emptyTablesCount})
+                      Còn trống (
+                      {tables.filter((t) => t.status === "empty").length})
                     </button>
                   </div>
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-gray-600">
-                    <input
-                      type="checkbox"
-                      checked={openMenuOnSelect}
-                      onChange={(e) => setOpenMenuOnSelect(e.target.checked)}
-                      className="w-4 h-4 accent-blue-600 rounded"
-                    />
-                    Mở thực đơn khi chọn bàn
-                  </label>
                 </div>
 
-                <div className="flex-1 overflow-y-auto pr-2 pb-20">
-                  <div className="grid grid-cols-4 gap-6">
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="grid grid-cols-4 xl:grid-cols-5 gap-4">
                     {displayTables.map((table) => {
                       const isSelected = table.id === activeTabId;
                       const isOccupied = table.status === "occupied";
-                      let bgClass = "bg-white text-black border-gray-400";
+                      let bgClass =
+                        "bg-white border-gray-200 text-gray-700 hover:border-gray-400";
                       if (isSelected)
                         bgClass =
-                          "bg-[#0066ff] text-white border-blue-700 shadow-blue-500/50";
+                          "bg-[#5D5FEF] border-[#5D5FEF] text-white shadow-[0_4px_15px_rgba(93,95,239,0.4)]";
                       else if (isOccupied)
-                        bgClass = "bg-[#4dabf7] text-black border-blue-400";
+                        bgClass =
+                          "bg-orange-50 border-orange-400 text-orange-800 shadow-sm";
 
                       return (
                         <div
                           key={table.id}
                           onClick={() => handleTableClick(table)}
-                          className={`relative w-full aspect-[4/3] rounded-3xl flex items-center justify-center font-bold text-[15px] cursor-pointer shadow-sm border-2 transition-all hover:scale-105 ${bgClass}`}
+                          className={`relative aspect-[4/3] rounded-xl flex flex-col items-center justify-center cursor-pointer border-2 transition-all ${bgClass}`}
                         >
-                          <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-1 h-1/2 border-l-2 border-dashed border-gray-400"></div>
-                          <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 w-1 h-1/2 border-r-2 border-dashed border-gray-400"></div>
-                          {table.name}
+                          <span className="font-bold text-lg">
+                            {table.name}
+                          </span>
+                          {isOccupied && !isSelected && (
+                            <span className="text-[10px] font-bold mt-1 bg-orange-100 px-2 py-0.5 rounded-full border border-orange-200">
+                              Đang chơi
+                            </span>
+                          )}
+                          {isSelected && (
+                            <span className="text-[10px] font-bold mt-1 bg-white/20 px-2 py-0.5 rounded-full">
+                              Đang chọn
+                            </span>
+                          )}
                         </div>
                       );
                     })}
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
-              /* ====== CHẾ ĐỘ 2: THỰC ĐƠN ====== */
               <div className="flex flex-col h-full">
-                <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 shrink-0 pb-2 border-b border-gray-200">
-                  {menuCategories.map((cat) => (
+                {/* MENU CATEGORIES */}
+                <div className="flex gap-2 overflow-x-auto no-scrollbar shrink-0 px-4 py-3 bg-white border-b border-gray-200 shadow-sm z-10">
+                  {categories.map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setActiveCategory(cat)}
-                      className={`px-4 py-1.5 rounded-full font-bold text-xs whitespace-nowrap transition-colors border shadow-sm cursor-pointer
-                        ${activeCategory === cat ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"}
+                      className={`px-4 py-1.5 rounded-full font-bold text-[13px]  tracking-wider whitespace-nowrap transition-all border cursor-pointer
+                        ${activeCategory === cat ? "bg-[#3b53ab] text-white border-gray-400 shadow-md" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-800"}
                       `}
                     >
                       {cat}
                     </button>
                   ))}
-
-                  <div className="ml-auto flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 shadow-sm">
-                    <img
-                      src={Icons.Search}
-                      alt="search"
-                      className="w-3 h-3 opacity-50"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Tìm tên món..."
-                      className="ml-2 outline-none text-xs w-[120px]"
-                    />
-                  </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto pr-2 pb-20">
-                  <div className="grid grid-cols-4 gap-4">
-                    {filteredMenuItems.map((item) => (
-                      <div
-                        key={item.id}
-                        onClick={() => handleAddItemToBill(item)}
-                        className="bg-white rounded-xl p-2 flex flex-col items-center cursor-pointer shadow-sm border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all active:scale-95 group"
-                      >
-                        <div className="w-full aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center text-gray-400 text-xs overflow-hidden relative">
-                          {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="opacity-50">Chưa có ảnh</span>
+                {/* MENU ITEMS GRID */}
+                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                  <div className="grid grid-cols-4 xl:grid-cols-5 gap-3">
+                    {filteredMenuItems.map((item) => {
+                      const isOutOfStock =
+                        item.category !== "Dịch vụ" && item.tonKho <= 0;
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => handleAddItemToBill(item)}
+                          className={`bg-white rounded-xl p-2.5 flex flex-col items-center cursor-pointer border-2 transition-all active:scale-95 group relative
+                            ${isOutOfStock ? "border-red-100 hover:border-red-300 opacity-80" : "border-transparent shadow-sm hover:border-[#5D5FEF] hover:shadow-md"}
+                          `}
+                        >
+                          {isOutOfStock && (
+                            <div className="absolute top-1 left-1 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded z-10">
+                              Hết hàng
+                            </div>
                           )}
-                          <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-white bg-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg shadow-lg">
-                              +
-                            </span>
+                          <div className="w-full aspect-square bg-gray-50 rounded-lg mb-2 flex items-center justify-center text-gray-300 text-xs overflow-hidden relative border border-gray-100">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <img
+                                src={Icons.Dinner}
+                                alt="Hình ảnh"
+                                className="w-10 h-10 brightness-200 invert"
+                              />
+                            )}
                           </div>
+                          <span className="font-bold text-gray-800 text-center w-full truncate mb-0.5 text-[13px]">
+                            {item.name}
+                          </span>
+                          <span className="text-[#5D5FEF] font-bold text-[14px]">
+                            {item.price.toLocaleString()}đ
+                          </span>
                         </div>
-                        <span className="font-bold text-gray-800 text-center w-full truncate mb-1">
-                          {item.name}
-                        </span>
-                        <span className="text-blue-600 font-bold">
-                          {item.price.toLocaleString()}đ
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -730,266 +1006,464 @@ function Cashier() {
         </section>
 
         {/* --- CỘT PHẢI: BILL THANH TOÁN --- */}
-        <section className="flex-[4.5] bg-white flex flex-col h-full border-l-4 border-[#2a3f85]">
+        <section className="flex-[4] flex flex-col h-full bg-white rounded-xl shadow-lg overflow-hidden relative ml-2">
           {openTabs.length === 0 ? (
-            <div className="flex-1 bg-[#f4f6f8] flex flex-col items-center justify-center text-gray-400">
-              <div className="w-16 h-16 mb-4 opacity-30">
-                <img
-                  src={Icons.Search}
-                  alt="empty"
-                  className="w-full h-full filter grayscale"
-                />
-              </div>
-              <p className="text-base font-medium">
-                Vui lòng chọn bàn để xem chi tiết
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50">
+              <img
+                src={Icons.Timekeep}
+                alt="empty"
+                className="w-16 h-16 mb-4 opacity-20 filter grayscale"
+              />
+              <p className="text-sm font-bold tracking-wide">
+                CHƯA CÓ HÓA ĐƠN NÀO
+              </p>
+              <p className="text-xs mt-1">
+                Vui lòng chọn bàn bên trái để bắt đầu
               </p>
             </div>
           ) : (
             <>
-              <div className="flex items-end bg-[#0066ff] pt-2 px-2 shrink-0 overflow-x-auto no-scrollbar gap-1">
+              {/* TABS HÓA ĐƠN */}
+              <div className="flex items-end bg-gray-100 pt-2 px-0 shrink-0 overflow-x-auto gap-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {openTabs.map((tab) => {
                   const isActive = activeTabId === tab.id;
                   return (
                     <div
                       key={tab.id}
                       onClick={() => setActiveTabId(tab.id)}
-                      className={`group flex items-center justify-between px-4 py-2 rounded-t-lg cursor-pointer min-w-[100px] max-w-[150px] transition-colors
-                        ${isActive ? "bg-white text-[#0066ff] font-bold shadow-[0_-2px_4px_rgba(0,0,0,0.05)]" : "bg-[#2a3f85] text-white hover:bg-blue-600"}
+                      className={`group flex items-center justify-between px-3 py-3  rounded-t-lg cursor-pointer min-w-[100px] max-w-[140px] transition-all
+                        ${isActive ? "bg-white text-gray-600 font-bold border-gray-200 relative top-[1px]" : "bg-gray-200 text-gray-600 border-transparent"}
                       `}
                     >
-                      <span className="truncate text-[13px]">{tab.name}</span>
+                      <span className="truncate text-[16px] tracking-wide">
+                        {tab.name}
+                      </span>
                       <button
                         onClick={(e) => handleCloseTab(e, tab.id)}
-                        className={`ml-2 w-4 h-4 flex items-center justify-center rounded-full text-xs font-bold transition-opacity
-                          ${isActive ? "text-gray-400 hover:bg-red-100 hover:text-red-500" : "text-gray-300 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white"}
+                        className={`ml-2 w-4 h-4 flex items-center justify-center rounded-full text-[10px] font-bold transition-all cursor-pointer
+                          ${isActive ? "text-gray-400 hover:bg-red-100 hover:text-red-600" : "text-transparent group-hover:text-gray-500 hover:!text-red-500 hover:bg-white/50"}
                         `}
                       >
-                        ✕
+                        <img
+                          src={Icons.Close}
+                          alt="Đóng"
+                          className="w-5 h-5 brightness-200 invert"
+                        />
                       </button>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="flex justify-end gap-2 p-3 bg-white border-b border-gray-200 shrink-0 shadow-sm z-10">
-                <button
-                  onClick={() => setShowDiscountModal(true)}
-                  className="flex items-center gap-1 bg-[#ffc107] hover:bg-yellow-500 text-black font-bold px-3 py-1.5 rounded text-xs shadow-sm cursor-pointer transition-colors"
-                >
-                  <img
-                    src={Icons.Discount}
-                    alt="discount"
-                    className="w-3 h-3"
-                  />{" "}
-                  Giảm giá
-                </button>
-                <button 
-                  onClick={handleCancelTable}
-                  disabled={!billIdByTable[activeTabId]}
-                  className={`flex items-center gap-1 font-bold px-3 py-1.5 rounded text-xs shadow-sm transition-colors ${!billIdByTable[activeTabId] ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#ff6b6b] hover:bg-red-600 text-white cursor-pointer'}`}
-                >
-                  <img
-                    src={Icons.Delete}
-                    alt="cancel"
-                    className="w-3 h-3 filter brightness-0 invert"
-                  />{" "}
-                  Hủy bàn
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead className="sticky top-0 bg-white shadow-sm z-10">
-                    <tr className="border-b-2 border-gray-300">
-                      <th className="p-3 font-bold text-gray-800">Tên món</th>
-                      <th className="p-3 font-bold text-gray-800 text-center w-24">
-                        Số lượng
-                      </th>
-                      <th className="p-3 font-bold text-gray-800 text-right">
-                        Đơn giá
-                      </th>
-                      <th className="p-3 font-bold text-gray-800 text-right pr-8">
-                        Thành tiền
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentOrderItems.map((item) => (
-                      <tr
-                        key={item.id}
-                        className="group border-b border-gray-200 cursor-pointer transition-colors hover:bg-[#d6e4ff]"
-                      >
-                        <td className="p-3 text-black font-medium">
-                          {item.name}
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateQuantity(item.id, -1);
-                              }}
-                              className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-gray-300 text-gray-600 font-bold cursor-pointer"
-                            >
-                              -
-                            </button>
-                            <span className="w-4 text-center">{item.qty}</span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateQuantity(item.id, 1);
-                              }}
-                              className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-gray-300 text-gray-600 font-bold cursor-pointer"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </td>
-                        <td className="p-3 text-right text-gray-600">
-                          {item.price.toLocaleString()}đ
-                        </td>
-                        <td className="p-3 text-right font-bold text-black relative pr-8">
-                          {(item.price * item.qty).toLocaleString()}đ
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteItem(item.id);
-                            }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-red-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 rounded cursor-pointer"
-                            title="Xóa món"
-                          >
-                            ✕
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {[...Array(Math.max(4, 6 - currentOrderItems.length))].map(
-                      (_, i) => (
-                        <tr
-                          key={`empty-${i}`}
-                          className="border-b border-gray-200 h-11"
-                        >
-                          <td colSpan="4"></td>
-                        </tr>
-                      ),
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="p-4 bg-white border-t border-gray-200 shrink-0 space-y-2 text-[14px]">
-                <div className="flex justify-between text-gray-700">
-                  <span>Giờ bắt đầu</span>
-                  <span className="flex items-center gap-1">
-                    <img
-                      src={Icons.Clock}
-                      alt="time"
-                      className="w-4 h-4 opacity-70"
-                    />
-                    {formatStartTime(activeStartTime) || "--:--"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>Tổng giờ chơi</span>
-                  <span className="font-medium text-[#0066ff]">
-                    {activeStartTime ? formatDuration(durationSeconds) : "--:--"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-blue-800 font-medium">
-                  <span>Tiền giờ (55k/h)</span>
-                  <span>{timePrice.toLocaleString()}đ</span>
-                </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>Tổng món</span>
-                  <span className="font-medium">
-                    {currentOrderItems.reduce((acc, item) => acc + item.qty, 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-gray-700">
-                  <span className="flex items-center gap-2">
-                    Giảm giá
-                    {discountByTable[activeTabId] && (
-                      <span className="bg-yellow-100 text-yellow-800 text-[10px] px-1.5 py-0.5 rounded font-bold border border-yellow-300">
-                        {discountByTable[activeTabId].MAKHUYENMAI}
-                      </span>
-                    )}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-red-500">
-                      -{discountAmount.toLocaleString()}đ
-                    </span>
-                    {discountByTable[activeTabId] && (
+              {billIdByTable[activeTabId] ? (
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  {/* TOOLBAR BILL */}
+                  <div className="flex justify-between items-center p-3 bg-white border-b border-gray-100 shrink-0">
+                    <div className="text-xl font-bold text-gray-600 tracking-wide flex items-center gap-1">
+                      <i className="fa-solid fa-receipt"></i> Hóa đơn chi tiết
+                    </div>
+                    <div className="flex gap-2">
                       <button
-                        onClick={clearDiscount}
-                        className="text-gray-400 hover:text-red-500 font-bold ml-1 transition-colors"
+                        onClick={() => setShowDiscountModal(true)}
+                        className="flex items-center gap-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 font-bold px-3 py-1.5 rounded-md text-[14px] transition-colors"
                       >
-                        ✕
+                        <i className="fa-solid fa-tags"></i> Khuyến mãi
                       </button>
-                    )}
+                      <button
+                        onClick={handleCancelTable}
+                        disabled={!billIdByTable[activeTabId]}
+                        className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold px-3 py-1.5 rounded-md text-[14px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <i className="fa-solid fa-trash-can"></i> Hủy bàn
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex justify-between font-bold text-[18px] text-black pt-2 border-t mt-2">
-                  <span>Tổng tiền</span>
-                  <div className="flex flex-col items-end">
-                    {discountAmount > 0 && (
-                      <span className="text-[12px] text-gray-400 line-through font-normal">
-                        {rawTotal.toLocaleString()}đ
-                      </span>
-                    )}
-                    <span className="text-blue-600">
-                      {finalTotal.toLocaleString()}đ
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              <div className="p-3 bg-white grid grid-cols-3 gap-2 shrink-0">
-                <button
-                  className={`font-bold py-3.5 rounded-md shadow-sm transition-colors text-[14px] ${isTableEmpty ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#4dabf7] hover:bg-blue-600 text-white cursor-pointer"}`}
-                >
-                  Báo bếp
-                </button>
-                <button
-                  onClick={() => {
-                    if (!isTableEmpty) setShowTransferModal(true);
-                  }}
-                  className={`font-bold py-3.5 rounded-md shadow-sm transition-colors text-[14px] ${isTableEmpty ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#ff922b] hover:bg-orange-600 text-white cursor-pointer"}`}
-                >
-                  Chuyển bàn
-                </button>
-                <button
-                  onClick={handleCheckout}
-                  className={`font-bold py-3.5 rounded-md shadow-sm transition-colors text-[14px] uppercase tracking-wide ${isTableEmpty ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#20c997] hover:bg-green-600 text-white cursor-pointer"}`}
-                >
-                  Thanh Toán
-                </button>
-              </div>
+                  {/* DANH SÁCH MÓN TRONG BILL */}
+                  <div className="flex-1 overflow-y-auto bg-gray-50 custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="sticky top-0 bg-white shadow-sm z-10 text-[12px] text-gray-600 tracking-wider">
+                        <tr>
+                          <th className="p-3 font-bold border-b border-gray-200">
+                            Tên món
+                          </th>
+                          <th className="p-3 font-bold border-b border-gray-200 text-center w-35">
+                            SL
+                          </th>
+                          <th className="p-3 font-bold border-b border-gray-200 text-right w-33">
+                            Đơn giá
+                          </th>
+                          <th className="p-3 font-bold border-b border-gray-200 text-right whitespace-nowrap">
+                            Thành tiền
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentOrderItems.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan="4"
+                              className="text-center py-10 text-gray-400 italic text-xs"
+                            >
+                              Chưa có món nào được gọi
+                            </td>
+                          </tr>
+                        ) : (
+                          currentOrderItems.map((item) => (
+                            <tr
+                              key={item.id}
+                              className="group border-b border-gray-100 bg-white hover:bg-blue-50/50 transition-colors"
+                            >
+                              <td className="p-3 text-gray-800 font-bold text-[13px]">
+                                {item.name}
+                              </td>
+                              <td className="p-3">
+                                <div className="flex items-center justify-center border border-gray-200 rounded-md bg-gray-50 w-fit mx-auto">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateQuantity(item.id, -1);
+                                    }}
+                                    className="w-6 h-6 flex items-center justify-center"
+                                  >
+                                    <img
+                                      src={Icons.Minus}
+                                      alt="Trừ"
+                                      className="w-4 h-4 brightness-200"
+                                    />
+                                  </button>
+                                  <span className="w-6 text-center text-xs font-bold bg-white h-6 flex items-center justify-center border-l border-r border-gray-200">
+                                    {item.qty}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateQuantity(item.id, 1);
+                                    }}
+                                    className="w-6 h-6 flex items-center justify-center ml-2"
+                                  >
+                                    <img
+                                      src={Icons.Add}
+                                      alt="Cộng"
+                                      className="w-4 h-4 brightness-200"
+                                    />
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="p-3 text-right text-gray-700 text-[16px] font-medium">
+                                {item.price.toLocaleString()}
+                              </td>
+                              <td className="p-3 text-right font-medium text-gray-700 text-[16px] relative pr-6">
+                                {(item.price * item.qty).toLocaleString()}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteItem(item.id);
+                                  }}
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-all"
+                                >
+                                  <img
+                                    src={Icons.Delete}
+                                    alt="Xóa món"
+                                    className="cursor-pointer brightness-200 invert-20"
+                                  />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* TỔNG KẾT BILL */}
+                  <div className="bg-white border-t border-gray-200 shrink-0 z-10 px-4 py-2.5">
+                    <div className="space-y-3 mb-2">
+                      <div className="flex justify-between items-center text-[13px]">
+                        <span className="text-gray-600 font-medium flex items-center gap-2">
+                          <i className="fa-regular fa-clock"></i> Giờ bắt đầu
+                        </span>
+                        <div className="flex items-center gap-3">
+                          {storeSettings?.CHOPHEP_CHINHGIO === true &&
+                            billIdByTable[activeTabId] && (
+                              <button
+                                onClick={() => {
+                                  setEditingStartTime(true);
+                                  setTempStartTime(
+                                    formatStartTime(activeStartTime),
+                                  );
+                                }}
+                                title="Chỉnh giờ bắt đầu"
+                                className="text-blue-400 hover:text-blue-600 transition-colors cursor-pointer"
+                              >
+                                <img
+                                  src={Icons.Clock}
+                                  alt="Chỉnh giờ"
+                                  className="w-5 h-5"
+                                />
+                              </button>
+                            )}
+                          <span className="font-bold text-gray-700">
+                            {activeStartTime
+                              ? formatStartTime(activeStartTime)
+                              : "--:--:--"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[13px]">
+                        <span className="text-gray-600 font-medium flex items-center gap-2">
+                          <i className="fa-regular fa-clock"></i> Tổng tiền chơi
+                          ({hourlyRate.toLocaleString()}đ/h)
+                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-gray-800">
+                            {activeStartTime
+                              ? formatDuration(durationSeconds)
+                              : "--:--:--"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[13px]">
+                        <span className="text-gray-600 font-medium flex items-center gap-2">
+                          <i className="fa-solid fa-mug-hot text-[11px]"></i>{" "}
+                          Tổng tiền món (
+                          {currentOrderItems.reduce((acc, i) => acc + i.qty, 0)}
+                          )
+                        </span>
+                        <span className="font-bold text-sm text-gray-700">
+                          {rawTotal.toLocaleString()}đ
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[13px]">
+                        <span className="text-gray-600 font-medium flex items-center gap-2">
+                          <i className="fa-solid fa-mug-hot text-[11px]"></i>{" "}
+                          Giảm giá
+                        </span>
+                        <span className="font-bold text-gray-700 text-sm">
+                          -{discountAmount.toLocaleString()}đ
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-dashed border-gray-300 flex justify-between items-center mb-4 pl-2">
+                      <span className="text-[20px] font-bold  text-gray-800">
+                        Tổng tiền
+                      </span>
+                      <span className="text-[20px] font-bold text-red-500">
+                        {finalTotal.toLocaleString()}đ
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <button
+                        onClick={handleNotifyKitchen}
+                        className="bg-[#5D5FEF] hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-colors cursor-pointer text-[16px] tracking-wide border border-gray-300"
+                      >
+                        Báo Bếp
+                      </button>
+                      <button
+                        onClick={handleTransferTable}
+                        className="hover:bg-[#ba9d47] bg-amber-600 text-white font-bold py-4 rounded-xl transition-colors text-[16px] tracking-wide border border-gray-300 cursor-pointer"
+                      >
+                        Chuyển bàn
+                      </button>
+                      <button
+                        onClick={handleOpenCheckout}
+                        className="bg-[#169c4e] hover:bg-[#12b862] text-white font-bold py-4 rounded-xl transition-all text-[16px] tracking-wide cursor-pointer"
+                      >
+                        Thanh Toán
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* NẾU BÀN TRỐNG -> HIỆN NÚT MỞ BÀN TO ĐÙNG */
+                <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-500">
+                  <h3 className="text-xl font-bold text-gray-700 mb-2 tracking-wide">
+                    Bàn Đang Trống
+                  </h3>
+                  <p className="text-sm mb-8 text-gray-500">
+                    Bấm nút bên dưới để tính giờ.
+                  </p>
+
+                  <button
+                    onClick={handleOpenTable}
+                    className="flex items-center gap-3 bg-[#5D5FEF] hover:bg-blue-600 text-white font-bold px-10 py-4 rounded-full transition-all cursor-pointer"
+                  >
+                    <span className="text-lg tracking-wider">Mở bàn</span>
+                  </button>
+                </div>
+              )}
             </>
           )}
         </section>
       </main>
-
-      {/* --- MODAL CHỌN MÃ KHUYẾN MÃI --- */}
-      {showDiscountModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl overflow-hidden zoom-in-95">
-            <div className="bg-[#2a3f85] px-6 py-4 flex justify-between items-center text-white">
-              <h2 className="text-lg font-bold">Chọn Mã Khuyến Mãi</h2>
+      {/* MODAL CHỈNH GIỜ BẮT ĐẦU */}
+      {editingStartTime && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[150]">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-gray-100">
+            <div className="px-5 py-4 flex justify-between items-center border-b border-gray-200">
+              <h2 className="text-lg font-bold text-gray-700">
+                Chỉnh giờ bắt đầu
+              </h2>
               <button
-                onClick={() => setShowDiscountModal(false)}
-                className="text-white/70 hover:text-white font-bold text-xl transition-colors"
+                onClick={() => setEditingStartTime(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500 font-bold"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-4 max-h-[60vh] overflow-y-auto">
+            <div className="p-5">
+              <p className="text-sm text-gray-500 mb-5">
+                Giờ hiện tại:{" "}
+                <strong className="text-gray-800">
+                  {formatStartTime(activeStartTime)}
+                </strong>
+              </p>
+
+              {/* Time Spinner */}
+              {(() => {
+                const parts = (tempStartTime || "00:00:00")
+                  .split(":")
+                  .map(Number);
+                const hh = parts[0] || 0;
+                const mm = parts[1] || 0;
+                const ss = parts[2] || 0;
+                const update = (h, m, s) =>
+                  setTempStartTime(
+                    `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`,
+                  );
+
+                return (
+                  <div className="flex items-center justify-center gap-3 mb-5">
+                    <TimeSpinner
+                      label="Giờ"
+                      value={hh}
+                      max={23}
+                      onUp={() => update(hh >= 23 ? 0 : hh + 1, mm, ss)}
+                      onDown={() => update(hh <= 0 ? 23 : hh - 1, mm, ss)}
+                      onChange={(v) => update(v, mm, ss)}
+                    />
+                    <span className="text-3xl font-bold text-gray-300 pb-6">
+                      :
+                    </span>
+                    <TimeSpinner
+                      label="Phút"
+                      value={mm}
+                      max={59}
+                      onUp={() => update(hh, mm >= 59 ? 0 : mm + 1, ss)}
+                      onDown={() => update(hh, mm <= 0 ? 59 : mm - 1, ss)}
+                      onChange={(v) => update(hh, v, ss)}
+                    />
+                    <span className="text-3xl font-bold text-gray-300 pb-6">
+                      :
+                    </span>
+                    <TimeSpinner
+                      label="Giây"
+                      value={ss}
+                      max={59}
+                      onUp={() => update(hh, mm, ss >= 59 ? 0 : ss + 1)}
+                      onDown={() => update(hh, mm, ss <= 0 ? 59 : ss - 1)}
+                      onChange={(v) => update(hh, mm, v)}
+                    />
+                  </div>
+                );
+              })()}
+
+              <p className="text-xs text-orange-500 flex items-center gap-1">
+                <i className="fa-solid fa-triangle-exclamation"></i>
+                Thay đổi sẽ ảnh hưởng tiền giờ.
+              </p>
+            </div>
+
+            <div className="px-5 py-4 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => setEditingStartTime(false)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={async () => {
+                  if (!tempStartTime || tempStartTime === ":00") {
+                    Swal.fire(
+                      "Thông báo",
+                      "Vui lòng chọn giờ hợp lệ!",
+                      "warning",
+                    );
+                    return;
+                  }
+
+                  const now = new Date();
+                  const [h, m] = tempStartTime.split(":").map(Number);
+                  const inputDate = new Date();
+                  inputDate.setHours(h, m, 0, 0);
+
+                  if (inputDate > now) {
+                    Swal.fire(
+                      "Thông báo",
+                      "Giờ bắt đầu không thể lớn hơn giờ hiện tại!",
+                      "warning",
+                    );
+                    return;
+                  }
+                  const billId = billIdByTable[activeTabId];
+                  try {
+                    await axios.patch(
+                      `http://localhost:5000/api/bills/${billId}/start`,
+                      { GIOBATDAU: tempStartTime },
+                    );
+                    setStartTimeByTable((prev) => ({
+                      ...prev,
+                      [activeTabId]: tempStartTime,
+                    }));
+                    setEditingStartTime(false);
+                    Swal.fire({
+                      icon: "success",
+                      title: "Đã cập nhật giờ!",
+                      text: `Giờ bắt đầu mới: ${tempStartTime}`,
+                      timer: 1500,
+                      showConfirmButton: false,
+                    });
+                  } catch {
+                    Swal.fire("Lỗi", "Không thể cập nhật giờ!", "error");
+                  }
+                }}
+                className="flex-[2] bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition-all"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KHUYẾN MÃI */}
+      {showDiscountModal && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-[100]">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden zoom-in-95 border border-gray-100">
+            <div className="bg-[#f8f9fc] px-5 py-4 flex justify-between items-center border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-700  tracking-wide">
+                Chọn Khuyến Mãi
+              </h2>
+              <button
+                onClick={() => setShowDiscountModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500 font-bold transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 max-h-[50vh] overflow-y-auto custom-scrollbar bg-gray-50">
               {discountsList.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 font-medium">
-                  Hiện không có chương trình khuyến mãi nào.
+                <div className="text-center py-8 text-gray-400 font-medium italic">
+                  Không có mã giảm giá nào.
                 </div>
               ) : (
-                <div className="grid gap-3">
+                <div className="space-y-3">
                   {discountsList.map((discount) => {
                     const detail =
                       discount.MACHITETKHOAN || discount.MACHITIETKHUYENMAI;
@@ -1000,38 +1474,27 @@ function Cashier() {
                       <div
                         key={discount.MAKHUYENMAI}
                         onClick={() => handleApplyDiscount(discount)}
-                        className={`flex items-center justify-between border rounded-xl p-4 cursor-pointer transition-all hover:shadow-md
-                          ${isSelected ? "bg-blue-50 border-[#0066ff]" : "bg-white border-gray-200 hover:border-blue-300"}
-                        `}
+                        className={`flex flex-col border-2 rounded-xl p-3 cursor-pointer transition-all bg-white ${isSelected ? "border-[#5D5FEF] shadow-md relative" : "border-gray-200 hover:border-[#5D5FEF]/50"}`}
                       >
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded border border-yellow-300">
-                              {discount.MAKHUYENMAI}
-                            </span>
-                            <span className="text-xs text-gray-500 border border-gray-200 px-2 rounded-full">
-                              Đến{" "}
-                              {new Date(
-                                discount.NGAYKETTHUC,
-                              ).toLocaleDateString("vi-VN")}
-                            </span>
+                        {isSelected && (
+                          <div className="absolute top-0 right-0 bg-[#5D5FEF] text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg rounded-tr-lg">
+                            Đang chọn
                           </div>
-                          <p className="font-bold text-[15px] text-gray-800">
-                            {detail}
-                          </p>
+                        )}
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="bg-yellow-100 text-yellow-800 text-[12px] font-bold px-2 py-0.5 rounded">
+                            {discount.TENKHUYENMAI || discount.MAKHUYENMAI}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-bold bg-gray-100 px-2 py-0.5 rounded">
+                            HSD:{" "}
+                            {new Date(discount.NGAYKETTHUC).toLocaleDateString(
+                              "vi-VN",
+                            )}
+                          </span>
                         </div>
-
-                        <div className="ml-4 shrink-0">
-                          {isSelected ? (
-                            <div className="bg-[#0066ff] text-white px-4 py-1.5 rounded-full text-xs font-bold">
-                              Đang dùng
-                            </div>
-                          ) : (
-                            <button className="border-2 border-[#0066ff] text-[#0066ff] hover:bg-[#0066ff] hover:text-white px-4 py-1.5 rounded-full text-xs font-bold transition-colors">
-                              Áp dụng
-                            </button>
-                          )}
-                        </div>
+                        <p className="font-bold text-[13px] text-gray-800">
+                          {detail}
+                        </p>
                       </div>
                     );
                   })}
@@ -1042,91 +1505,473 @@ function Cashier() {
         </div>
       )}
 
-      {/* --- MODAL CHUYỂN BÀN --- */}
+      {showCheckoutModal && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex justify-end transition-opacity ">
+          <div className="w-full max-w-[900px] h-full bg-[#f4f6f8] shadow-[[-10px_0_20px_rgba(0,0,0,0.2)]] flex flex-col animate-in slide-in-from-right duration-400 rounded-l-3xl overflow-hidden border-l border-gray-300">
+            {/* Header Modal */}
+            <div className="h-14 bg-white flex justify-between items-center px-6 border-b border-gray-200 shrink-0 ">
+              <h2 className="text-lg font-bold text-gray-800">
+                Thanh toán • {tables.find((t) => t.id === activeTabId)?.name}
+              </h2>
+              <button
+                onClick={() => setShowCheckoutModal(false)}
+                className="text-gray-500 hover:bg-gray-100 hover:text-red-500 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+              >
+                <img src={Icons.Close} alt="Đóng" />
+              </button>
+            </div>
+
+            {/* Body Modal chia 2 cột */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* CỘT TRÁI: CHI TIẾT MÓN */}
+              <div className="flex-[5.5] bg-white border-r border-gray-200 flex flex-col h-full">
+                <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center shrink-0">
+                  <div className="flex items-center gap-2 border border-gray-300 rounded overflow-hidden w-full max-w-[250px] bg-white px-2 py-1.5">
+                    <i className="fa-solid fa-user text-gray-400 text-xs"></i>
+                    <input
+                      type="text"
+                      placeholder="Nhập tên khách hàng..."
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="w-full outline-none text-[14px] bg-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                  <table className="w-full text-left border-collapse text-[13px]">
+                    <thead className="bg-white sticky top-0 border-b border-gray-200 text-gray-500 uppercase text-[11px]">
+                      <tr>
+                        <th className="p-3 font-bold">Mặt hàng</th>
+                        <th className="p-3 font-bold text-center w-16">SL</th>
+                        <th className="p-3 font-bold text-right w-24">
+                          Đơn giá
+                        </th>
+                        <th className="p-3 font-bold text-right w-28">
+                          Thành tiền
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Tiền giờ Bida */}
+                      {(checkoutData?.timePrice || 0) > 0 && (
+                        <tr className="border-b border-dashed border-gray-200 bg-blue-50/30">
+                          <td className="p-3 text-blue-800 font-bold flex flex-col">
+                            <span>Tiền giờ chơi</span>
+                            <span className="text-[11px] font-normal text-gray-500">
+                              Từ {formatStartTime(activeStartTime)} đến{" "}
+                              {checkoutData?.endTime} (
+                              {formatDuration(
+                                checkoutData?.durationSeconds || 0,
+                              )}
+                              )
+                            </span>
+                          </td>
+                          <td className="p-3 text-center text-gray-800">1</td>
+                          <td className="p-3 text-right text-gray-600">
+                            {(checkoutData?.timePrice || 0).toLocaleString()}
+                          </td>
+                          <td className="p-3 text-right font-bold text-gray-800">
+                            {(checkoutData?.timePrice || 0).toLocaleString()}
+                          </td>
+                        </tr>
+                      )}
+                      {/* Các món ăn */}
+                      {currentOrderItems.map((item, idx) => (
+                        <tr
+                          key={item.id}
+                          className="border-b border-dashed border-gray-200 hover:bg-gray-50"
+                        >
+                          <td className="p-3 text-gray-800 font-medium">
+                            <span className="text-gray-400 mr-2">
+                              {idx + 1}.
+                            </span>
+                            {item.name}
+                          </td>
+                          <td className="p-3 text-center text-gray-800">
+                            {item.qty}
+                          </td>
+                          <td className="p-3 text-right text-gray-600">
+                            {item.price.toLocaleString()}
+                          </td>
+                          <td className="p-3 text-right font-bold text-gray-800">
+                            {(item.price * item.qty).toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center shrink-0">
+                  <span className="font-bold text-gray-600">
+                    Tổng tiền hàng{" "}
+                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs ml-1">
+                      {currentOrderItems.reduce((acc, i) => acc + i.qty, 0)}
+                    </span>
+                  </span>
+                  <span className="font-bold text-lg text-gray-800">
+                    {(
+                      (checkoutData?.rawTotal || 0) +
+                      (checkoutData?.timePrice || 0)
+                    ).toLocaleString()}
+                    đ
+                  </span>
+                </div>
+              </div>
+
+              {/* CỘT PHẢI: CHI TIẾT THANH TOÁN */}
+              <div className="flex-[4.5] bg-white flex flex-col h-full">
+                <div className="p-5 flex-1 overflow-y-auto">
+                  <h3 className="font-bold text-[15px] text-gray-800 mb-6 tracking-wide">
+                    Chi tiết giao dịch
+                  </h3>
+
+                  <div className="space-y-4 mb-8 text-[13px]">
+                    <div className="flex justify-between text-gray-600">
+                      <span>Tổng tiền hàng</span>
+                      <span className="font-bold text-gray-800">
+                        {(
+                          (checkoutData?.rawTotal || 0) +
+                          (checkoutData?.timePrice || 0)
+                        ).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-gray-600">
+                      <span>Giảm giá</span>
+                      <div className="flex flex-col items-end">
+                        {discountByTable[activeTabId] && (
+                          <span className="text-[10px] bg-yellow-100 text-yellow-800 px-1 rounded font-bold mb-1">
+                            {discountByTable[activeTabId].TENKHUYENMAI ||
+                              discountByTable[activeTabId].MAKHUYENMAI}
+                          </span>
+                        )}
+                        <span className="font-bold text-gray-800">
+                          -
+                          {(checkoutData?.discountAmount || 0).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-[#5D5FEF] font-bold border-t border-gray-200 pt-4">
+                      <span>Khách cần trả</span>
+                      <span className="text-lg">
+                        {(checkoutData?.finalTotal || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-gray-800 font-bold">
+                      <span>
+                        {paymentMethod === "Kết hợp"
+                          ? "Tiền mặt khách đưa"
+                          : "Khách thanh toán"}
+                      </span>
+                      <div className="relative w-32">
+                        <input
+                          type="text"
+                          value={
+                            customerPaid === ""
+                              ? ""
+                              : Number(customerPaid).toLocaleString()
+                          }
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "");
+                            setCustomerPaid(val);
+                          }}
+                          className="w-full text-right font-bold text-lg outline-none focus:border-blue-700 pb-1 border-b-2 border-gray-200"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Chọn phương thức thanh toán */}
+                  <div className="border border-gray-200 rounded-xl p-1 flex bg-gray-50 mb-6">
+                    {["Tiền mặt", "Chuyển khoản", "Kết hợp"].map((method) => (
+                      <button
+                        key={method}
+                        onClick={() => setPaymentMethod(method)}
+                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${paymentMethod === method ? "bg-white shadow text-[#5D5FEF]" : "text-gray-500 hover:text-gray-800"}`}
+                      >
+                        <div
+                          className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${paymentMethod === method ? "border-[#5D5FEF]" : "border-gray-400"}`}
+                        >
+                          {paymentMethod === method && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#5D5FEF]"></div>
+                          )}
+                        </div>
+                        {method}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Nút Gợi ý tiền nhanh */}
+                  {paymentMethod === "Tiền mặt" && (
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {[finalTotal, 50000, 100000, 200000, 500000].map(
+                        (amt, i) => {
+                          if (amt < (checkoutData?.finalTotal || 0) && i !== 0)
+                            return null;
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => setCustomerPaid(amt.toString())}
+                              className="px-3 py-1.5 border border-gray-300 rounded-full text-xs font-bold text-gray-700 hover:border-[#5D5FEF] hover:text-[#5D5FEF] transition-colors"
+                            >
+                              {amt.toLocaleString()}
+                            </button>
+                          );
+                        },
+                      )}
+                    </div>
+                  )}
+
+                  {paymentMethod === "Chuyển khoản" && (
+                    <div className="flex flex-col items-center justify-center mb-2 p-3 bg-green-50 border border-green-200 rounded-xl">
+                      <p className="text-[12px] font-bold text-green-800 mb-3 uppercase tracking-wide">
+                        Quét mã để thanh toán
+                      </p>
+
+                      {storeSettings?.SOTAIKHOAN ? (
+                        <img
+                          src={qrUrl}
+                          alt="QR Code"
+                          className="w-full max-w-[240px] aspect-square object-contain rounded-md shadow-sm border border-gray-200 bg-white"
+                        />
+                      ) : (
+                        <div className="w-44 h-44 flex flex-col items-center justify-center bg-white border-2 border-dashed border-gray-300 rounded-lg text-gray-400 text-center p-4">
+                          <i className="fa-solid fa-qrcode text-3xl mb-2"></i>
+                          <span className="text-xs font-bold">
+                            Chưa cấu hình QR
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {paymentMethod === "Kết hợp" && (
+                    <div className="flex flex-col mb-2 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                      <p className="text-[12px] font-bold text-blue-800 mb-3 uppercase tracking-wide text-center">
+                        Thanh toán Kết hợp
+                      </p>
+                      <div className="flex justify-between items-center text-sm mb-2 text-gray-600">
+                        <span>1. Đã nhận tiền mặt:</span>
+                        <span className="font-bold text-gray-800">
+                          {Number(customerPaid || 0).toLocaleString()}đ
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm border-t border-blue-200 pt-3 mb-4">
+                        <span className="font-bold text-gray-700">
+                          2. Cần chuyển khoản:
+                        </span>
+                        <span className="font-black text-red-500 text-[16px]">
+                          {Math.max(
+                            0,
+                            (checkoutData?.finalTotal || 0) -
+                              Number(customerPaid || 0),
+                          ).toLocaleString()}
+                          đ
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={generateCombinedQR}
+                        className="w-full bg-[#5D5FEF] hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg transition-colors text-[13px] mb-4 shadow-sm flex items-center justify-center gap-2"
+                      >
+                        <i className="fa-solid fa-qrcode"></i> Tạo mã QR phần
+                        còn lại
+                      </button>
+
+                      <div className="flex flex-col items-center justify-center bg-white p-3 rounded-lg border border-gray-200">
+                        {storeSettings?.SOTAIKHOAN ? (
+                          <img
+                            src={qrUrl}
+                            alt="QR Code Kết hợp"
+                            className="w-full max-w-[200px] aspect-square object-contain"
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400 py-4">
+                            Chưa cấu hình QR
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethod !== "Kết hợp" && (
+                    <div className="flex justify-between items-center text-gray-600 text-[13px] border-t border-gray-200 pt-4">
+                      <span>Tiền thừa trả khách</span>
+                      <span className="font-bold text-gray-800">
+                        {customerPaid &&
+                        Number(customerPaid) > (checkoutData?.finalTotal || 0)
+                          ? (
+                              Number(customerPaid) -
+                              (checkoutData?.finalTotal || 0)
+                            ).toLocaleString()
+                          : "0"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 bg-white border-t border-gray-200 shrink-0 flex gap-3">
+                  <button
+                    onClick={() => setShowCheckoutModal(false)}
+                    className="flex-[3] bg-gray-300 hover:bg-gray-200 text-gray-600 font-bold py-4 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-[16px] cursor-pointer"
+                  >
+                    Trở về
+                  </button>
+                  <button
+                    onClick={confirmCheckout}
+                    className="flex-[7] bg-[#169c4e] hover:bg-[#12b862] text-white font-bold py-4 rounded-xl shadow-[0_4px_15px_rgba(22,156,78,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2 text-[16px] cursor-pointer tracking-wider"
+                  >
+                    Thanh toán
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {showTransferModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="bg-[#ff922b] px-6 py-4 flex justify-between items-center text-white">
-              <h2 className="text-lg font-bold">Chuyển Bàn</h2>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[150]">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100">
+            <div className="px-5 py-4 flex justify-between items-center border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-700">Chuyển bàn</h2>
               <button
                 onClick={() => {
                   setShowTransferModal(false);
                   setTargetTableId(null);
                 }}
-                className="text-white/70 hover:text-white font-bold text-xl transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500 font-bold"
               >
                 ✕
               </button>
             </div>
-            <div className="p-6">
-              <p className="text-gray-600 mb-4 text-sm">
-                Đang chuyển từ{" "}
-                <span className="font-bold text-black">
-                  {tables.find((t) => t.id === activeTabId)?.name}
-                </span>{" "}
-                sang bàn mới:
+
+            <div className="p-4">
+              <p className="text-sm text-gray-500 mb-3">
+                Chọn bàn trống để chuyển đến:
               </p>
-              <div className="mb-4">
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Chọn Bàn Đích{" "}
-                  <span className="text-gray-400 font-normal">
-                    (Chỉ hiển thị bàn trống)
-                  </span>
-                </label>
-                <div className="grid grid-cols-4 gap-2 max-h-[200px] overflow-y-auto pr-1">
-                  {tables.filter(
-                    (t) => t.status === "empty" && t.id !== activeTabId,
-                  ).length === 0 ? (
-                    <div className="col-span-4 text-center text-red-500 text-sm py-4 bg-red-50 rounded-lg border border-red-200">
-                      Hiện không còn bàn trống nào!
+              <div className="grid grid-cols-3 gap-3 max-h-[300px] overflow-y-auto">
+                {tables
+                  .filter((t) => t.status === "empty" && t.id !== activeTabId)
+                  .map((t) => (
+                    <div
+                      key={t.id}
+                      onClick={() => setTargetTableId(t.id)}
+                      className={`aspect-square rounded-xl flex items-center justify-center font-bold cursor-pointer border-2 transition-all
+                  ${
+                    targetTableId === t.id
+                      ? "bg-amber-500 border-amber-500 text-white shadow-md"
+                      : "bg-white border-gray-200 text-gray-700 hover:border-amber-400"
+                  }`}
+                    >
+                      {t.name}
                     </div>
-                  ) : (
-                    tables
-                      .filter(
-                        (t) => t.status === "empty" && t.id !== activeTabId,
-                      )
-                      .map((table) => (
-                        <button
-                          key={table.id}
-                          onClick={() => setTargetTableId(table.id)}
-                          className={`py-3 px-1 text-center font-bold text-[12px] rounded-lg border-2 transition-all ${targetTableId === table.id ? "bg-[#ff922b] text-white border-[#ff922b] shadow-md scale-105" : "bg-white text-gray-700 border-gray-200 hover:border-[#ff922b] hover:text-[#ff922b]"}`}
-                        >
-                          {table.name}
-                        </button>
-                      ))
-                  )}
-                </div>
+                  ))}
               </div>
-              {targetTableId && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4 text-sm text-orange-800 font-medium">
-                  Sẽ chuyển sang{" "}
-                  <strong>
-                    {tables.find((t) => t.id === targetTableId)?.name}
-                  </strong>
-                  . Toàn bộ món ăn và mã giảm giá (nếu có) sẽ được chuyển theo.
-                </div>
-              )}
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => {
+            </div>
+
+            <div className="px-5 py-4 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowTransferModal(false);
+                  setTargetTableId(null);
+                }}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl"
+              >
+                Hủy
+              </button>
+              <button
+                disabled={!targetTableId}
+                onClick={async () => {
+                  if (!targetTableId) return;
+                  const billId = billIdByTable[activeTabId];
+                  const targetTable = tables.find(
+                    (t) => t.id === targetTableId,
+                  );
+                  try {
+                    await axios.put(
+                      `http://localhost:5000/api/bills/${billId}/transfer`,
+                      {
+                        MABAN_MOI: targetTable.maban,
+                      },
+                    );
+                    // Cập nhật state
+                    setTables((prev) =>
+                      prev.map((t) => {
+                        if (t.id === activeTabId)
+                          return { ...t, status: "empty" };
+                        if (t.id === targetTableId)
+                          return { ...t, status: "occupied" };
+                        return t;
+                      }),
+                    );
+                    setOrdersByTable((prev) => {
+                      const clone = { ...prev };
+                      clone[targetTableId] = clone[activeTabId];
+                      delete clone[activeTabId];
+                      return clone;
+                    });
+                    setBillIdByTable((prev) => {
+                      const clone = { ...prev };
+                      clone[targetTableId] = clone[activeTabId];
+                      delete clone[activeTabId];
+                      return clone;
+                    });
+                    setStartTimeByTable((prev) => {
+                      const clone = { ...prev };
+                      clone[targetTableId] = clone[activeTabId];
+                      delete clone[activeTabId];
+                      return clone;
+                    });
+                    setDiscountByTable((prev) => {
+                      const clone = { ...prev };
+                      if (clone[activeTabId]) {
+                        clone[targetTableId] = clone[activeTabId];
+                        delete clone[activeTabId];
+                      }
+                      return clone;
+                    });
+                    setOpenTabs((prev) =>
+                      prev.map((t) =>
+                        t.id === activeTabId
+                          ? {
+                              ...t,
+                              id: targetTableId,
+                              name: targetTable.name,
+                            }
+                          : t,
+                      ),
+                    );
+                    setActiveTabId(targetTableId);
                     setShowTransferModal(false);
                     setTargetTableId(null);
-                  }}
-                  className="px-5 py-2 font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  onClick={handleTransferTable}
-                  disabled={!targetTableId}
-                  className={`px-5 py-2 font-bold rounded-lg transition-colors shadow-sm ${!targetTableId ? "bg-orange-200 text-white cursor-not-allowed" : "bg-[#ff922b] hover:bg-orange-600 text-white cursor-pointer"}`}
-                >
-                  Xác nhận chuyển
-                </button>
-              </div>
+                    Swal.fire({
+                      icon: "success",
+                      title: `Đã chuyển sang ${targetTable.name}!`,
+                      timer: 1500,
+                      showConfirmButton: false,
+                    });
+                  } catch {
+                    Swal.fire("Lỗi", "Chuyển bàn thất bại!", "error");
+                  }
+                }}
+                className="flex-[2] bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all"
+              >
+                Xác nhận chuyển
+              </button>
             </div>
           </div>
         </div>
+      )}
+      {/* MODAL IN HÓA ĐƠN */}
+      {showPrintModal && printBillData && (
+        <PrintBillModal
+          billData={printBillData}
+          onClose={() => {
+            setShowPrintModal(false);
+            setPrintBillData(null);
+          }}
+        />
       )}
     </div>
   );

@@ -129,6 +129,16 @@ const importController = {
     try {
       await transaction.begin();
 
+      const configReq = new sql.Request(transaction);
+      const configRes = await configReq.query(`
+        SELECT TOP 1 GIAVON_TRUNGBINH 
+        FROM THIETLAPCUAHANG
+      `);
+      const isGiaVonTrungBinh =
+        configRes.recordset.length > 0 &&
+        configRes.recordset[0].GIAVON_TRUNGBINH
+          ? 1
+          : 0;
       const resultMaxPN = await pool.request().query(`
         SELECT TOP 1 MAPHIEUNHAP 
         FROM NHAPKHO 
@@ -184,9 +194,25 @@ const importController = {
           const reqTonKho = new sql.Request(transaction);
           await reqTonKho
             .input("MAHANGHOA", sql.VarChar, item.MAHANGHOA)
-            .input("SL", sql.Int, item.qty).query(`
+            .input("SL", sql.Int, item.qty)
+            .input("DONGIANHAP", sql.Float, item.price)
+            .input("IS_TRUNGBINH", sql.Int, isGiaVonTrungBinh).query(`
               UPDATE HANGHOA 
-              SET SOLUONGTONKHO = ISNULL(SOLUONGTONKHO, 0) + @SL 
+              SET 
+                -- Thuật toán Tính Giá Vốn Nâng Cấp (Chuẩn ERP)
+                GIAVON = CASE 
+                  WHEN @IS_TRUNGBINH = 1 THEN 
+                    CASE 
+                      WHEN ISNULL(SOLUONGTONKHO, 0) <= 0 THEN @DONGIANHAP
+                      ELSE ROUND(
+                        ((ISNULL(SOLUONGTONKHO, 0) * ISNULL(GIAVON, 0)) + (@SL * @DONGIANHAP)) 
+                        / (@SL + ISNULL(SOLUONGTONKHO, 0))
+                      , 0)
+                    END
+                  ELSE 
+                    @DONGIANHAP 
+                END,
+                SOLUONGTONKHO = ISNULL(SOLUONGTONKHO, 0) + @SL 
               WHERE MAHANGHOA = @MAHANGHOA
             `);
         }

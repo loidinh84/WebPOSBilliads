@@ -1,21 +1,41 @@
 import React, { useState, useEffect } from "react";
-import * as Icons from "../../assets/icons/index";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
+import * as Icons from "../../assets/icons/index";
 import Swal from "sweetalert2";
 
+const ToggleSwitch = ({ checked, onChange }) => (
+  <div
+    onClick={onChange}
+    className={`w-11 h-6 rounded-full flex items-center cursor-pointer transition-colors duration-300 flex-shrink-0 ${
+      checked ? "bg-[#2563EB]" : "bg-gray-300"
+    }`}
+  >
+    <div
+      className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
+        checked ? "translate-x-6" : "translate-x-1"
+      }`}
+    />
+  </div>
+);
+
 function Product() {
-  // =========================================================================
-  // 1. STATE DỮ LIỆU (Mock data & DB)
-  // =========================================================================
+  // 1. STATE DỮ LIỆU
   const [categories, setCategories] = useState([{ id: "ALL", name: "Tất cả" }]);
 
   const [products, setProducts] = useState([]);
+  const [storeSettings, setStoreSettings] = useState(null);
+  const [selectedIngredients, setSelectedIngredients] = useState({});
+  const [hasAttributes, setHasAttributes] = useState(false);
+  const [variants, setVariants] = useState([
+    { tenThuocTinh: "", giaBan: "", tonKho: "" },
+  ]);
 
   // Tự động fetch dữ liệu từ Database khi load trang
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    fetchStoreSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -35,6 +55,27 @@ function Product() {
       }
     } catch (error) {
       console.error("Lỗi fetch danh mục:", error);
+    }
+  };
+
+  const fetchStoreSettings = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5000/api/store-settings", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success) {
+          setStoreSettings(result.data);
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi fetch cài đặt:", error);
     }
   };
 
@@ -63,9 +104,7 @@ function Product() {
     }
   };
 
-  // =========================================================================
   // 2. STATE GIAO DIỆN & LỌC
-  // =========================================================================
   const [expandedRows, setExpandedRows] = useState({});
   const [isTypeExpanded, setIsTypeExpanded] = useState(true);
   const [isInventoryExpanded, setIsInventoryExpanded] = useState(true);
@@ -79,9 +118,7 @@ function Product() {
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [selectedInventory, setSelectedInventory] = useState("all");
 
-  // =========================================================================
   // 3. STATE COMBO
-  // =========================================================================
   const [isAddingCombo, setIsAddingCombo] = useState(false);
   const [selectedItemsForCombo, setSelectedItemsForCombo] = useState({});
   // eslint-disable-next-line no-unused-vars
@@ -89,9 +126,7 @@ function Product() {
   // eslint-disable-next-line no-unused-vars
   const [comboPrice, setComboPrice] = useState("");
 
-  // =========================================================================
   // 4. STATE MODAL THÊM/SỬA
-  // =========================================================================
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
@@ -108,9 +143,7 @@ function Product() {
     HINHANH: null,
   });
 
-  // =========================================================================
   // 5. CÁC HÀM XỬ LÝ LOGIC
-  // =========================================================================
 
   const generateNextId = () => {
     if (products.length === 0) return "HH00001";
@@ -614,6 +647,25 @@ function Product() {
       isNotNestedCombo
     );
   });
+
+  const handleIngredientCheck = (id) => {
+    setSelectedIngredients((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleAddVariant = () => {
+    setVariants([...variants, { tenThuocTinh: "", giaBan: "", tonKho: "" }]);
+  };
+
+  const handleVariantChange = (index, field, value) => {
+    const newVariants = [...variants];
+    newVariants[index][field] = value;
+    setVariants(newVariants);
+  };
+
+  const handleRemoveVariant = (index) => {
+    const newVariants = variants.filter((_, i) => i !== index);
+    setVariants(newVariants);
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] font-inter text-gray-900 pb-32 relative">
@@ -1417,7 +1469,12 @@ function Product() {
                           onChange={(e) =>
                             setFormData({ ...formData, GIABAN: e.target.value })
                           }
-                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-green-600 font-bold"
+                          disabled={hasAttributes}
+                          className={`w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold transition-colors outline-none ${
+                            hasAttributes
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "text-green-600 bg-white focus:border-blue-500"
+                          }`}
                         />
                       </div>
                       <div>
@@ -1433,7 +1490,12 @@ function Product() {
                               GIANIEMYET: e.target.value,
                             })
                           }
-                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-400"
+                          disabled={hasAttributes}
+                          className={`w-full border border-gray-300 rounded px-3 py-2 text-sm transition-colors outline-none ${
+                            hasAttributes
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "text-gray-600 bg-white focus:border-blue-500"
+                          }`}
                         />
                       </div>
                     </div>
@@ -1450,7 +1512,12 @@ function Product() {
                           onChange={(e) =>
                             setFormData({ ...formData, TONKHO: e.target.value })
                           }
-                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold"
+                          disabled={hasAttributes}
+                          className={`w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold transition-colors outline-none ${
+                            hasAttributes
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-white focus:border-blue-500"
+                          }`}
                         />
                       </div>
                       <div>
@@ -1486,6 +1553,159 @@ function Product() {
                         </div>
                       </div>
                     </div>
+
+                    {formData.LOAIHANG === "Hàng chế biến" &&
+                      storeSettings?.DINHLUONG_NGUYENLIEU === true && (
+                        <div className="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-100 animate-fadeIn">
+                          <div className="flex items-center gap-2 mb-3">
+                            <i className="fa-solid fa-blender text-orange-600"></i>
+                            <p className="text-sm font-bold text-orange-800">
+                              Định lượng nguyên vật liệu (Thành phần)
+                            </p>
+                          </div>
+                          <p className="text-xs text-gray-500 mb-3 italic">
+                            Chọn các nguyên liệu cấu thành món này. Khi bán, kho
+                            sẽ tự động trừ các nguyên liệu bên dưới.
+                          </p>
+
+                          <div className="max-h-40 overflow-y-auto space-y-1.5 pr-2 custom-scrollbar">
+                            {products
+                              .filter((p) => p.LOAIHANG === "Hàng thường")
+                              .map((p) => (
+                                <label
+                                  key={p.MAHANGHOA}
+                                  className="flex items-center justify-between bg-white p-2.5 rounded shadow-sm cursor-pointer border border-transparent hover:border-orange-300 transition-colors"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <input
+                                      type="checkbox"
+                                      className="w-4 h-4 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                                      checked={
+                                        !!selectedIngredients[p.MAHANGHOA]
+                                      }
+                                      onChange={() =>
+                                        handleIngredientCheck(p.MAHANGHOA)
+                                      }
+                                    />
+                                    <span className="text-sm font-bold text-gray-700">
+                                      {p.TENHANGHOA}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                                    Tồn: {p.TONKHO} {p.DONVITINH}
+                                  </span>
+                                </label>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {storeSettings?.HANGHOA_THUOCTHINH === true && (
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100 animate-fadeIn">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <i className="fa-solid fa-layer-group text-blue-600"></i>
+                            <p className="text-sm font-bold text-blue-800">
+                              Sản phẩm có nhiều thuộc tính (Size, Loại...)
+                            </p>
+                          </div>
+                          {/* Nút Toggle Switch */}
+                          <ToggleSwitch
+                            checked={hasAttributes}
+                            onChange={() => setHasAttributes(!hasAttributes)}
+                          />
+                        </div>
+
+                        {hasAttributes && (
+                          <div className="mt-3 bg-white p-3 rounded border border-blue-200 animate-fadeIn">
+                            <table className="w-full text-left text-sm mb-2">
+                              <thead>
+                                <tr className="text-gray-500 border-b border-gray-100">
+                                  <th className="pb-2 font-bold w-2/5">
+                                    Tên thuộc tính
+                                  </th>
+                                  <th className="pb-2 font-bold w-1/4">
+                                    Giá bán
+                                  </th>
+                                  <th className="pb-2 font-bold w-1/4">
+                                    Tồn kho
+                                  </th>
+                                  <th className="pb-2"></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {variants.map((v, index) => (
+                                  <tr key={index}>
+                                    <td className="py-1 pr-2">
+                                      <input
+                                        type="text"
+                                        value={v.tenThuocTinh}
+                                        onChange={(e) =>
+                                          handleVariantChange(
+                                            index,
+                                            "tenThuocTinh",
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder="Nhập size/loại..."
+                                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500"
+                                      />
+                                    </td>
+                                    <td className="py-1 pr-2">
+                                      <input
+                                        type="number"
+                                        value={v.giaBan}
+                                        onChange={(e) =>
+                                          handleVariantChange(
+                                            index,
+                                            "giaBan",
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder="Giá..."
+                                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500"
+                                      />
+                                    </td>
+                                    <td className="py-1 pr-2">
+                                      <input
+                                        type="number"
+                                        value={v.tonKho}
+                                        onChange={(e) =>
+                                          handleVariantChange(
+                                            index,
+                                            "tonKho",
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder="Tồn..."
+                                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500"
+                                      />
+                                    </td>
+                                    <td className="py-1 text-right">
+                                      <button
+                                        onClick={() =>
+                                          handleRemoveVariant(index)
+                                        }
+                                        className="text-red-500 hover:text-red-700"
+                                      >
+                                        <i className="fa-solid fa-trash"></i>
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            <button
+                              onClick={handleAddVariant}
+                              className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                            >
+                              <i className="fa-solid fa-plus"></i> Thêm thuộc
+                              tính
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 

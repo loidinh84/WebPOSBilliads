@@ -1,37 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import * as Icons from "../../assets/icons/index";
 import EmployeeModal from "./Modal";
+import axios from "axios";
+import Swal from "sweetalert2";
+
+const API_BASE_URL = "http://localhost:5000/api/employees";
 
 function StaffList() {
-  // ─── State: Danh sách nhân viên (Thêm dữ liệu mẫu để test bộ lọc) ─────────
-  const [employees, setEmployees] = useState([
-    {
-      id: 1,
-      staffId: "NV001",
-      checkInId: "1001",
-      name: "Trần Thanh Khang",
-      phone: "0344999655",
-      idCard: "12345678910",
-      role: "Quản lý",
-      department: "Điều hành",
-      status: "working", // working hoặc off
-      avatar: null,
-    },
-    {
-      id: 2,
-      staffId: "NV002",
-      checkInId: "1002",
-      name: "Nguyễn Văn Lợi lém lỉnh",
-      phone: "0901234567",
-      idCard: "98765432100",
-      role: "Thu ngân",
-      department: "Kế toán",
-      status: "off",
-      avatar: null,
-    },
-  ]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // ─── Fetch Data ──────────────────────────────────────────────────────────
+  const fetchEmployees = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(API_BASE_URL);
+      setEmployees(response.data);
+      setLoading(false);
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách nhân viên:", err);
+      setError("Không thể tải danh sách nhân viên.");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
 
   // ─── State: Quản lý Bộ lọc & Tìm kiếm ─────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,12 +41,12 @@ function StaffList() {
   const filteredEmployees = employees.filter((emp) => {
     // 1. Lọc theo Tìm kiếm (Tên, Mã, SĐT)
     const matchesSearch =
-      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.staffId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.phone.includes(searchTerm);
+      (emp.TENNGUOIDUNG || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.MANVIEN || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.SDT || "").includes(searchTerm);
 
     // 2. Lọc theo Trạng thái (Radio)
-    const matchesStatus = filterStatus === "all" || emp.status === filterStatus;
+    const matchesStatus = filterStatus === "all" || emp.TRANGTHAI === (filterStatus === "working" ? 1 : 0);
 
     // 3. Lọc theo Phòng ban (Dropdown)
     const matchesDept =
@@ -56,7 +54,7 @@ function StaffList() {
 
     // 4. Lọc theo Chức danh (Dropdown)
     const matchesRole =
-      filterRole === "Chọn chức danh" || emp.role === filterRole;
+      filterRole === "Chọn chức danh" || emp.CHUCVU === filterRole;
 
     return matchesSearch && matchesStatus && matchesDept && matchesRole;
   });
@@ -78,21 +76,79 @@ function StaffList() {
   const closeModal = () => setModal({ isOpen: false, type: "", data: null });
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
-  const handleAddEmployee = (formData) => {
-    const newEmp = {
-      ...formData,
-      id: Date.now(),
-      staffId: `NV${String(employees.length + 1).padStart(3, "0")}`,
-      status: "working",
-      avatar: null,
-    };
-    setEmployees((prev) => [...prev, newEmp]);
+  const handleAddEmployee = async (formData) => {
+    try {
+      // Map frontend fields to backend schema
+      const payload = {
+        MANVIEN: formData.staffId || `NV${Date.now().toString().slice(-4)}`,
+        MACCH: formData.checkInId,
+        TENDANGNHAP: formData.username || formData.staffId || `user${Date.now().toString().slice(-4)}`,
+        TENNGUOIDUNG: formData.name,
+        SDT: formData.phone,
+        EMAIL: formData.email || null,
+        DIACHI: formData.address || null,
+        GIOITINH: formData.gender || null,
+        NGAYSINH: formData.dob || null,
+        CCCD: formData.idCard || null,
+        CHUCVU: formData.role,
+        HINHANH: formData.avatar || null,
+      };
+
+      await axios.post(API_BASE_URL, payload);
+      Swal.fire("Thành công", "Đã thêm nhân viên mới!", "success");
+      fetchEmployees();
+    } catch (err) {
+      console.error("Lỗi khi thêm nhân viên:", err);
+      Swal.fire("Lỗi", err.response?.data?.message || "Không thể thêm nhân viên.", "error");
+    }
   };
 
-  const handleUpdateEmployee = (updatedData) => {
-    setEmployees((prev) =>
-      prev.map((emp) => (emp.id === updatedData.id ? updatedData : emp)),
-    );
+  const handleUpdateEmployee = async (updatedData) => {
+    try {
+      const payload = {
+        MACCH: updatedData.checkInId || updatedData.MACCH,
+        TENNGUOIDUNG: updatedData.name || updatedData.TENNGUOIDUNG,
+        SDT: updatedData.phone || updatedData.SDT,
+        EMAIL: updatedData.email || updatedData.EMAIL,
+        DIACHI: updatedData.address || updatedData.DIACHI,
+        GIOITINH: updatedData.gender || updatedData.GIOITINH,
+        NGAYSINH: updatedData.dob || updatedData.NGAYSINH,
+        CCCD: updatedData.idCard || updatedData.CCCD,
+        CHUCVU: updatedData.role || updatedData.CHUCVU,
+        HINHANH: updatedData.avatar || updatedData.HINHANH,
+      };
+
+      await axios.put(`${API_BASE_URL}/${updatedData.MANVIEN}`, payload);
+      Swal.fire("Thành công", "Đã cập nhật thông tin nhân viên!", "success");
+      fetchEmployees();
+    } catch (err) {
+      console.error("Lỗi khi cập nhật nhân viên:", err);
+      Swal.fire("Lỗi", "Không thể cập nhật thông tin nhân viên.", "error");
+    }
+  };
+
+  const handleDeleteEmployee = async (manvien, username) => {
+    const result = await Swal.fire({
+      title: "Bạn có chắc chắn?",
+      text: "Nhân viên này sẽ bị xóa vĩnh viễn khỏi hệ thống!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Xóa ngay",
+      cancelButtonText: "Hủy",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${API_BASE_URL}/${manvien}?username=${username}`);
+        Swal.fire("Đã xóa!", "Nhân viên đã được gỡ bỏ.", "success");
+        fetchEmployees();
+      } catch (err) {
+        console.error("Lỗi khi xóa nhân viên:", err);
+        Swal.fire("Lỗi", "Không thể xóa nhân viên này.", "error");
+      }
+    }
   };
 
   const handleApproveRequest = (reqId) => {
@@ -309,14 +365,21 @@ function StaffList() {
               <div className="p-4 text-[13px] font-bold text-gray-700 uppercase text-center">
                 Số CMND/CCCD
               </div>
+              <div className="p-4 text-[13px] font-bold text-gray-700 uppercase text-center">
+                Thao tác
+              </div>
             </div>
 
-            {filteredEmployees.length > 0 ? (
+            {loading ? (
+              <div className="flex-1 flex items-center justify-center p-6 text-gray-500">
+                Đang tải dữ liệu...
+              </div>
+            ) : filteredEmployees.length > 0 ? (
               <div className="flex-1 overflow-y-auto">
                 {filteredEmployees.map((emp) => (
                   <div
-                    key={emp.id}
-                    className="grid grid-cols-[50px_100px_1.2fr_1.2fr_1.8fr_1.2fr_1.4fr] border-b border-gray-100 hover:bg-blue-50/30 transition-all items-center group"
+                    key={emp.MANVIEN}
+                    className="grid grid-cols-[50px_100px_1.2fr_1.2fr_1.8fr_1.2fr_1.4fr_100px] border-b border-gray-100 hover:bg-blue-50/30 transition-all items-center group"
                   >
                     <div className="p-4 flex justify-center border-r border-gray-50 h-full items-center">
                       <input
@@ -325,10 +388,10 @@ function StaffList() {
                       />
                     </div>
                     <div className="p-4 border-r border-gray-50 flex items-center h-full justify-center">
-                      {emp.avatar ? (
+                      {emp.HINHANH ? (
                         <div className="w-10 h-10 rounded-full overflow-hidden border">
                           <img
-                            src={emp.avatar}
+                            src={emp.HINHANH}
                             alt=""
                             className="w-full h-full object-cover"
                           />
@@ -342,22 +405,60 @@ function StaffList() {
                       )}
                     </div>
                     <div className="p-4 text-[14px] text-gray-700 font-medium border-r border-gray-50">
-                      {emp.staffId}
+                      {emp.MANVIEN}
                     </div>
                     <div className="p-4 text-[14px] text-gray-700 font-medium border-r border-gray-50">
-                      {emp.checkInId}
+                      {emp.MACCH}
                     </div>
                     <div
                       className="p-4 text-[14px] text-gray-800 font-bold border-r border-gray-50 group-hover:text-[#5D5FEF] transition-colors cursor-pointer"
-                      onClick={() => openModal("VIEW_BY_EMPLOYEE", emp)}
+                      onClick={() => openModal("VIEW_BY_EMPLOYEE", { 
+                        ...emp, 
+                        name: emp.TENNGUOIDUNG, 
+                        phone: emp.SDT, 
+                        email: emp.EMAIL,
+                        address: emp.DIACHI,
+                        role: emp.CHUCVU,
+                        staffId: emp.MANVIEN,
+                        checkInId: emp.MACCH,
+                        gender: emp.GIOITINH,
+                        dob: emp.NGAYSINH,
+                        idCard: emp.CCCD
+                      })}
                     >
-                      {emp.name}
+                      {emp.TENNGUOIDUNG}
                     </div>
                     <div className="p-4 text-[14px] text-gray-600 border-r border-gray-50 text-center">
-                      {emp.phone}
+                      {emp.SDT}
                     </div>
-                    <div className="p-4 text-[14px] text-gray-600 text-center">
-                      {emp.idCard}
+                    <div className="p-4 text-[14px] text-gray-600 text-center border-r border-gray-50">
+                      {emp.CCCD || "---"}
+                    </div>
+                    <div className="p-4 flex justify-center gap-3">
+                      <button 
+                        onClick={() => openModal("EDIT", { 
+                          ...emp, 
+                          name: emp.TENNGUOIDUNG, 
+                          phone: emp.SDT, 
+                          email: emp.EMAIL,
+                          address: emp.DIACHI,
+                          role: emp.CHUCVU,
+                          staffId: emp.MANVIEN,
+                          checkInId: emp.MACCH,
+                          gender: emp.GIOITINH,
+                          dob: emp.NGAYSINH,
+                          idCard: emp.CCCD
+                        })}
+                        className="text-blue-500 hover:text-blue-700 transition-colors"
+                      >
+                        <i className="fas fa-edit"></i> Sửa
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteEmployee(emp.MANVIEN, emp.TENDANGNHAP)}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <i className="fas fa-trash"></i> Xóa
+                      </button>
                     </div>
                   </div>
                 ))}

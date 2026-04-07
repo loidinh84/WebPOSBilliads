@@ -1,7 +1,9 @@
 const { sql, poolPromise } = require("../config/db");
+// 1. IMPORT MODEL LỊCH SỬ THAO TÁC
+const ActionHistoryModel = require("../models/actionHistoryModel");
 
 const tableController = {
-  // Hàm lấy danh sách bàn
+  // Hàm lấy danh sách bàn (Không cần ghi log)
   getAllTables: async (req, res) => {
     try {
       const pool = await poolPromise;
@@ -42,6 +44,16 @@ const tableController = {
           INSERT INTO BAN (MABAN, TENBAN, KHUVUC, TRANGTHAI, MAHANGHOA, GHICHU)
           VALUES (@MABAN, @TENBAN, @KHUVUC, @TRANGTHAI, @MAHANGHOA, @GHICHU)
         `);
+
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'THÊM BÀN',
+          MABAN,
+          `Thêm bàn mới: ${TENBAN} - Khu vực: ${KHUVUC}`
+      );
+
       res.json({ success: true, message: "Thêm bàn thành công!" });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
@@ -68,6 +80,16 @@ const tableController = {
               TRANGTHAI = @TRANGTHAI
           WHERE MABAN = @MABAN
         `);
+
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'CẬP NHẬT BÀN',
+          id,
+          `Thay đổi thông tin bàn: ${TENBAN}`
+      );
+
       res.json({ success: true, message: "Cập nhật thành công!" });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
@@ -83,6 +105,16 @@ const tableController = {
         .request()
         .input("MABAN", sql.VarChar, id)
         .query("DELETE FROM BAN WHERE MABAN = @MABAN");
+
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'XÓA BÀN',
+          id,
+          `Xóa bàn mã số: ${id}`
+      );
+
       res.json({ success: true, message: "Đã xóa bàn!" });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
