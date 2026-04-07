@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BackgroundLogin from "../assets/images/BackgroundLogin.png";
 import * as Icons from "../assets/icons/index";
+import Swal from "sweetalert2";
 
 function Login() {
   const navigate = useNavigate();
@@ -17,8 +18,10 @@ function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  // 3. THÊM MỚI: State để hứng tên cửa hàng trong Modal Setup
+  // 3. Tạo mới cửa hàng
   const [tempStoreName, setTempStoreName] = useState("");
+  const [tempPhone, setTempPhone] = useState("");
+  const [isSettingUp, setIsSettingUp] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -40,7 +43,7 @@ function Login() {
 
         const savedStoreName = localStorage.getItem("storeName");
 
-        if (data.user.QUYENHAN === "Quản lý" && !savedStoreName) {
+        if (data.user.QUYENHAN === "Admin" && !savedStoreName) {
           setIsSetupOpen(true);
         } else {
           navigate("/dashboard");
@@ -56,13 +59,56 @@ function Login() {
   };
 
   // 4. Hàm xử lý khi bấm nút "Vào cửa hàng ngay"
-  const handleFinalSetup = () => {
-    if (tempStoreName.trim() !== "") {
-      // Lưu tên cửa hàng vào LocalStorage
-      localStorage.setItem("storeName", tempStoreName);
+  const handleFinalSetup = async () => {
+    if (!tempStoreName.trim()) {
+      Swal.fire("Thông báo", "Vui lòng nhập tên cửa hàng!", "warning");
     }
     setIsSetupOpen(false);
-    navigate("/dashboard");
+    try {
+      const token = localStorage.getItem("token");
+
+      // Gọi API để tạo dòng dữ liệu đầu tiên trong bảng THIETLAPCUAHANG
+      const response = await fetch("http://localhost:5000/api/store-settings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          tenCuaHang: tempStoreName,
+          dienThoai: tempPhone,
+          blockTinhGio: false,
+          lamTronTien: true,
+          kieuLamTron: "round",
+          choPhepChinhGio: true,
+        }),
+      });
+
+      if (response.ok) {
+        localStorage.setItem("storeName", tempStoreName);
+        Swal.fire({
+          icon: "success",
+          title: "Hoàn tất!",
+          text: "Khởi tạo hệ thống thành công. Chào mừng bạn!",
+          timer: 1500,
+          showConfirmButton: false,
+        }).then(() => {
+          setIsSetupOpen(false);
+          navigate("/dashboard");
+        });
+      } else {
+        Swal.fire(
+          "Lỗi",
+          "Không thể khởi tạo cửa hàng, vui lòng thử lại!",
+          "error",
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.fire("Lỗi", "Không thể kết nối tới máy chủ!", "error");
+    } finally {
+      setIsSettingUp(false);
+    }
   };
 
   return (
@@ -220,6 +266,8 @@ function Login() {
               />
               <SetupInput
                 label="Số điện thoại"
+                value={tempPhone}
+                onChange={(e) => setTempPhone(e.target.value)}
                 placeholder="Nhập số điện thoại..."
               />
               <SetupInput
@@ -237,7 +285,7 @@ function Login() {
                 onClick={handleFinalSetup}
                 className="w-full py-5 bg-blue-700 text-white rounded-[25px] font-bold text-xl hover:bg-blue-800 transition-all mt-8 shadow-2xl shadow-blue-200 active:scale-95"
               >
-                Vào cửa hàng ngay
+                {isSettingUp ? "Đang thiết lập..." : "Vào cửa hàng"}
               </button>
             </div>
           </div>
