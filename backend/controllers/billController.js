@@ -1,4 +1,6 @@
 const { sql, poolPromise } = require("../config/db");
+// 1. IMPORT MODEL LỊCH SỬ THAO TÁC VÀO ĐÂY
+const ActionHistoryModel = require("../models/actionHistoryModel");
 
 const billController = {
   // Lấy danh sách bàn
@@ -110,6 +112,15 @@ const billController = {
               SELECT MABAN FROM HOADON WHERE MAHOADON = @MAHOADON);
         `);
 
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'HỦY HÓA ĐƠN',
+          id,
+          `Hủy hóa đơn chưa thanh toán`
+      );
+
       res.json({ success: true, message: "Đã hủy hóa đơn thành công!" });
     } catch (err) {
       console.error("Lỗi khi hủy hóa đơn:", err);
@@ -151,6 +162,15 @@ const billController = {
           UPDATE BAN SET TRANGTHAI = N'Đang sử dụng' WHERE MABAN = @MABAN_MOI;
         `);
       }
+
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'CHUYỂN BÀN',
+          id,
+          `Chuyển khách từ bàn ${maBanCu} sang bàn mới: ${MABAN_MOI}`
+      );
 
       res.json({ success: true });
     } catch (err) {
@@ -216,11 +236,14 @@ const billController = {
         newId = "HD" + String(lastNum + 1).padStart(3, "0");
       }
 
+      // Xử lý lấy mã nhân viên thực tế đang đăng nhập nếu có, ưu tiên token
+      const maNhanVienThucTe = req.user?.MANVIEN || req.body?.MANVIEN || manvien;
+
       await pool
         .request()
         .input("MAHOADON", sql.VarChar, newId)
         .input("MABAN", sql.VarChar, MABAN)
-        .input("MANVIEN", sql.VarChar, manvien)
+        .input("MANVIEN", sql.VarChar, maNhanVienThucTe)
         .input("GIOBATDAU", sql.VarChar, GIOBATDAU || null)
         .input("NGAY", sql.Date, new Date(NGAY))
         .input("TRANGTHAI", sql.NVarChar, "Đang chơi")
@@ -233,6 +256,14 @@ const billController = {
           -- CẬP NHẬT TRẠNG THÁI BÀN
           UPDATE BAN SET TRANGTHAI = N'Đang sử dụng' WHERE MABAN = @MABAN;
         `);
+
+      // === GHI LOG ===
+      await ActionHistoryModel.insertActionLog(
+          maNhanVienThucTe,
+          'MỞ BÀN',
+          newId,
+          `Khởi tạo hóa đơn mới cho bàn: ${MABAN}`
+      );
 
       res.json({ success: true, MAHOADON: newId });
     } catch (err) {
@@ -253,7 +284,7 @@ const billController = {
         .input("MAHOADON", sql.VarChar, id)
         .query(`DELETE FROM CHITIETHOADON WHERE MAHOADON = @MAHOADON`);
 
-      // Lấy danh sách các mã hàng hóa hợp lệ HIỆN CÓ trong CSDL để tránh lỗi khóa ngoại
+      // Lấy danh sách các mã hàng hóa hợp lệ HIỆN CÓ trong CSDL
       const validItemsRes = await pool
         .request()
         .query("SELECT MAHANGHOA FROM HANGHOA");
@@ -261,16 +292,14 @@ const billController = {
         validItemsRes.recordset.map((i) => String(i.MAHANGHOA)),
       );
 
-      // Thêm lại toàn bộ danh sách món mới (chỉ thêm món có mã hợp lệ)
+      // Thêm lại toàn bộ danh sách món mới
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const itemId = String(item.MAHANGHOA || item.id);
 
-        // Nếu mã không tồn tại trong danh mục Hàng hóa, ta bỏ qua để không bị lỗi khóa ngoại
-        // Điều này xử lý triệt để cả trường hợp mã 108 hoặc bất kỳ mã ảo nào khác
         if (!validIds.has(itemId)) {
           console.warn(
-            `Bỏ qua lưu món ${item.TENHANGHOA || itemId} vào CTHD vì mã không tồn tại trong danh mục.`,
+            `Bỏ qua lưu món ${item.TENHANGHOA || itemId} vào CTHD vì mã không tồn tại.`,
           );
           continue;
         }
@@ -292,6 +321,15 @@ const billController = {
             VALUES (@MACHITETHOADON, @MAHOADON, @MAHANGHOA, @SOLUONG, @DONGIA, @THANHTIEN)
           `);
       }
+
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'CẬP NHẬT MÓN',
+          id,
+          `Thêm/Sửa danh sách món (Tổng: ${items.length} mặt hàng)`
+      );
 
       res.json({ success: true });
     } catch (err) {
@@ -369,6 +407,16 @@ const billController = {
         `);
 
       await transaction.commit();
+
+      // === GHI LOG SAU KHI TRANSACTION THÀNH CÔNG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'THANH TOÁN HÓA ĐƠN',
+          id,
+          `Hoàn tất thanh toán. Tổng tiền: ${TONGTHANHTOAN?.toLocaleString()}đ (${PHUONGTHUCTHANHTOAN})`
+      );
+
       res.json({ success: true, message: "Thanh toán thành công!" });
     } catch (err) {
       await transaction.rollback();
@@ -391,6 +439,15 @@ const billController = {
         .query(
           `UPDATE HOADON SET GIOBATDAU = @GIOBATDAU WHERE MAHOADON = @MAHOADON`,
         );
+
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'CẬP NHẬT GIỜ CHƠI',
+          id,
+          `Bắt đầu tính giờ chơi lúc ${GIOBATDAU}`
+      );
 
       res.json({ success: true, message: "Đã kích hoạt giờ chơi!" });
     } catch (err) {

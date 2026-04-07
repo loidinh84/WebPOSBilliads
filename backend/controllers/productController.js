@@ -1,4 +1,5 @@
 const { sql, poolPromise } = require("../config/db");
+const ActionHistoryModel = require("../models/actionHistoryModel");
 
 const productController = {
   // Cập nhật trạng thái hàng hóa
@@ -15,6 +16,16 @@ const productController = {
         .query(
           "UPDATE HANGHOA SET TRANGTHAI = @TRANGTHAI WHERE MAHANGHOA = @MAHANGHOA",
         );
+        
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'CẬP NHẬT TRẠNG THÁI',
+          id,
+          `Cập nhật trạng thái hàng hóa thành: ${TRANGTHAI ? 'Hiện' : 'Ẩn'}`
+      );
+
       res.json({ success: true, message: "Cập nhật trạng thái thành công" });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
@@ -40,16 +51,8 @@ const productController = {
   // 2. Thêm mới hàng hóa
   createProduct: async (req, res) => {
     const {
-      MAHANGHOA,
-      TENHANGHOA,
-      MADANHMUC,
-      DONGIABAN,
-      DONVITINH,
-      GIANIEMYET,
-      TONKHO,
-      MOTA,
-      HINHANH,
-      LOAIHANG,
+      MAHANGHOA, TENHANGHOA, MADANHMUC, DONGIABAN, DONVITINH,
+      GIANIEMYET, TONKHO, MOTA, HINHANH, LOAIHANG,
     } = req.body;
 
     try {
@@ -77,6 +80,16 @@ const productController = {
                     @HINHANH, 1, @LOAIHANG, @MOTA
                 )
             `);
+            
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'THÊM HÀNG HÓA',
+          MAHANGHOA,
+          `Thêm mới hàng hóa: ${TENHANGHOA}`
+      );
+
       res.json({ success: true, message: "Thêm hàng hóa thành công!" });
     } catch (err) {
       console.error("Lỗi thêm hàng hóa:", err);
@@ -88,13 +101,7 @@ const productController = {
   updateProduct: async (req, res) => {
     const { MAHANGHOA } = req.params;
     const {
-      TENHANGHOA,
-      DONGIABAN,
-      GIANIEMYET,
-      SOLUONGTONKHO,
-      DONVITINH,
-      HINHANH,
-      MOTA,
+      TENHANGHOA, DONGIABAN, GIANIEMYET, SOLUONGTONKHO, DONVITINH, HINHANH, MOTA,
     } = req.body;
 
     try {
@@ -129,6 +136,16 @@ const productController = {
       }
 
       await request.query(queryUpdate);
+
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'CẬP NHẬT HÀNG HÓA',
+          MAHANGHOA,
+          `Thay đổi thông tin hàng hóa: ${TENHANGHOA}`
+      );
+
       res.json({ success: true, message: "Cập nhật thành công!" });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
@@ -145,7 +162,17 @@ const productController = {
         .request()
         .input("id", sql.VarChar, id)
         .query("DELETE FROM HANGHOA WHERE MAHANGHOA = @id");
+        
       if (result.rowsAffected[0] > 0) {
+        // === GHI LOG ===
+        const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+        await ActionHistoryModel.insertActionLog(
+            maNhanVien,
+            'XÓA HÀNG HÓA',
+            id,
+            `Xóa hàng hóa mã số: ${id}`
+        );
+
         res.json({ success: true, message: "Đã xóa hàng hóa thành công" });
       } else {
         res
@@ -184,6 +211,16 @@ const productController = {
           INSERT INTO DANHMUC (MADANHMUC, TENDANHMUC, TRANGTHAI)
           VALUES (@MADANHMUC, @TENDANHMUC, 1)
         `);
+
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'THÊM DANH MỤC',
+          MADANHMUC,
+          `Thêm danh mục mới: ${TENDANHMUC}`
+      );
+
       res.json({ success: true, message: "Thêm danh mục thành công!" });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
@@ -205,6 +242,16 @@ const productController = {
           SET TENDANHMUC = @TENDANHMUC, TRANGTHAI = @TRANGTHAI
           WHERE MADANHMUC = @MADANHMUC
         `);
+
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'CẬP NHẬT DANH MỤC',
+          id,
+          `Thay đổi thông tin danh mục: ${TENDANHMUC}`
+      );
+
       res.json({ success: true, message: "Cập nhật danh mục thành công!" });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
@@ -234,6 +281,15 @@ const productController = {
         .request()
         .input("MADANHMUC", sql.VarChar, id)
         .query("DELETE FROM DANHMUC WHERE MADANHMUC = @MADANHMUC");
+
+      // === GHI LOG ===
+      const maNhanVien = req.user?.MANVIEN || req.body?.MANVIEN || 'NV001';
+      await ActionHistoryModel.insertActionLog(
+          maNhanVien,
+          'XÓA DANH MỤC',
+          id,
+          `Xóa danh mục mã số: ${id}`
+      );
 
       res.json({ success: true, message: "Đã xóa danh mục thành công" });
     } catch (err) {
