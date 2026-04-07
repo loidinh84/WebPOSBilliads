@@ -7,6 +7,8 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+// --- KHAI BÁO CÁC ROUTES ---
+
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
@@ -23,6 +25,7 @@ app.use("/api/categories", productRoutes);
 const tableRoutes = require("./routes/tableRoutes");
 app.use("/api/tables", tableRoutes);
 
+// SỬA LỖI TẠI ĐÂY: Xóa chữ require dư thừa
 const templateRoutes = require("./routes/templateRoutes");
 app.use("/api/templates", templateRoutes);
 
@@ -47,9 +50,12 @@ app.use("/api/users", adminUserRoutes);
 const storeSettingsRoutes = require("./routes/storeSettingsRoutes.js");
 app.use("/api/store-settings", storeSettingsRoutes);
 
-const actionHistoryRoutes = require('./routes/actionHistoryRoutes');
-app.use('/api/action-history', actionHistoryRoutes);
+const actionHistoryRoutes = require("./routes/actionHistoryRoutes");
+app.use("/api/action-history", actionHistoryRoutes);
 
+const inventoryRoutes = require("./routes/inventoryRoutes");
+app.use("/api/inventory", inventoryRoutes);
+
+// --- LISTEN ---
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server chạy tại cổng ${PORT}`));
-
+app.listen(PORT, () => console.log(`🚀 Server đang "bay" tại cổng ${PORT}`));

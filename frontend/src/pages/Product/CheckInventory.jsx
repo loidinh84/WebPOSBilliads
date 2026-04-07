@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import { useNavigate } from "react-router-dom";
@@ -6,28 +6,23 @@ import * as Icons from "../../assets/icons/index";
 
 function CheckInventory() {
   const navigate = useNavigate();
-  const [inventorySlips] = useState([
-    {
-      id: "PKK000007",
-      createdDate: "30/11/2025 14:12",
-      totalDiff: 10,
-      incDiff: 10,
-      decDiff: 0,
-      note: "Kiểm kho định kỳ cuối tháng.",
-      status: "Đã cân bằng kho",
-    },
-    {
-      id: "PKK000006",
-      createdDate: "29/11/2025 22:43",
-      totalDiff: -5,
-      incDiff: 0,
-      decDiff: 5,
-      note: "Kiểm tra lại bia Tiger.",
-      status: "Đã cân bằng kho",
-    },
-  ]);
-
+  const [inventorySlips, setInventorySlips] = useState([]);
   const [searchId, setSearchId] = useState("");
+
+  // Lấy dữ liệu thật từ Backend
+  const fetchSlips = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/inventory");
+      const result = await res.json();
+      if (result.success) setInventorySlips(result.data);
+    } catch (err) {
+      console.error("Lỗi kết nối:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSlips();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F4F6F8] font-sans text-slate-700 text-[13px]">
@@ -35,7 +30,7 @@ function CheckInventory() {
       <DashboardNav activeTab="Hàng hóa" />
 
       <main className="max-w-[1600px] mx-auto p-4 flex gap-4">
-        {/* SIDEBAR LỌC */}
+        {/* SIDEBAR LỌC GỐC */}
         <aside className="w-[260px] flex-shrink-0 flex flex-col gap-3">
           <div className="bg-white p-5 rounded border border-slate-200 shadow-sm">
             <h3 className="font-bold mb-4 text-slate-800 uppercase tracking-tight text-[12px]">
@@ -44,7 +39,7 @@ function CheckInventory() {
             <input
               type="text"
               placeholder="Theo mã phiếu..."
-              className="w-full border border-slate-300 rounded px-3 py-2 outline-none focus:border-blue-500 transition-all"
+              className="w-full border border-slate-300 rounded px-3 py-2 outline-none focus:border-blue-500"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
             />
@@ -62,19 +57,17 @@ function CheckInventory() {
                 >
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded border-slate-300 text-blue-600 cursor-pointer"
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600"
                     defaultChecked={st === "Đã cân bằng kho"}
                   />
-                  <span className="group-hover:text-blue-600 transition-colors">
-                    {st}
-                  </span>
+                  <span className="group-hover:text-blue-600">{st}</span>
                 </label>
               ))}
             </div>
           </div>
         </aside>
 
-        {/* NỘI DUNG CHÍNH */}
+        {/* NỘI DUNG CHÍNH GỐC */}
         <div className="flex-1 flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">
@@ -82,13 +75,13 @@ function CheckInventory() {
             </h1>
             <button
               onClick={() => navigate("/product/check-inventory/create")}
-              className="flex items-center gap-2 bg-[#00a651] hover:bg-green-700 text-white font-bold px-4 py-2 rounded shadow-sm transition-all active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 bg-[#00a651] hover:bg-green-700 text-white font-bold px-4 py-2 rounded shadow-sm cursor-pointer"
             >
               <img
                 src={Icons.Add}
                 className="w-4 h-4 brightness-0 invert"
                 alt=""
-              />
+              />{" "}
               KIỂM KHO
             </button>
           </div>
@@ -98,7 +91,7 @@ function CheckInventory() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[11px]">
                   <th className="p-3 w-10 text-center">
-                    <input type="checkbox" className="cursor-pointer" />
+                    <input type="checkbox" />
                   </th>
                   <th className="p-3">Mã kiểm kho</th>
                   <th className="p-3 text-center">Ngày lập</th>
@@ -110,49 +103,47 @@ function CheckInventory() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {inventorySlips.map((slip) => (
-                  <tr
-                    key={slip.id}
-                    className="hover:bg-blue-50/20 transition-colors cursor-pointer group"
-                  >
-                    <td className="p-3 text-center">
-                      <input type="checkbox" className="cursor-pointer" />
-                    </td>
-                    <td className="p-3 font-bold text-blue-600 group-hover:underline">
-                      {slip.id}
-                    </td>
-                    <td className="p-3 text-center text-slate-500 font-mono">
-                      {slip.createdDate}
-                    </td>
-                    <td className="p-3 text-right font-bold text-slate-800">
-                      {slip.totalDiff}
-                    </td>
-                    <td className="p-3 text-right text-gray-700 font-bold">
-                      +{slip.incDiff}
-                    </td>
-                    <td className="p-3 text-right text-gray-700 font-bold">
-                      -{slip.decDiff}
-                    </td>
-                    <td className="p-3 text-slate-400 italic truncate max-w-[200px]">
-                      {slip.note}
-                    </td>
-                    <td className="p-3 text-center">
-                      <span className="text-emerald-600 font-black uppercase text-[10px] tracking-tighter">
-                        {slip.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {inventorySlips
+                  .filter((s) => s.id.includes(searchId))
+                  .map((slip) => (
+                    <tr
+                      key={slip.id}
+                      className="hover:bg-blue-50/20 cursor-pointer group"
+                    >
+                      <td className="p-3 text-center">
+                        <input type="checkbox" />
+                      </td>
+                      <td className="p-3 font-bold text-blue-600 group-hover:underline">
+                        {slip.id}
+                      </td>
+                      <td className="p-3 text-center text-slate-500 font-mono">
+                        {slip.createdDate}
+                      </td>
+                      <td className="p-3 text-right font-bold text-slate-800">
+                        {slip.totalDiff}
+                      </td>
+                      <td className="p-3 text-right text-gray-700">
+                        +{slip.incDiff}
+                      </td>
+                      <td className="p-3 text-right text-gray-700">
+                        -{slip.decDiff}
+                      </td>
+                      <td className="p-3 text-slate-400 italic truncate max-w-[200px]">
+                        {slip.note}
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="text-emerald-600 font-black uppercase text-[10px] tracking-tighter">
+                          {slip.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
-            <div className="p-10 text-center text-slate-400 italic">
-              -- Hết danh sách phiếu --
-            </div>
           </div>
         </div>
       </main>
     </div>
   );
 }
-
 export default CheckInventory;
