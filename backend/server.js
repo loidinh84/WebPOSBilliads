@@ -41,17 +41,30 @@ app.use("/api/return-imports", returnImportRoutes);
 const discountRoutes = require("./routes/discountRoutes");
 app.use("/api/discounts", discountRoutes);
 
+const leaveRoutes = require("./routes/leaveRoutes");
+app.use("/api/leave", leaveRoutes);
+
+const scheduleRoutes = require("./routes/scheduleRoutes");
+app.use("/api/schedule", scheduleRoutes);
+
 const exportRoutes = require("./routes/exportRoutes.js");
 app.use("/api/transactions/exports", exportRoutes);
 
 const adminUserRoutes = require("./routes/AdminUserRoutes.js");
 app.use("/api/users", adminUserRoutes);
 
+<<<<<<< HEAD
+const attendanceRoutes = require("./routes/attendanceRoutes");
+app.use("/api/attendance", attendanceRoutes);
+
+const salaryRoutes = require("./routes/salaryRoutes");
+app.use("/api/salary", salaryRoutes);
+=======
 const storeSettingsRoutes = require("./routes/storeSettingsRoutes.js");
 app.use("/api/store-settings", storeSettingsRoutes);
 
-const actionHistoryRoutes = require("./routes/actionHistoryRoutes");
-app.use("/api/action-history", actionHistoryRoutes);
+const actionHistoryRoutes = require('./routes/actionHistoryRoutes');
+app.use('/api/action-history', actionHistoryRoutes);
 
 const inventoryRoutes = require("./routes/inventoryRoutes");
 app.use("/api/inventory", inventoryRoutes);

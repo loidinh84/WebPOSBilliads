@@ -178,22 +178,31 @@ const NhanVienController = {
     }
   },
 
-  // 5. Xóa người dùng
   deleteUser: async (req, res) => {
     const { username } = req.params;
+    const pool = await poolPromise;
+    const transaction = new sql.Transaction(pool);
     try {
-      const pool = await poolPromise;
-      await pool
+      await transaction.begin();
+
+      // 1. Đánh dấu xóa trong TAIKHOAN
+      await transaction
         .request()
         .input("u", sql.VarChar, username)
         .query("UPDATE TAIKHOAN SET DAXOA = 1 WHERE TENDANGNHAP = @u");
 
+      // 2. Đánh dấu xóa trong NHANVIEN
+      await transaction
+        .request()
+        .input("u", sql.VarChar, username)
+        .query("UPDATE NHANVIEN SET DAXOA = 1 WHERE TENDANGNHAP = @u");
+
+      await transaction.commit();
       res.json({ success: true, message: "Đã xóa người dùng thành công!" });
     } catch (err) {
+      if (transaction) await transaction.rollback();
       console.error("Lỗi xóa user:", err);
-      res
-        .status(500)
-        .json({ success: false, message: "Lỗi hệ thống: " + err.message });
+      res.status(500).json({ success: false, message: "Lỗi hệ thống: " + err.message });
     }
   },
 
