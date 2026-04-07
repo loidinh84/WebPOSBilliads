@@ -8,7 +8,7 @@ const billController = {
     try {
       const pool = await poolPromise;
       const result = await pool.request().query(`
-        SELECT MABAN as maban, TENBAN as name, TRANGTHAI as status
+        SELECT MABAN as maban, TENBAN as name, TRANGTHAI as status, MAHANGHOA
         FROM BAN
       `);
 

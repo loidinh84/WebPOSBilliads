@@ -291,23 +291,6 @@ function Cashier() {
           ),
         );
 
-        if (currentTable.MAHANGHOA) {
-          const serviceItem = menuItems.find(
-            (item) => item.id === currentTable.MAHANGHOA,
-          );
-          if (serviceItem) {
-            const finalItem = { ...serviceItem, qty: 1 };
-            setOrdersByTable((prev) => ({
-              ...prev,
-              [activeTabId]: [finalItem],
-            }));
-            await axios.put(
-              `http://localhost:5000/api/bills/${newBillId}/items`,
-              { items: [finalItem] },
-            );
-          }
-        }
-
         Swal.fire({
           icon: "success",
           title: "Đã mở bàn!",
