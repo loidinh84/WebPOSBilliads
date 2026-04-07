@@ -74,7 +74,11 @@ function Tables() {
       });
       if (res.ok) {
         const data = await res.json();
-        const filtered = data.filter((item) => item.MADANHMUC === "DM8227");
+        const filtered = data.filter(
+          (item) =>
+            item.NHOMHANG?.toUpperCase() === "LOẠI BÀN" ||
+            item.TENDANHMUC?.toUpperCase() === "LOẠI BÀN",
+        );
         setTableCategories(filtered);
       }
     } catch (error) {

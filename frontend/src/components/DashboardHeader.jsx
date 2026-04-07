@@ -208,7 +208,7 @@ function DashboardHeader() {
                   onClick={() => navigate("/settings/discount")}
                   className="w-full text-left px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#5D5FEF] font-bold transition-colors text-[14px] border-b border-gray-50 cursor-pointer"
                 >
-                  Quản lý KM
+                  Quản lý khuyến mãi
                 </button>
                 <button
                   onClick={() => navigate("/settings/history")}

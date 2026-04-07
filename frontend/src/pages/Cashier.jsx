@@ -6,6 +6,34 @@ import * as Icons from "../assets/icons/index";
 import Swal from "sweetalert2";
 import PrintBillModal from "../components/PrintBillModal";
 
+const TimeSpinner = ({ label, value, max, onUp, onDown, onChange }) => (
+  <div className="flex flex-col items-center gap-1">
+    <button
+      onClick={onUp}
+      className="w-10 h-8 text-gray-400 hover:text-blue-500 text-lg font-bold transition-colors select-none"
+    >
+      ▲
+    </button>
+    <input
+      type="number"
+      min={0}
+      max={max}
+      value={String(value).padStart(2, "0")}
+      onChange={(e) =>
+        onChange(Math.max(0, Math.min(max, Number(e.target.value))))
+      }
+      className="w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 focus:border-blue-500 rounded-xl outline-none transition-colors"
+    />
+    <button
+      onClick={onDown}
+      className="w-10 h-8 text-gray-400 hover:text-blue-500 text-lg font-bold transition-colors select-none"
+    >
+      ▼
+    </button>
+    <span className="text-xs text-gray-400 mt-1">{label}</span>
+  </div>
+);
+
 function Cashier() {
   const navigate = useNavigate();
   const [leftTab, setLeftTab] = useState("tables");
@@ -13,6 +41,8 @@ function Cashier() {
   const [openMenuOnSelect, setOpenMenuOnSelect] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printBillData, setPrintBillData] = useState(null);
+  const [editingStartTime, setEditingStartTime] = useState(false);
+  const [tempStartTime, setTempStartTime] = useState("");
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const isManagerOrAdmin =
@@ -151,7 +181,7 @@ function Cashier() {
             name: t.TENBAN || t.name,
             maban: t.MABAN || t.maban,
             MAHANGHOA: t.MAHANGHOA,
-            status: "empty", // Mặc định khởi tạo là Trống
+            status: "empty",
           }));
         }
 
@@ -186,7 +216,7 @@ function Cashier() {
             }
           });
 
-          // Ghi đè trạng thái của những bàn có Hóa đơn thành 'occupied' (Đang chơi)
+          // Ghi đè trạng thái của những bàn có Hóa đơn thành 'occupied'
           baseTables = baseTables.map((t) => ({
             ...t,
             status: newBillIds[t.id] ? "occupied" : "empty",
@@ -338,7 +368,7 @@ function Cashier() {
     }
 
     // Lấy trạng thái công tắc
-    const choPhepBanAm = storeSettings?.NHAN_GOI_MON === true;
+    const choPhepBanAm = storeSettings?.NHAN_GOIMON === true;
 
     // Kiểm tra tồn kho nếu không phải Dịch vụ
     if (item.category !== "Dịch vụ" && item.tonKho <= 0 && !choPhepBanAm) {
@@ -355,6 +385,21 @@ function Cashier() {
     let updated;
 
     const tableServiceId = currentTableInfo?.MAHANGHOA;
+    const allServiceIds = tables
+      .map((t) => String(t.MAHANGHOA))
+      .filter(Boolean);
+
+    if (
+      allServiceIds.includes(String(item.id)) &&
+      String(item.id) !== String(tableServiceId)
+    ) {
+      Swal.fire({
+        icon: "warning",
+        title: "Không thể thêm!",
+        text: `Bàn này đang dùng loại dịch vụ khác. Không thể thêm "${item.name}" vào đây.`,
+      });
+      return;
+    }
     const isServiceItem =
       tableServiceId && String(item.id) === String(tableServiceId);
     const finalItem = isServiceItem ? { ...item, price: 0 } : item;
@@ -444,6 +489,42 @@ function Cashier() {
     setShowCheckoutModal(true);
   };
 
+  // --- TẠO MÃ QR CHO PHƯƠNG THỨC KẾT HỢP ---
+  const generateCombinedQR = () => {
+    const cash = Number(customerPaid || 0);
+    const finalTot = checkoutData?.finalTotal || 0;
+    const remaining = finalTot - cash;
+
+    if (remaining <= 0) {
+      Swal.fire(
+        "Thông báo",
+        "Số tiền mặt đã đủ thanh toán, không cần chuyển khoản thêm!",
+        "info",
+      );
+      return;
+    }
+
+    if (storeSettings?.SOTAIKHOAN) {
+      const bank = storeSettings.NGANHANG_BIN || storeSettings.NGANHANG || "";
+      const acc = storeSettings.SOTAIKHOAN || "";
+      const name = encodeURIComponent(
+        storeSettings.TENTAIKHOAN || storeSettings.TENCHUTAIKHOAN || "",
+      );
+      const info = `THANHTOAN_${billIdByTable[activeTabId]}`;
+
+      const url = `https://img.vietqr.io/image/${bank}-${acc}-compact2.png?amount=${remaining}&addInfo=${info}&accountName=${name}`;
+      setQrUrl(url);
+
+      Swal.fire({
+        icon: "success",
+        title: "Đã cập nhật mã QR",
+        text: `Mã QR đã đổi thành: ${remaining.toLocaleString()}đ`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    }
+  };
+
   const confirmCheckout = async () => {
     const billId = billIdByTable[activeTabId];
     if (!billId || !checkoutData) return;
@@ -510,7 +591,10 @@ function Cashier() {
             storeSettings: storeSettings,
             customerName: customerName,
             paymentMethod: paymentMethod,
-            discountCode: discountByTable[activeTabId]?.MAKHUYENMAI || "",
+            discountCode:
+              discountByTable[activeTabId]?.TENKHUYENMAI ||
+              discountByTable[activeTabId]?.MAKHUYENMAI ||
+              "",
             cashierName: currentUser.TENNGUOIDUNG || currentUser.HOTEN || "",
           });
           setShowPrintModal(true);
@@ -561,13 +645,15 @@ function Cashier() {
 
   const getDiscountAmount = (rawTotal) => {
     if (!activeTabId || !discountByTable[activeTabId]) return 0;
+
     const discount = discountByTable[activeTabId];
-    const detail = discount.MACHITETKHOAN || discount.MACHITIETKHUYENMAI || "";
-    const percentMatch = detail.match(/(\d+)\s*%/);
-    if (percentMatch) {
-      const percentage = parseInt(percentMatch[1], 10);
-      return (rawTotal * percentage) / 100;
+    const detail = discount.MACHITETKHOAN || discount.MACHITIETKHUYENMAI || "0";
+    const percentage = parseInt(String(detail).replace(/\D/g, ""), 10);
+
+    if (!isNaN(percentage) && percentage > 0) {
+      return Math.round((rawTotal * percentage) / 100);
     }
+
     return 0;
   };
 
@@ -582,9 +668,33 @@ function Cashier() {
   const hourlyRate = tableServiceItem?.price || 0;
   const activeStartTime = startTimeByTable[activeTabId];
   const durationSeconds = getDurationInSeconds(activeStartTime);
-  const timePrice = Math.round((durationSeconds / 60 / 60) * hourlyRate);
+  const blockTinhGio = storeSettings?.BLOCK_TINHGIO === true;
+  const soPhutBlock = storeSettings?.SOPHUT_BLOCK || 15;
+
+  const timePrice = (() => {
+    if (!durationSeconds || !hourlyRate) return 0;
+    if (blockTinhGio) {
+      // Làm tròn lên theo block
+      const soBlock = Math.ceil(durationSeconds / 60 / soPhutBlock);
+      const giaMotBlock = (hourlyRate / 60) * soPhutBlock;
+      return Math.round(soBlock * giaMotBlock);
+    }
+    // Tính giờ thường
+    return Math.round((durationSeconds / 3600) * hourlyRate);
+  })();
   const discountAmount = getDiscountAmount(rawTotal + timePrice);
-  const finalTotal = rawTotal + timePrice - discountAmount;
+  const rawFinalTotal = rawTotal + timePrice - discountAmount;
+
+  const lamTronTien = storeSettings?.LAMTRON_TIEN === true;
+  const kieuLamTron = storeSettings?.KIEU_LAMTRON || "round";
+
+  const finalTotal = (() => {
+    if (!lamTronTien) return rawFinalTotal;
+    // Làm tròn đến hàng nghìn
+    if (kieuLamTron === "ceil") return Math.ceil(rawFinalTotal / 1000) * 1000;
+    if (kieuLamTron === "floor") return Math.floor(rawFinalTotal / 1000) * 1000;
+    return Math.round(rawFinalTotal / 1000) * 1000;
+  })();
 
   const displayTables = tables.filter((t) => {
     if (tableFilter === "occupied") return t.status === "occupied";
@@ -598,6 +708,16 @@ function Cashier() {
     const matchSearch = item.name
       .toLowerCase()
       .includes(searchMenuQuery.toLowerCase());
+    const allServiceIds = tables
+      .map((t) => String(t.MAHANGHOA))
+      .filter(Boolean);
+    const tableServiceId = currentTableInfo?.MAHANGHOA;
+    if (
+      allServiceIds.includes(String(item.id)) &&
+      String(item.id) !== String(tableServiceId)
+    ) {
+      return false;
+    }
     return matchCat && matchSearch;
   });
 
@@ -1064,11 +1184,25 @@ function Cashier() {
                           <i className="fa-regular fa-clock"></i> Giờ bắt đầu
                         </span>
                         <div className="flex items-center gap-3">
-                          <img
-                            src={Icons.Clock}
-                            alt="Chỉnh giờ"
-                            className="w-6 h-6 brightness-200 invert-2"
-                          />
+                          {storeSettings?.CHOPHEP_CHINHGIO === true &&
+                            billIdByTable[activeTabId] && (
+                              <button
+                                onClick={() => {
+                                  setEditingStartTime(true);
+                                  setTempStartTime(
+                                    formatStartTime(activeStartTime),
+                                  );
+                                }}
+                                title="Chỉnh giờ bắt đầu"
+                                className="text-blue-400 hover:text-blue-600 transition-colors cursor-pointer"
+                              >
+                                <img
+                                  src={Icons.Clock}
+                                  alt="Chỉnh giờ"
+                                  className="w-5 h-5"
+                                />
+                              </button>
+                            )}
                           <span className="font-bold text-gray-700">
                             {activeStartTime
                               ? formatStartTime(activeStartTime)
@@ -1167,6 +1301,146 @@ function Cashier() {
           )}
         </section>
       </main>
+      {/* MODAL CHỈNH GIỜ BẮT ĐẦU */}
+      {editingStartTime && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[150]">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-gray-100">
+            <div className="px-5 py-4 flex justify-between items-center border-b border-gray-200">
+              <h2 className="text-lg font-bold text-gray-700">
+                Chỉnh giờ bắt đầu
+              </h2>
+              <button
+                onClick={() => setEditingStartTime(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-5">
+              <p className="text-sm text-gray-500 mb-5">
+                Giờ hiện tại:{" "}
+                <strong className="text-gray-800">
+                  {formatStartTime(activeStartTime)}
+                </strong>
+              </p>
+
+              {/* Time Spinner */}
+              {(() => {
+                const parts = (tempStartTime || "00:00:00")
+                  .split(":")
+                  .map(Number);
+                const hh = parts[0] || 0;
+                const mm = parts[1] || 0;
+                const ss = parts[2] || 0;
+                const update = (h, m, s) =>
+                  setTempStartTime(
+                    `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`,
+                  );
+
+                return (
+                  <div className="flex items-center justify-center gap-3 mb-5">
+                    <TimeSpinner
+                      label="Giờ"
+                      value={hh}
+                      max={23}
+                      onUp={() => update(hh >= 23 ? 0 : hh + 1, mm, ss)}
+                      onDown={() => update(hh <= 0 ? 23 : hh - 1, mm, ss)}
+                      onChange={(v) => update(v, mm, ss)}
+                    />
+                    <span className="text-3xl font-bold text-gray-300 pb-6">
+                      :
+                    </span>
+                    <TimeSpinner
+                      label="Phút"
+                      value={mm}
+                      max={59}
+                      onUp={() => update(hh, mm >= 59 ? 0 : mm + 1, ss)}
+                      onDown={() => update(hh, mm <= 0 ? 59 : mm - 1, ss)}
+                      onChange={(v) => update(hh, v, ss)}
+                    />
+                    <span className="text-3xl font-bold text-gray-300 pb-6">
+                      :
+                    </span>
+                    <TimeSpinner
+                      label="Giây"
+                      value={ss}
+                      max={59}
+                      onUp={() => update(hh, mm, ss >= 59 ? 0 : ss + 1)}
+                      onDown={() => update(hh, mm, ss <= 0 ? 59 : ss - 1)}
+                      onChange={(v) => update(hh, mm, v)}
+                    />
+                  </div>
+                );
+              })()}
+
+              <p className="text-xs text-orange-500 flex items-center gap-1">
+                <i className="fa-solid fa-triangle-exclamation"></i>
+                Thay đổi sẽ ảnh hưởng tiền giờ.
+              </p>
+            </div>
+
+            <div className="px-5 py-4 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => setEditingStartTime(false)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={async () => {
+                  if (!tempStartTime || tempStartTime === ":00") {
+                    Swal.fire(
+                      "Thông báo",
+                      "Vui lòng chọn giờ hợp lệ!",
+                      "warning",
+                    );
+                    return;
+                  }
+
+                  const now = new Date();
+                  const [h, m] = tempStartTime.split(":").map(Number);
+                  const inputDate = new Date();
+                  inputDate.setHours(h, m, 0, 0);
+
+                  if (inputDate > now) {
+                    Swal.fire(
+                      "Thông báo",
+                      "Giờ bắt đầu không thể lớn hơn giờ hiện tại!",
+                      "warning",
+                    );
+                    return;
+                  }
+                  const billId = billIdByTable[activeTabId];
+                  try {
+                    await axios.patch(
+                      `http://localhost:5000/api/bills/${billId}/start`,
+                      { GIOBATDAU: tempStartTime },
+                    );
+                    setStartTimeByTable((prev) => ({
+                      ...prev,
+                      [activeTabId]: tempStartTime,
+                    }));
+                    setEditingStartTime(false);
+                    Swal.fire({
+                      icon: "success",
+                      title: "Đã cập nhật giờ!",
+                      text: `Giờ bắt đầu mới: ${tempStartTime}`,
+                      timer: 1500,
+                      showConfirmButton: false,
+                    });
+                  } catch {
+                    Swal.fire("Lỗi", "Không thể cập nhật giờ!", "error");
+                  }
+                }}
+                className="flex-[2] bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition-all"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL KHUYẾN MÃI */}
       {showDiscountModal && (
@@ -1208,8 +1482,8 @@ function Cashier() {
                           </div>
                         )}
                         <div className="flex justify-between items-center mb-2">
-                          <span className="bg-yellow-100 text-yellow-800 text-[11px] font-black px-2 py-0.5 rounded">
-                            {discount.MAKHUYENMAI}
+                          <span className="bg-yellow-100 text-yellow-800 text-[12px] font-bold px-2 py-0.5 rounded">
+                            {discount.TENKHUYENMAI || discount.MAKHUYENMAI}
                           </span>
                           <span className="text-[10px] text-gray-400 font-bold bg-gray-100 px-2 py-0.5 rounded">
                             HSD:{" "}
@@ -1368,7 +1642,8 @@ function Cashier() {
                       <div className="flex flex-col items-end">
                         {discountByTable[activeTabId] && (
                           <span className="text-[10px] bg-yellow-100 text-yellow-800 px-1 rounded font-bold mb-1">
-                            {discountByTable[activeTabId].MAKHUYENMAI}
+                            {discountByTable[activeTabId].TENKHUYENMAI ||
+                              discountByTable[activeTabId].MAKHUYENMAI}
                           </span>
                         )}
                         <span className="font-bold text-gray-800">
@@ -1384,7 +1659,11 @@ function Cashier() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-gray-800 font-bold">
-                      <span>Khách thanh toán</span>
+                      <span>
+                        {paymentMethod === "Kết hợp"
+                          ? "Tiền mặt khách đưa"
+                          : "Khách thanh toán"}
+                      </span>
                       <div className="relative w-32">
                         <input
                           type="text"
@@ -1397,7 +1676,7 @@ function Cashier() {
                             const val = e.target.value.replace(/\D/g, "");
                             setCustomerPaid(val);
                           }}
-                          className="w-full text-right font-bold text-lg outline-none focus:border-blue-700 pb-1"
+                          className="w-full text-right font-bold text-lg outline-none focus:border-blue-700 pb-1 border-b-2 border-gray-200"
                         />
                       </div>
                     </div>
@@ -1467,18 +1746,69 @@ function Cashier() {
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center text-gray-600 text-[13px] border-t border-gray-200 pt-4">
-                    <span>Tiền thừa trả khách</span>
-                    <span className="font-bold text-gray-800">
-                      {customerPaid &&
-                      Number(customerPaid) > (checkoutData?.finalTotal || 0)
-                        ? (
-                            Number(customerPaid) -
-                            (checkoutData?.finalTotal || 0)
-                          ).toLocaleString()
-                        : "0"}
-                    </span>
-                  </div>
+                  {paymentMethod === "Kết hợp" && (
+                    <div className="flex flex-col mb-2 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                      <p className="text-[12px] font-bold text-blue-800 mb-3 uppercase tracking-wide text-center">
+                        Thanh toán Kết hợp
+                      </p>
+                      <div className="flex justify-between items-center text-sm mb-2 text-gray-600">
+                        <span>1. Đã nhận tiền mặt:</span>
+                        <span className="font-bold text-gray-800">
+                          {Number(customerPaid || 0).toLocaleString()}đ
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm border-t border-blue-200 pt-3 mb-4">
+                        <span className="font-bold text-gray-700">
+                          2. Cần chuyển khoản:
+                        </span>
+                        <span className="font-black text-red-500 text-[16px]">
+                          {Math.max(
+                            0,
+                            (checkoutData?.finalTotal || 0) -
+                              Number(customerPaid || 0),
+                          ).toLocaleString()}
+                          đ
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={generateCombinedQR}
+                        className="w-full bg-[#5D5FEF] hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg transition-colors text-[13px] mb-4 shadow-sm flex items-center justify-center gap-2"
+                      >
+                        <i className="fa-solid fa-qrcode"></i> Tạo mã QR phần
+                        còn lại
+                      </button>
+
+                      <div className="flex flex-col items-center justify-center bg-white p-3 rounded-lg border border-gray-200">
+                        {storeSettings?.SOTAIKHOAN ? (
+                          <img
+                            src={qrUrl}
+                            alt="QR Code Kết hợp"
+                            className="w-full max-w-[200px] aspect-square object-contain"
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400 py-4">
+                            Chưa cấu hình QR
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethod !== "Kết hợp" && (
+                    <div className="flex justify-between items-center text-gray-600 text-[13px] border-t border-gray-200 pt-4">
+                      <span>Tiền thừa trả khách</span>
+                      <span className="font-bold text-gray-800">
+                        {customerPaid &&
+                        Number(customerPaid) > (checkoutData?.finalTotal || 0)
+                          ? (
+                              Number(customerPaid) -
+                              (checkoutData?.finalTotal || 0)
+                            ).toLocaleString()
+                          : "0"}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-4 bg-white border-t border-gray-200 shrink-0 flex gap-3">

@@ -236,7 +236,7 @@ function Invoices() {
 
     // 3. THAY THẾ (REPLACE) TỪ KHÓA BẰNG DỮ LIỆU THẬT
     let finalHtml = mauInTuDB
-      .replace("{{TEN_CUA_HANG}}", "Billiards Lục Lọi")
+      .replace("{{TEN_CUA_HANG}}")
       .replace(/{{MA_HOA_DON}}/g, inv.MAHOADON)
       .replace("{{TEN_KHACH_HANG}}", inv.TENKHACHHANG || "Khách vãng lai")
       .replace("{{GIO_CHOI}}", calculateDuration(inv.GIOBATDAU, inv.GIOKETTHUC))
