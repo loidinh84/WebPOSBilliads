@@ -42,7 +42,7 @@ const productController = {
                 LEFT JOIN DANHMUC dm ON hh.MADANHMUC = dm.MADANHMUC
                 ORDER BY hh.MAHANGHOA DESC
             `);
-      res.json({ success: true, data: result.recordset });
+      res.json(result.recordset);
     } catch (err) {
       res.status(500).send({ message: err.message });
     }
@@ -206,7 +206,7 @@ const productController = {
         .request()
         .query("SELECT MADANHMUC, TENDANHMUC FROM DANHMUC WHERE TRANGTHAI = 1");
 
-      res.json({ success: true, data: result.recordset });
+      res.json(result.recordset);
     } catch (err) {
       console.error("Lỗi lấy danh mục:", err);
       res.status(500).json({ message: "Lỗi Server", error: err.message });
