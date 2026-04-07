@@ -125,7 +125,7 @@ const inventoryController = {
       const maNhanVien = req.user?.MANVIEN || "NV001";
       await ActionHistoryModel.insertActionLog(
         maNhanVien,
-        isDraft ? "KIỂM KHO (TẠM)" : "HOÀN THÀNH KIỂM KHO",
+        isDraft ? "KIỂM KHO (TẠM)" : "HOÀN THÀNH KIỂM KHO !",
         newId,
         `Mã phiếu: ${newId}`,
       );
