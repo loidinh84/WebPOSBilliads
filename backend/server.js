@@ -41,17 +41,23 @@ app.use("/api/return-imports", returnImportRoutes);
 const discountRoutes = require("./routes/discountRoutes");
 app.use("/api/discounts", discountRoutes);
 
+const leaveRoutes = require("./routes/leaveRoutes");
+app.use("/api/leave", leaveRoutes);
+
+const scheduleRoutes = require("./routes/scheduleRoutes");
+app.use("/api/schedule", scheduleRoutes);
+
 const exportRoutes = require("./routes/exportRoutes.js");
 app.use("/api/transactions/exports", exportRoutes);
 
 const adminUserRoutes = require("./routes/AdminUserRoutes.js");
 app.use("/api/users", adminUserRoutes);
 
-const actionHistoryRoutes = require("./routes/actionHistoryRoutes");
-app.use("/api/action-history", actionHistoryRoutes);
+const storeSettingsRoutes = require("./routes/storeSettingsRoutes.js");
+app.use("/api/store-settings", storeSettingsRoutes);
 
-const kitchenRoutes = require("./routes/kitchenRoutes");
-app.use("/api/kitchen", kitchenRoutes);
+const actionHistoryRoutes = require('./routes/actionHistoryRoutes');
+app.use('/api/action-history', actionHistoryRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server chạy tại cổng ${PORT}`));

@@ -13,6 +13,7 @@ import RevenueReport from "./pages/Reports/RevenueReport";
 import CostReport from "./pages/Reports/CostReport";
 import PriceSetting from "./pages/Product/PriceSetting";
 import CheckInventory from "./pages/Product/CheckInventory";
+import CreateCheckInventory from "./pages/Product/CreateCheckInventory";
 import Export from "./pages/Transaction/Export";
 import Invoices from "./pages/Transaction/Invoices";
 import Import from "./pages/Transaction/Import";
@@ -34,6 +35,7 @@ import Discount from "./pages/SetupAdmin/Discount";
 import CreateImport from "./pages/Transaction/CreateImport";
 import CreateReturnImport from "./pages/Transaction/CreateReturnImport";
 import CreateExport from "./pages/Transaction/CreateExport";
+
 // Component bảo vệ Route
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -135,6 +137,10 @@ function App() {
         <Route path="/products/list" element={<Product />} />
         <Route path="/products/price-setting" element={<PriceSetting />} />
         <Route path="/products/check-inventory" element={<CheckInventory />} />
+        <Route
+          path="/product/check-inventory/create"
+          element={<CreateCheckInventory />}
+        />
 
         {/* Quản lý Bàn & Giao dịch */}
         <Route path="/tables" element={<Tables />} />
