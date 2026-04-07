@@ -11,26 +11,6 @@ function Kitchen() {
     // Dùng h-screen để giao diện nhà bếp fix cứng vừa vặn màn hình, không bị cuộn trang thừa thãi
     <div className="h-screen flex flex-col font-sans text-[13px] bg-[#1e293b]">
       
-      {/* ---------------- 1. THANH TOPBAR (HEADER DÀNH RIÊNG CHO BẾP) ---------------- */}
-      <header className="h-14 bg-[#5b6cf7] flex justify-between items-center px-4 shrink-0 text-white shadow-sm">
-        {/* Nút Quay lại */}
-        <Link to="/" className="flex items-center gap-2 font-bold hover:opacity-80 transition-opacity">
-          <img src={Icons.ArrowBackLong} alt="back" className="w-4 h-4 filter brightness-0 invert" />
-          Quay lại
-        </Link>
-
-        {/* Cụm nút chức năng bên phải */}
-        <div className="flex items-center gap-3">
-          <Link to="/management" className="flex items-center gap-2 bg-white text-[#5b6cf7] px-4 py-1.5 rounded shadow-sm font-bold hover:bg-gray-50 transition-colors">
-            <img src={Icons.Home} alt="manage" className="w-4 h-4 object-contain" />
-            Quản lý
-          </Link>
-          <Link to="/cashier" className="flex items-center gap-2 bg-white text-[#5b6cf7] px-4 py-1.5 rounded shadow-sm font-bold hover:bg-gray-50 transition-colors">
-            <img src={Icons.MoneyBag} alt="cashier" className="w-4 h-4 object-contain" />
-            Thu ngân
-          </Link>
-        </div>
-      </header>
 
       {/* ---------------- 2. KHÔNG GIAN LÀM VIỆC CHÍNH ---------------- */}
       {/* Nền xanh đen đặc trưng của màn hình bếp (Navy/Slate) */}
@@ -48,7 +28,8 @@ function Kitchen() {
             <div className="relative mb-2 mr-4">
               <input 
                 type="text" 
-                className="bg-transparent border border-gray-400/50 text-white rounded-md pl-3 pr-8 py-1 text-sm outline-none focus:border-white/80 w-[250px] transition-colors"
+                placeholder="Tìm kiếm mã đơn, tên món..."
+                className="bg-white/10 border border-white/20 text-white rounded-full pl-10 pr-4 py-2 text-[13px] outline-none focus:bg-white/20 focus:border-white/50 w-[400px] transition-all placeholder-white/50 backdrop-blur-md shadow-sm"
               />
               <img 
                 src={Icons.Search} 
