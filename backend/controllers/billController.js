@@ -252,8 +252,6 @@ const billController = {
         .input("TONGTHANHTOAN", sql.Decimal(18, 0), 0).query(`
           INSERT INTO HOADON (MAHOADON, MABAN, MANVIEN, GIOBATDAU, NGAY, TRANGTHAI, TONGTIENGIO, TONGTIENHANG, TONGTHANHTOAN)
           VALUES (@MAHOADON, @MABAN, @MANVIEN, @GIOBATDAU, @NGAY, @TRANGTHAI, @TONGTIENGIO, @TONGTIENHANG, @TONGTHANHTOAN);
-          
-          -- CẬP NHẬT TRẠNG THÁI BÀN
           UPDATE BAN SET TRANGTHAI = N'Đang sử dụng' WHERE MABAN = @MABAN;
         `);
 
@@ -448,6 +446,84 @@ const billController = {
       res.json({ success: true, message: "Đã kích hoạt giờ chơi!" });
     } catch (err) {
       console.error("Lỗi updateStartTime:", err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  getDashboardStats: async (req, res) => {
+    try {
+      const pool = await poolPromise;
+
+      // 1. Lấy ngày lọc (mặc định hôm nay VN)
+      const selectedDate =
+        req.query.date ||
+        new Intl.DateTimeFormat("sv-SE", {
+          timeZone: "Asia/Ho_Chi_Minh",
+        }).format(new Date());
+
+      // 2. Lấy đơn ĐÃ XONG và DOANH THU (Từ HOADON)
+      const statsResult = await pool
+        .request()
+        .input("SelectedDate", sql.VarChar, selectedDate).query(`
+          SELECT COUNT(MAHOADON) as TotalOrders, ISNULL(SUM(TONGTHANHTOAN), 0) as TotalRevenue
+          FROM HOADON 
+          WHERE TRANGTHAI = N'Đã thanh toán' 
+          AND CONVERT(VARCHAR(10), NGAY, 126) = @SelectedDate
+        `);
+
+      // 3. ĐẾM SỐ BÀN ĐANG PHỤC VỤ (Lấy trực tiếp từ bảng BAN)
+      const tableStats = await pool.request().query(`
+        SELECT 
+          COUNT(*) as Total, 
+          SUM(CASE WHEN TRANGTHAI IN (N'Đang sử dụng', N'Đang chơi') THEN 1 ELSE 0 END) as Active 
+        FROM BAN
+      `);
+      const totalTables = tableStats.recordset[0].Total || 1;
+      const activeTables = tableStats.recordset[0].Active || 0;
+      const occupancyRate = Math.round((activeTables / totalTables) * 100);
+
+      // 4. Dữ liệu biểu đồ theo giờ
+      const chartResult = await pool
+        .request()
+        .input("SelectedDate", sql.VarChar, selectedDate).query(`
+          SELECT DATEPART(HOUR, NGAY) as Hour, SUM(TONGTHANHTOAN) as Revenue, COUNT(MAHOADON) as Orders
+          FROM HOADON 
+          WHERE TRANGTHAI = N'Đã thanh toán' AND CONVERT(VARCHAR(10), NGAY, 126) = @SelectedDate
+          GROUP BY DATEPART(HOUR, NGAY)
+        `);
+
+      const hourlyData = Array.from({ length: 24 }, (_, i) => ({
+        time: `${i}h`,
+        revenue: 0,
+        orders: 0,
+      }));
+      chartResult.recordset.forEach((row) => {
+        if (hourlyData[row.Hour]) {
+          hourlyData[row.Hour].revenue = row.Revenue;
+          hourlyData[row.Hour].orders = row.Orders;
+        }
+      });
+
+      // 5. Giao dịch gần đây
+      const recentTxResult = await pool.request().query(`
+        SELECT TOP 5 H.MAHOADON, B.TENBAN, H.TONGTHANHTOAN, FORMAT(H.NGAY, 'dd/MM') + ' ' + FORMAT(H.GIOKETTHUC, 'HH:mm') as THOIGIAN_STR
+        FROM HOADON H JOIN BAN B ON H.MABAN = B.MABAN
+        WHERE H.TRANGTHAI = N'Đã thanh toán'
+        ORDER BY H.NGAY DESC, H.GIOKETTHUC DESC
+      `);
+
+      res.json({
+        success: true,
+        stats: {
+          completedOrders: statsResult.recordset[0].TotalOrders || 0,
+          revenue: statsResult.recordset[0].TotalRevenue || 0,
+          activeOrders: activeTables,
+          occupancyRate: occupancyRate,
+        },
+        hourlyData,
+        recentTransactions: recentTxResult.recordset,
+      });
+    } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }
   },

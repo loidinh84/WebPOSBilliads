@@ -99,7 +99,6 @@ function Tables() {
 
       if (res.ok) {
         const data = await res.json();
-        console.log("Dữ liệu bàn nhận được:", data);
         setTables(data);
       } else {
         console.error("Lỗi xác thực hoặc không tìm thấy API");

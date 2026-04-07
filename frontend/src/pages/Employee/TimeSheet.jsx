@@ -1,163 +1,328 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 import * as Icons from "../../assets/icons/index";
 import EmployeeModal from "./Modal";
+import axios from "axios";
 
 function Timesheet() {
-  // State điều hướng tuần
-  const [currentWeek, setCurrentWeek] = useState("Tuần 1 - Th. 3 2026");
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   // ─── State: Modal ─────────────────────────────────────────────────────────
-  const [modal, setModal] = useState({ isOpen: false, type: "" });
+  const [modal, setModal] = useState({ isOpen: false, type: "", data: null });
 
-  const openModal = (type) => setModal({ isOpen: true, type });
-  const closeModal = () => setModal({ isOpen: false, type: "" });
+  const openModal = (type, data = null) =>
+    setModal({ isOpen: true, type, data });
+  const closeModal = () => setModal({ isOpen: false, type: "", data: null });
+
+  // ─── Logic: Xử lý Ngày tháng ─────────────────────────────────────────────
+  const getWeekRange = (date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d.getFullYear(), d.getMonth(), diff);
+
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const nextDay = new Date(monday);
+      nextDay.setDate(monday.getDate() + i);
+      const y = nextDay.getFullYear();
+      const m = String(nextDay.getMonth() + 1).padStart(2, "0");
+      const dayVal = String(nextDay.getDate()).padStart(2, "0");
+      days.push(`${y}-${m}-${dayVal}`);
+    }
+    return days;
+  };
+
+  const weekDays = getWeekRange(currentDate);
+
+  useEffect(() => {
+    fetchAttendance();
+  }, [currentDate]);
+
+  const fetchAttendance = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`http://localhost:5000/api/attendance`, {
+        params: {
+          startDate: weekDays[0],
+          endDate: weekDays[6],
+        },
+      });
+      setEmployees(response.data);
+    } catch (error) {
+      console.error("Lỗi khi tải bảng chấm công:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changeWeek = (offset) => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(currentDate.getDate() + offset * 7);
+    setCurrentDate(newDate);
+  };
+
+  // ─── Render Helper: Trạng thái ──────────────────────────────────────────
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "DUNG_GIO":
+        return "bg-blue-600";
+      case "TRE_SOM":
+        return "bg-purple-600";
+      case "THIEU":
+        return "bg-red-500";
+      case "CHUA_CHAM":
+        return "bg-orange-500";
+      default:
+        return "bg-gray-200";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F0F2F5] font-sans text-black text-[13px]">
-      {/* Header & Nav giữ nguyên */}
       <DashboardHeader storeName="Billiards Lục Lợi" />
-      <DashboardNav activeTab="Nhân viên" /> {/* Chú ý tôi đổi active tab sang Nhân viên nhé */}
+      <DashboardNav activeTab="Nhân viên" />
 
       <main className="max-w-[1600px] mx-auto p-4 flex flex-col gap-4">
-        
-        {/* Tiêu đề trang */}
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Bảng chấm công</h1>
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+          Bảng chấm công
+        </h1>
 
-        {/* ---------------- TOOLBAR (Tìm kiếm, Điều hướng tuần, Nút thao tác) ---------------- */}
-        <div className="flex justify-between items-center">
-          
-          {/* Cụm Tìm kiếm */}
-          <div className="flex items-center border border-gray-300 rounded-md px-3 py-1.5 bg-white w-[250px] focus-within:border-blue-500 transition-colors shadow-sm">
-            <img src={Icons.Search} alt="search" className="w-4 h-4 opacity-50 mr-2 filter brightness-0" />
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm nhân viên" 
-              className="w-full outline-none text-sm text-gray-700 bg-transparent"
+        {/* Toolbar */}
+        <div className="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 w-[300px] focus-within:bg-white transition-all shadow-inner">
+            <img
+              src={Icons.Search}
+              alt="search"
+              className="w-4 h-4 opacity-40 mr-3"
             />
-            <img src={Icons.ArrowDown} alt="dropdown" className="w-3 h-3 opacity-50 filter brightness-0 cursor-pointer" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm nhân viên..."
+              className="w-full outline-none text-[13px] bg-transparent"
+            />
           </div>
 
-          {/* Cụm Điều hướng tuần */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center border border-gray-300 rounded-md bg-white shadow-sm overflow-hidden">
-              <button className="px-3 py-1.5 hover:bg-gray-100 transition-colors border-r border-gray-300 cursor-pointer font-bold text-gray-600">
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => changeWeek(-1)}
+                className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all font-bold cursor-pointer"
+              >
                 &lt;
               </button>
-              <span className="px-4 py-1.5 font-medium text-gray-800 text-sm">
-                {currentWeek}
+              <span className="px-4 font-bold text-gray-700 min-w-[180px] text-center">
+                {`${weekDays[0].split("-").reverse().join("/")} - ${weekDays[6].split("-").reverse().join("/")}`}
               </span>
-              <button className="px-3 py-1.5 hover:bg-gray-100 transition-colors border-l border-gray-300 cursor-pointer font-bold text-gray-600">
+              <button
+                onClick={() => changeWeek(1)}
+                className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all font-bold cursor-pointer"
+              >
                 &gt;
               </button>
             </div>
-            <button className="border border-gray-300 rounded-md px-4 py-1.5 bg-white hover:bg-gray-50 text-gray-700 font-medium shadow-sm cursor-pointer transition-colors">
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="px-4 py-2 bg-[#5D5FEF] text-white rounded-lg font-bold hover:bg-[#4b4dbf] transition-all"
+            >
               Tuần này
             </button>
           </div>
 
-          {/* Cụm Nút Thao tác */}
           <div className="flex items-center gap-2">
-            {/* Nút Xem theo ca -> mở modal VIEW_BY_SHIFT */}
             <button
               onClick={() => openModal("VIEW_BY_SHIFT")}
-              className="flex items-center gap-2 border border-gray-300 rounded-md px-4 py-1.5 bg-white hover:bg-gray-50 text-gray-700 font-medium shadow-sm cursor-pointer transition-colors"
+              className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg font-bold hover:bg-gray-50 transition-all text-gray-600"
             >
-              <img src={Icons.Calendar2} alt="view" className="w-4 h-4 filter brightness-0 opacity-70" />
+              <img
+                src={Icons.Calendar2}
+                alt="view"
+                className="w-4 h-4 opacity-60"
+              />
               Xem theo ca
             </button>
-            {/* Nút Duyệt chấm công -> mở modal APPROVE_ATTENDANCE */}
             <button
               onClick={() => openModal("APPROVE_ATTENDANCE")}
-              className="flex items-center gap-2 border border-gray-300 rounded-md px-4 py-1.5 bg-white hover:bg-gray-50 text-gray-700 font-medium shadow-sm cursor-pointer transition-colors"
+              className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg font-bold hover:bg-gray-50 transition-all text-gray-600"
             >
-              <img src={Icons.Calendar} alt="approve" className="w-4 h-4 filter brightness-0 opacity-70" />
+              <img
+                src={Icons.Calendar}
+                alt="approve"
+                className="w-4 h-4 opacity-60"
+              />
               Duyệt chấm công
             </button>
           </div>
-
         </div>
 
-        {/* ---------------- KHU VỰC BẢNG (TABLE) ---------------- */}
-        <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-[500px]">
+        {/* Table Area */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[600px] flex flex-col">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-center whitespace-nowrap">
-              
-              {/* Table Header */}
-              <thead className="bg-white border-b border-gray-200 text-sm text-gray-800 font-bold">
-                <tr>
-                  <th className="p-3 border-r border-gray-200 w-[15%]">
-                    <div className="flex justify-between items-center px-2">
-                      <span>Ca làm việc</span>
-                      <button className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 text-lg cursor-pointer transition-colors">
-                        +
-                      </button>
-                    </div>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-50/50 border-b border-gray-100 text-[12px] font-bold text-gray-500 uppercase tracking-widest text-center">
+                  <th className="p-4 text-left border-r border-gray-50 w-[200px]">
+                    Nhân viên
                   </th>
-                  <th className="p-3 border-r border-gray-200 w-[10%]">Thứ hai</th>
-                  <th className="p-3 border-r border-gray-200 w-[10%]">Thứ ba</th>
-                  <th className="p-3 border-r border-gray-200 w-[10%]">Thứ tư</th>
-                  <th className="p-3 border-r border-gray-200 w-[10%]">Thứ năm</th>
-                  <th className="p-3 border-r border-gray-200 w-[10%]">Thứ sáu</th>
-                  {/* Cột Thứ Bảy có text màu xanh dương theo thiết kế */}
-                  <th className="p-3 border-r border-gray-200 w-[10%] text-blue-500">Thứ bảy</th>
-                  <th className="p-3 border-r border-gray-200 w-[10%] text-red-500">Chủ nhật</th>
-                  <th className="p-3 w-[15%]">Lương dự kiến</th>
+                  <th className="p-4 border-r border-gray-50">Thứ hai</th>
+                  <th className="p-4 border-r border-gray-50">Thứ ba</th>
+                  <th className="p-4 border-r border-gray-50">Thứ tư</th>
+                  <th className="p-4 border-r border-gray-50">Thứ năm</th>
+                  <th className="p-4 border-r border-gray-50">Thứ sáu</th>
+                  <th className="p-4 border-r border-gray-50 text-blue-500">
+                    Thứ bảy
+                  </th>
+                  <th className="p-4 border-r border-gray-50 text-red-500">
+                    Chủ nhật
+                  </th>
+                  <th className="p-4 bg-blue-50/30 text-blue-700">Tổng giờ</th>
                 </tr>
               </thead>
-
-              {/* Table Body - Hiển thị Trạng thái Trống (Empty State) */}
-              <tbody>
-                <tr>
-                  {/* Cột trái (Trống) */}
-                  <td className="border-r border-gray-200 h-[350px]"></td>
-                  
-                  {/* Ô span qua 8 cột còn lại để chứa thông báo */}
-                  <td colSpan="8" className="h-[350px] align-middle">
-                    <div className="flex flex-col items-center justify-center text-gray-500">
-                      {/* Icon User Empty */}
-                      <div className="w-12 h-12 mb-3 opacity-60">
-                        <img src={Icons.User} alt="empty" className="w-full h-full object-contain filter brightness-0" />
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan="9" className="h-[400px] text-center">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="w-8 h-8 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                        <p className="font-bold text-gray-400">
+                          Đang tải bảng chấm công...
+                        </p>
                       </div>
-                      <p className="mb-1 text-[13px]">Nhân viên chưa có ca làm việc.</p>
-                      <p className="text-[13px]">
-                        Nhấn <span className="text-blue-600 font-medium cursor-pointer hover:underline">vào đây</span> để thêm mới ca làm việc.
-                      </p>
-                    </div>
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
+                ) : employees.length > 0 ? (
+                  employees.map((emp) => (
+                    <tr
+                      key={emp.id}
+                      className="hover:bg-gray-50/50 transition-colors"
+                    >
+                      <td className="p-4 border-r border-gray-50">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900 text-[14px]">
+                            {emp.name}
+                          </span>
+                          <span className="text-[11px] text-gray-400 font-bold uppercase">
+                            {emp.role}
+                          </span>
+                        </div>
+                      </td>
+                      {weekDays.map((date) => {
+                        const dayData = emp.schedule[date];
+                        return (
+                          <td
+                            key={date}
+                            className="p-2 border-r border-gray-50 align-middle cursor-pointer hover:bg-blue-50/50 transition-all group/cell"
+                            onClick={() =>
+                              openModal("MANUAL_ATTENDANCE", {
+                                staffId: emp.id,
+                                staffName: emp.name,
+                                date: date,
+                                dayData: dayData,
+                              })
+                            }
+                          >
+                            {dayData && dayData.status !== "NGHI" ? (
+                              <div className="flex flex-col items-center gap-1">
+                                <div
+                                  className={`w-2 h-2 rounded-full ${getStatusStyle(dayData.status)}`}
+                                ></div>
+                                <div className="text-[11px] font-bold text-gray-800">
+                                  {dayData.actual || "00:00 - 00:00"}
+                                </div>
+                                <div className="text-[9px] text-gray-400 italic">
+                                  {dayData.planned}
+                                </div>
+                                {dayData.isCompleted && (
+                                  <div className="text-[9px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full mt-0.5 border border-green-100 uppercase tracking-tighter">
+                                    Hoàn thành ca
+                                  </div>
+                                )}
+                                {dayData.salary > 0 && (
+                                  <div className="text-[11px] font-black text-blue-900 mt-1">
+                                    {new Intl.NumberFormat("vi-VN").format(
+                                      dayData.salary,
+                                    )}
+                                    đ
+                                  </div>
+                                )}
+                                {dayData.discrepancy && (
+                                  <div
+                                    className={`text-[10px] font-bold mt-0.5 ${dayData.status === "TRE_SOM" || dayData.status === "THIEU" ? "text-red-500" : "text-orange-500"}`}
+                                  >
+                                    {dayData.discrepancy}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-[11px] text-gray-300 font-medium italic text-center">
+                                Nghỉ
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td className="p-4 font-bold text-blue-700 text-center bg-blue-50/10">
+                        {emp.totalHours}h
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="9"
+                      className="h-[400px] text-center text-gray-400"
+                    >
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <img
+                          src={Icons.User}
+                          alt="empty"
+                          className="w-12 h-12 opacity-10"
+                        />
+                        <p className="font-medium">
+                          Không tìm thấy dữ liệu trong tuần này
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
-
             </table>
           </div>
 
-          {/* ---------------- CHÚ THÍCH TRẠNG THÁI (LEGEND) ---------------- */}
-          <div className="mt-auto border-t border-gray-100 bg-gray-50/50 p-4 flex justify-center items-center gap-6 text-[12px] text-gray-600">
+          <div className="mt-auto border-t border-gray-100 bg-gray-50/30 p-4 flex justify-center items-center gap-8 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-blue-600"></span> Đúng giờ
+              <span className="w-3 h-3 rounded-full bg-blue-600 shadow-sm"></span>{" "}
+              Đúng giờ
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-purple-600"></span> Đi muộn / về sớm
+              <span className="w-3 h-3 rounded-full bg-purple-600 shadow-sm"></span>{" "}
+              Muộn/Sớm
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-red-500"></span> Chấm công thiếu
+              <span className="w-3 h-3 rounded-full bg-red-500 shadow-sm"></span>{" "}
+              Thiếu
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-orange-500"></span> Chưa chấm công
+              <span className="w-3 h-3 rounded-full bg-orange-500 shadow-sm"></span>{" "}
+              Chưa chấm
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-gray-400"></span> Nghỉ làm
+              <span className="w-3 h-3 rounded-full bg-gray-200 shadow-sm"></span>{" "}
+              Nghỉ làm
             </div>
           </div>
-
         </div>
       </main>
-      {/* Modal trung tâm - xử lý Xem theo ca và Duyệt chấm công */}
+
       <EmployeeModal
         isOpen={modal.isOpen}
         onClose={closeModal}
         type={modal.type}
+        data={modal.data}
+        onSaveSuccess={fetchAttendance}
       />
     </div>
   );

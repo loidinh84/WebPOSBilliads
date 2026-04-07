@@ -7,6 +7,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 
 const API_BASE_URL = "http://localhost:5000/api/employees";
+const API_LEAVE_URL = "http://localhost:5000/api/leave";
 
 function StaffList() {
   const [employees, setEmployees] = useState([]);
@@ -27,47 +28,70 @@ function StaffList() {
     }
   };
 
+  const fetchLeaveRequests = async () => {
+    try {
+      const response = await axios.get(`${API_LEAVE_URL}/pending`);
+      const mappedRequests = response.data.map((req) => ({
+        id: req.MAYEUCAU,
+        name: req.FullName,
+        reason: `${req.LYDO} (${new Date(req.NGAYBATDAU).toLocaleDateString("vi-VN")} - ${new Date(req.NGAYKETTHUC).toLocaleDateString("vi-VN")})`,
+        employeeId: req.MANVIEN,
+      }));
+      setRequests(mappedRequests);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        console.warn("Route /api/leave/pending chưa tồn tại hoặc sai tên");
+        setRequests([]);
+      } else {
+        console.error("Lỗi khi tải yêu cầu nghỉ phép:", err);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchEmployees();
+    fetchLeaveRequests();
   }, []);
 
   // ─── State: Quản lý Bộ lọc & Tìm kiếm ─────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all"); // all, working, off
-  const [filterDept, setFilterDept] = useState("Chọn phòng ban");
   const [filterRole, setFilterRole] = useState("Chọn chức danh");
 
   // ─── LOGIC LỌC TỔNG HỢP ───────────────────────────────────────────────────
   const filteredEmployees = employees.filter((emp) => {
     // 1. Lọc theo Tìm kiếm (Tên, Mã, SĐT)
     const matchesSearch =
-      (emp.TENNGUOIDUNG || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.TENNGUOIDUNG || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       (emp.MANVIEN || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (emp.SDT || "").includes(searchTerm);
 
     // 2. Lọc theo Trạng thái (Radio)
-    const matchesStatus = filterStatus === "all" || emp.TRANGTHAI === (filterStatus === "working" ? 1 : 0);
+    // Dựa trên employeeModel: 1 hoặc NULL/undefined là Đang làm việc, 0 là Đã nghỉ
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "working" &&
+        (emp.TRANGTHAI === 1 ||
+          emp.TRANGTHAI === true ||
+          emp.TRANGTHAI === null ||
+          emp.TRANGTHAI === undefined)) ||
+      (filterStatus === "off" &&
+        (emp.TRANGTHAI === 0 || emp.TRANGTHAI === false));
 
-    // 3. Lọc theo Phòng ban (Dropdown)
-    const matchesDept =
-      filterDept === "Chọn phòng ban" || emp.department === filterDept;
-
-    // 4. Lọc theo Chức danh (Dropdown)
+    // 3. Lọc theo Chức danh (Dropdown)
+    // Cho phép khớp cả tên cũ (ví dụ: Quản lý) và tên mới (Quản lý (40k))
     const matchesRole =
-      filterRole === "Chọn chức danh" || emp.CHUCVU === filterRole;
+      filterRole === "Chọn chức danh" ||
+      (emp.CHUCVU &&
+        emp.CHUCVU.toLowerCase().includes(filterRole.toLowerCase()));
 
-    return matchesSearch && matchesStatus && matchesDept && matchesRole;
+    return matchesSearch && matchesStatus && matchesRole;
   });
 
   // ─── State khác (Yêu cầu & Modal) ────────────────────────────────────────
-  const [requests, setRequests] = useState([
-    {
-      id: 1,
-      name: "Trần Thanh Khang",
-      reason: "Gửi yêu cầu nghỉ phép: 05/04/2026",
-      employeeId: 1,
-    },
-  ]);
+  const [requests, setRequests] = useState([]);
 
   const [modal, setModal] = useState({ isOpen: false, type: "", data: null });
 
@@ -80,9 +104,6 @@ function StaffList() {
     try {
       // Map frontend fields to backend schema
       const payload = {
-        MANVIEN: formData.staffId || `NV${Date.now().toString().slice(-4)}`,
-        MACCH: formData.checkInId,
-        TENDANGNHAP: formData.username || formData.staffId || `user${Date.now().toString().slice(-4)}`,
         TENNGUOIDUNG: formData.name,
         SDT: formData.phone,
         EMAIL: formData.email || null,
@@ -99,7 +120,11 @@ function StaffList() {
       fetchEmployees();
     } catch (err) {
       console.error("Lỗi khi thêm nhân viên:", err);
-      Swal.fire("Lỗi", err.response?.data?.message || "Không thể thêm nhân viên.", "error");
+      Swal.fire(
+        "Lỗi",
+        err.response?.data?.message || "Không thể thêm nhân viên.",
+        "error",
+      );
     }
   };
 
@@ -151,16 +176,31 @@ function StaffList() {
     }
   };
 
-  const handleApproveRequest = (reqId) => {
-    const req = requests.find((r) => r.id === reqId);
-    if (req) {
-      setEmployees((prev) =>
-        prev.map((emp) =>
-          emp.id === req.employeeId ? { ...emp, status: "off" } : emp,
-        ),
+  const handleApproveRequest = async (reqId) => {
+    try {
+      await axios.post(`${API_LEAVE_URL}/approve/${reqId}`);
+      Swal.fire(
+        "Thành công",
+        "Đã duyệt yêu cầu và cập nhật trạng thái nhân viên!",
+        "success",
       );
+      fetchEmployees();
+      fetchLeaveRequests();
+    } catch (err) {
+      console.error("Lỗi khi duyệt yêu cầu:", err);
+      Swal.fire("Lỗi", "Không thể duyệt yêu cầu này.", "error");
     }
-    setRequests((prev) => prev.filter((r) => r.id !== reqId));
+  };
+
+  const handleRejectRequest = async (reqId) => {
+    try {
+      await axios.post(`${API_LEAVE_URL}/reject/${reqId}`);
+      Swal.fire("Thành công", "Đã từ chối yêu cầu nghỉ phép!", "success");
+      fetchLeaveRequests();
+    } catch (err) {
+      console.error("Lỗi khi từ chối yêu cầu:", err);
+      Swal.fire("Lỗi", "Không thể từ chối yêu cầu này.", "error");
+    }
   };
 
   return (
@@ -234,30 +274,6 @@ function StaffList() {
             </div>
           </div>
 
-          {/* Phòng ban */}
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-[15px] font-bold text-gray-800 mb-3 uppercase text-[11px]">
-              Phòng ban
-            </h3>
-            <div className="relative">
-              <select
-                value={filterDept}
-                onChange={(e) => setFilterDept(e.target.value)}
-                className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#5D5FEF] text-gray-600 font-medium cursor-pointer"
-              >
-                <option>Chọn phòng ban</option>
-                <option>Điều hành</option>
-                <option>Kế toán</option>
-                <option>Dịch vụ</option>
-              </select>
-              <img
-                src={Icons.ArrowDown}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none opacity-50"
-                alt=""
-              />
-            </div>
-          </div>
-
           {/* Chức danh */}
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
             <h3 className="text-[15px] font-bold text-gray-800 mb-3 uppercase text-[11px]">
@@ -270,9 +286,10 @@ function StaffList() {
                 className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-[14px] outline-none focus:border-[#5D5FEF] text-gray-600 font-medium cursor-pointer"
               >
                 <option>Chọn chức danh</option>
-                <option>Quản lý</option>
-                <option>Thu ngân</option>
-                <option>Nhân viên bàn</option>
+                <option value="Admin">Admin</option>
+                <option value="Quản lý">Quản lý</option>
+                <option value="Nhà bếp">Nhà bếp</option>
+                <option value="Thu ngân">Thu ngân</option>
               </select>
               <img
                 src={Icons.ArrowDown}
@@ -340,7 +357,7 @@ function StaffList() {
           </div>
 
           <div className="bg-white rounded border border-gray-200 shadow-sm min-h-[500px] flex flex-col overflow-hidden">
-            <div className="grid grid-cols-[50px_100px_1.2fr_1.2fr_1.8fr_1.2fr_1.4fr] bg-[#EDF2F9] border-b border-gray-200">
+            <div className="grid grid-cols-[50px_100px_1.2fr_1.2fr_1.8fr_1.2fr_1.4fr_120px] bg-[#EDF2F9] border-b border-gray-200">
               <div className="p-4 flex justify-center border-r border-gray-200">
                 <input
                   type="checkbox"
@@ -379,7 +396,7 @@ function StaffList() {
                 {filteredEmployees.map((emp) => (
                   <div
                     key={emp.MANVIEN}
-                    className="grid grid-cols-[50px_100px_1.2fr_1.2fr_1.8fr_1.2fr_1.4fr_100px] border-b border-gray-100 hover:bg-blue-50/30 transition-all items-center group"
+                    className="grid grid-cols-[50px_100px_1.2fr_1.2fr_1.8fr_1.2fr_1.4fr_120px] border-b border-gray-100 hover:bg-blue-50/30 transition-all items-center group"
                   >
                     <div className="p-4 flex justify-center border-r border-gray-50 h-full items-center">
                       <input
@@ -412,19 +429,21 @@ function StaffList() {
                     </div>
                     <div
                       className="p-4 text-[14px] text-gray-800 font-bold border-r border-gray-50 group-hover:text-[#5D5FEF] transition-colors cursor-pointer"
-                      onClick={() => openModal("VIEW_BY_EMPLOYEE", { 
-                        ...emp, 
-                        name: emp.TENNGUOIDUNG, 
-                        phone: emp.SDT, 
-                        email: emp.EMAIL,
-                        address: emp.DIACHI,
-                        role: emp.CHUCVU,
-                        staffId: emp.MANVIEN,
-                        checkInId: emp.MACCH,
-                        gender: emp.GIOITINH,
-                        dob: emp.NGAYSINH,
-                        idCard: emp.CCCD
-                      })}
+                      onClick={() =>
+                        openModal("VIEW_BY_EMPLOYEE", {
+                          ...emp,
+                          name: emp.TENNGUOIDUNG,
+                          phone: emp.SDT,
+                          email: emp.EMAIL,
+                          address: emp.DIACHI,
+                          role: emp.CHUCVU,
+                          staffId: emp.MANVIEN,
+                          checkInId: emp.MACCH,
+                          gender: emp.GIOITINH,
+                          dob: emp.NGAYSINH,
+                          idCard: emp.CCCD,
+                        })
+                      }
                     >
                       {emp.TENNGUOIDUNG}
                     </div>
@@ -435,26 +454,30 @@ function StaffList() {
                       {emp.CCCD || "---"}
                     </div>
                     <div className="p-4 flex justify-center gap-3">
-                      <button 
-                        onClick={() => openModal("EDIT", { 
-                          ...emp, 
-                          name: emp.TENNGUOIDUNG, 
-                          phone: emp.SDT, 
-                          email: emp.EMAIL,
-                          address: emp.DIACHI,
-                          role: emp.CHUCVU,
-                          staffId: emp.MANVIEN,
-                          checkInId: emp.MACCH,
-                          gender: emp.GIOITINH,
-                          dob: emp.NGAYSINH,
-                          idCard: emp.CCCD
-                        })}
+                      <button
+                        onClick={() =>
+                          openModal("EDIT", {
+                            ...emp,
+                            name: emp.TENNGUOIDUNG,
+                            phone: emp.SDT,
+                            email: emp.EMAIL,
+                            address: emp.DIACHI,
+                            role: emp.CHUCVU,
+                            staffId: emp.MANVIEN,
+                            checkInId: emp.MACCH,
+                            gender: emp.GIOITINH,
+                            dob: emp.NGAYSINH,
+                            idCard: emp.CCCD,
+                          })
+                        }
                         className="text-blue-500 hover:text-blue-700 transition-colors"
                       >
                         <i className="fas fa-edit"></i> Sửa
                       </button>
-                      <button 
-                        onClick={() => handleDeleteEmployee(emp.MANVIEN, emp.TENDANGNHAP)}
+                      <button
+                        onClick={() =>
+                          handleDeleteEmployee(emp.MANVIEN, emp.TENDANGNHAP)
+                        }
                         className="text-red-500 hover:text-red-700 transition-colors"
                       >
                         <i className="fas fa-trash"></i> Xóa
@@ -486,6 +509,7 @@ function StaffList() {
         onUpdateEmployee={handleUpdateEmployee}
         requests={requests}
         onApproveRequest={handleApproveRequest}
+        onRejectRequest={handleRejectRequest}
       />
     </div>
   );

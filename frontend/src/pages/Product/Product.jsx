@@ -806,7 +806,10 @@ function Product() {
                   })
                   .map((cat) => (
                     <li
-                      key={cat.MADANHMUC}
+                      key={
+                        cat.MADANHMUC ||
+                        `cat-${Math.random().toString(36).substr(2, 9)}`
+                      }
                       className={`group flex items-center justify-between p-2 rounded text-sm cursor-pointer hover:bg-blue-50 transition-all ${
                         selectedCategory === cat.MADANHMUC
                           ? "bg-blue-100 text-blue-700 font-bold"

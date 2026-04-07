@@ -20,9 +20,8 @@ function ActionHistory() {
     fetch("http://localhost:5000/api/action-history")
       .then((response) => response.json())
       .then((result) => {
-        console.log("Dữ liệu nhận được từ Backend:", result); // Mở F12 lên xem dòng này nhé Bro!
         if (result.success) {
-          setLogs(result.data); // Đổ dữ liệu thật vào state
+          setLogs(result.data);
         }
       })
       .catch((error) => {

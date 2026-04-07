@@ -13,5 +13,6 @@ router.put("/:id/transfer", billController.transferBill);
 router.put("/:id/checkout", billController.checkoutBill);
 router.put("/:id/cancel", billController.cancelInvoice);
 router.patch("/:id/start", billController.updateStartTime);
+router.get("/dashboard/stats", billController.getDashboardStats);
 
 module.exports = router;

@@ -1,0 +1,30 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: always
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=thanhLoi84@
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=thanhLoi84@
+      - DB_NAME=web_pos_billiards
+    volumes:
+      - ./frontend/dist:/frontend/dist
+    depends_on:
+      - db
+
+volumes:
+  mssql_data:
