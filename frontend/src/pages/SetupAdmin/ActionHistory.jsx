@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardNav from "../../components/DashboardNav";
 
@@ -11,66 +11,38 @@ function ActionHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTime, setFilterTime] = useState("Hôm nay");
 
-  // Dữ liệu mẫu
-  const [logs] = useState([
-    {
-      id: 1,
-      action: "THANH TOÁN HÓA ĐƠN",
-      time: "2026/03/31 22:30",
-      target: "HD000001",
-      user: "Lợi - Thu ngân",
-      details: "Thanh toán hóa đơn: THANH TOÁN HÓA ĐƠN",
-    },
-    {
-      id: 2,
-      action: "XÓA HÓA ĐƠN",
-      time: "2026/03/31 22:15",
-      target: "HD000001",
-      user: "Tài - Kế Toán",
-      details: "Mô tả xử sinh tác số: XÓA HÓA ĐƠN",
-    },
-    {
-      id: 3,
-      action: "XÓA HÀNG HÓA",
-      time: "2026/03/31 21:45",
-      target: "SP000025",
-      user: "Khang - Thủ Kho",
-      details: "Mô tả xử sinh tác số: XÓA HÀNG HÓA",
-    },
-    {
-      id: 4,
-      action: "CẬP NHẬT GIÁ",
-      time: "2026/03/31 20:30",
-      target: "SP000019",
-      user: "Levis - Kinh Doanh",
-      details: "Thay đổi giá bán sản phẩm",
-    },
-    {
-      id: 5,
-      action: "THANH TOÁN HÓA ĐƠN",
-      time: "2026/03/31 20:10",
-      target: "HD000002",
-      user: "Lợi - Thu ngân",
-      details: "Thanh toán hóa đơn: THANH TOÁN HÓA ĐƠN",
-    },
-  ]);
+  // 1. Khởi tạo state logs là mảng rỗng
+  const [logs, setLogs] = useState([]);
 
-  // LOGIC LỌC DỮ LIỆU
+  // 2. GỌI API BACKEND KHI VỪA MỞ TRANG LÊN
+  useEffect(() => {
+    // Sửa lại port 5000 cho đúng với port Backend của Bro nếu cần
+    fetch("http://localhost:5000/api/action-history")
+      .then((response) => response.json())
+      .then((result) => {
+        console.log("Dữ liệu nhận được từ Backend:", result); // Mở F12 lên xem dòng này nhé Bro!
+        if (result.success) {
+          setLogs(result.data); // Đổ dữ liệu thật vào state
+        }
+      })
+      .catch((error) => {
+        console.error("Lỗi khi gọi API Lịch sử thao tác:", error);
+      });
+  }, []);
+
+  // 3. LOGIC LỌC DỮ LIỆU (Đã thêm check an toàn để không bị lỗi undefined)
   const filteredLogs = logs.filter((log) => {
-    // 1. Lọc theo Thao tác (Dropdown)
-    const matchesAction =
-      filterAction === "-- Tất cả --" ||
-      log.action.includes(filterAction.toUpperCase());
+    const actionStr = log.action || "";
+    const userStr = log.user || "";
+    const targetStr = log.target || "";
+    const detailsStr = log.details || "";
 
-    // 2. Lọc theo Người dùng (Dropdown)
-    const matchesUserSelect =
-      filterUserSelect === "-- Tất cả --" || log.user === filterUserSelect;
-
-    // 3. Lọc theo Ô tìm kiếm (Tìm trong tên nhân viên hoặc chi tiết)
+    const matchesAction = filterAction === "-- Tất cả --" || actionStr.toUpperCase().includes(filterAction.toUpperCase());
+    const matchesUserSelect = filterUserSelect === "-- Tất cả --" || userStr.includes(filterUserSelect);
     const matchesSearch =
-      log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.target.toLowerCase().includes(searchTerm.toLowerCase());
+      userStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      detailsStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      targetStr.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesAction && matchesUserSelect && matchesSearch;
   });
@@ -82,15 +54,12 @@ function ActionHistory() {
 
       <main className="max-w-[1600px] mx-auto p-4 flex gap-6">
         {/* --- SIDEBAR BỘ LỌC --- */}
-        <aside className="w-[250px] space-y-4 shrink-0">
-          <div className="space-y-4 text-black">
-            {/* Bộ lọc Thao tác */}
+        <aside className="w-[250px] shrink-0 bg-white border border-gray-200 rounded shadow-sm p-5 h-max">
+          <div className="space-y-5 text-black">
             <div>
-              <label className="block font-bold mb-1 text-gray-700">
-                Thao tác
-              </label>
+              <label className="block font-bold mb-1.5 text-gray-700">Thao tác</label>
               <select
-                className="w-full border border-gray-300 rounded px-2 py-1.5 outline-none bg-white cursor-pointer"
+                className="w-full border border-gray-300 rounded px-2 py-1.5 outline-none focus:border-blue-400 bg-white cursor-pointer"
                 value={filterAction}
                 onChange={(e) => setFilterAction(e.target.value)}
               >
@@ -101,38 +70,32 @@ function ActionHistory() {
               </select>
             </div>
 
-            {/* Bộ lọc Người dùng */}
             <div>
-              <label className="block font-bold mb-1 text-gray-700">
-                Người dùng
-              </label>
+              <label className="block font-bold mb-1.5 text-gray-700">Người dùng</label>
               <select
-                className="w-full border border-gray-300 rounded px-2 py-1.5 outline-none bg-white cursor-pointer mb-2"
+                className="w-full border border-gray-300 rounded px-2 py-1.5 outline-none focus:border-blue-400 bg-white cursor-pointer mb-2"
                 value={filterUserSelect}
                 onChange={(e) => setFilterUserSelect(e.target.value)}
               >
                 <option>-- Tất cả --</option>
-                <option>Tài - Kế Toán</option>
-                <option>Lợi - Thu ngân</option>
-                <option>Levis - Kinh Doanh</option>
-                <option>Khang - Thủ Kho</option>
+                {/* Bro có thể thay bằng danh sách nhân viên linh động nếu muốn */}
+                <option>Nguyễn Văn Quản Lý - Quản lý</option>
+                <option>Trần Thị Thu - Nhân viên</option>
+                <option>Lê Văn Hùng - Nhân viên</option>
               </select>
               <input
                 type="text"
-                placeholder="Tìm tên, nội dung..."
+                placeholder="Tìm tên, mã đối tượng, chi tiết..."
                 className="w-full border border-gray-300 rounded px-2 py-1.5 outline-none focus:border-blue-400"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            {/* Bộ lọc Thời gian */}
             <div>
-              <label className="block font-bold mb-1 text-gray-700">
-                Thời gian
-              </label>
+              <label className="block font-bold mb-1.5 text-gray-700">Thời gian</label>
               <select
-                className="w-full border border-gray-300 rounded px-2 py-1.5 outline-none bg-white cursor-pointer"
+                className="w-full border border-gray-300 rounded px-2 py-1.5 outline-none focus:border-blue-400 bg-white cursor-pointer"
                 value={filterTime}
                 onChange={(e) => setFilterTime(e.target.value)}
               >
@@ -146,30 +109,17 @@ function ActionHistory() {
         {/* --- NỘI DUNG CHÍNH --- */}
         <section className="flex-1">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">
-              Lịch sử thao tác ({filteredLogs.length})
-            </h2>
-            <button className="bg-white border border-gray-300 px-4 py-1 rounded shadow-sm font-bold cursor-pointer hover:bg-gray-50 active:scale-95 transition-all text-[12px]">
-              Xuất file Excel
-            </button>
+            <h2 className="text-xl font-bold">Lịch sử thao tác</h2>
           </div>
 
           <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-[#f8f9fa] border-b border-gray-200 text-black">
-                  <th className="p-3 text-left font-bold w-[200px]">
-                    Thao tác
-                  </th>
-                  <th className="p-3 text-left font-bold w-[150px]">
-                    Thời gian
-                  </th>
-                  <th className="p-3 text-left font-bold w-[120px]">
-                    Đối tượng
-                  </th>
-                  <th className="p-3 text-left font-bold w-[180px]">
-                    Người dùng
-                  </th>
+                  <th className="p-3 text-left font-bold w-[200px]">Thao tác</th>
+                  <th className="p-3 text-left font-bold w-[150px]">Thời gian</th>
+                  <th className="p-3 text-left font-bold w-[120px]">Đối tượng</th>
+                  <th className="p-3 text-left font-bold w-[180px]">Người dùng</th>
                   <th className="p-3 text-left font-bold">Mô tả chi tiết</th>
                 </tr>
               </thead>
@@ -179,27 +129,18 @@ function ActionHistory() {
                     <tr
                       key={log.id}
                       className={`border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${expandedRow === log.id ? "bg-blue-50" : ""}`}
-                      onClick={() =>
-                        setExpandedRow(expandedRow === log.id ? null : log.id)
-                      }
+                      onClick={() => setExpandedRow(expandedRow === log.id ? null : log.id)}
                     >
                       <td className="p-3 font-medium">{log.action}</td>
-                      <td className="p-3 text-gray-600 font-mono">
-                        {log.time}
-                      </td>
-                      <td className="p-3 text-blue-700 font-bold">
-                        {log.target}
-                      </td>
+                      <td className="p-3 text-gray-600 font-mono">{log.time}</td>
+                      <td className="p-3 text-blue-700 font-bold">{log.target}</td>
                       <td className="p-3">{log.user}</td>
                       <td className="p-3 text-gray-600">{log.details}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="5"
-                      className="p-10 text-center text-gray-400 italic"
-                    >
+                    <td colSpan="5" className="p-10 text-center text-gray-400 italic">
                       Không tìm thấy lịch sử phù hợp với bộ lọc.
                     </td>
                   </tr>
